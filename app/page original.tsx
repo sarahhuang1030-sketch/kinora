@@ -37,36 +37,16 @@ const modalGenres = ['Drama', 'Sci-Fi', 'Noir', 'Horror', 'Romance', 'Thriller',
 
 
 //watch list options
-const watchListFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/watchlist/w1.webp', progress: 0.65, isNew: true },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/watchlist/w2.webp', progress: 0.3, isNew: false },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/watchlist/w3.webp', progress: 0.8, isNew: true },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/watchlist/w4.webp', progress: 0.45, isNew: false },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/watchlist/w5.webp', progress: 0.1, isNew: false },
- ];
-
-const recommendedFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/recommended/r1.webp', progress: 0.65, isNew: true },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/recommended/r2.webp', progress: 0.3, isNew: false },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/recommended/r3.webp', progress: 0.8, isNew: true },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/recommended/r4.webp', progress: 0.45, isNew: false },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/recommended/r5.webp', progress: 0.1, isNew: false },
-  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/recommended/r6.webp', progress: 0.55, isNew: true },
-  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/recommended/r7.webp', progress: 0.9, isNew: false },
-  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/recommended/r8.webp', progress: 0.2, isNew: true },
+const films: Film[] = [
+  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', colors: ['#1a0400', '#3c0c00', '#0f0300'], progress: 0.65, isNew: true },
+  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', colors: ['#060618', '#14144a', '#06060f'], progress: 0.3, isNew: false },
+  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', colors: ['#001808', '#003c18', '#000f04'], progress: 0.8, isNew: true },
+  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', colors: ['#180004', '#3c000c', '#0a0002'], progress: 0.45, isNew: false },
+  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', colors: ['#181000', '#3a2c00', '#100c00'], progress: 0.1, isNew: false },
+  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', colors: ['#001018', '#00283c', '#000810'], progress: 0.55, isNew: true },
+  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', colors: ['#0c0020', '#200050', '#080015'], progress: 0.9, isNew: false },
+  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', colors: ['#080018', '#140038', '#040010'], progress: 0.2, isNew: true },
 ];
-
-const trendingFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/trending/t1.webp', progress: 0.65, isNew: true },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/trending/t2.webp', progress: 0.3, isNew: false },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/trending/t3.webp', progress: 0.8, isNew: true },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/trending/t4.webp', progress: 0.45, isNew: false },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/trending/t5.webp', progress: 0.1, isNew: false },
-  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/trending/t6.webp', progress: 0.55, isNew: true },
-  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/trending/t7.webp', progress: 0.9, isNew: false },
-  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/trending/t8.webp', progress: 0.2, isNew: true },
-];
-
 
 
 function Art({ colors }: { colors: [string, string, string] }) {
@@ -78,7 +58,7 @@ function PosterCard({ film }: { film: Film }) {
   return (
     <article className="pcard">
       <div className="pcard-thumb">
-        <img src={film.image} alt={film.title} className="poster-image"/>        
+        <Art colors={film.colors} />
         <div className="pcard-shine" />
         <div className="pcard-bottom">
           <span className="pcard-stars">★ {film.rating}</span>
@@ -97,7 +77,7 @@ function WideCard({ film }: { film: Film }) {
   return (
     <article className="wcard">
       <div className="wcard-thumb">
-        <img src={film.image} alt={film.title} className="poster-image"/> 
+        <Art colors={film.colors} />
         <div className="wcard-overlay" />
         <div className="wcard-play">▶</div>
         <div className="wcard-progress"><div className="wcard-progress-fill" style={{ width: `${pct}%` }} /></div>
@@ -109,57 +89,11 @@ function WideCard({ film }: { film: Film }) {
 }
 
 
-function Row({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
-
-  const scrollLeft = (id: string) => {
-    const row = document.getElementById(id);
-    row?.scrollBy({ left: -600, behavior: "smooth" });
-  };
-
-  const scrollRight = (id: string) => {
-    const row = document.getElementById(id);
-    row?.scrollBy({ left: 600, behavior: "smooth" });
-  };
-
-  const rowId = title.replace(/\s+/g, "-");
-
+function Row({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section className="content-section">
-      <div className="row-header">
-        <h2 className="row-title">{title}</h2>
-        <span className="row-see-all">See all</span>
-      </div>
-
-      <div className="row-wrapper">
-
-        <button
-          className="row-arrow row-arrow-left"
-          onClick={() => scrollLeft(rowId)}
-        >
-          ‹
-        </button>
-
-        <div
-          id={rowId}
-          className="cards-scroll"
-        >
-          {children}
-        </div>
-
-        <button
-          className="row-arrow row-arrow-right"
-          onClick={() => scrollRight(rowId)}
-        >
-          ›
-        </button>
-
-      </div>
+      <div className="row-header"><h2 className="row-title">{title}</h2><span className="row-see-all">See all</span></div>
+      <div className="cards-scroll">{children}</div>
     </section>
   );
 }
@@ -178,7 +112,7 @@ export default function Home() {
   const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
 
-  // const recommended = useMemo(() => films.slice().reverse(), []);
+  const recommended = useMemo(() => films.slice().reverse(), []);
 
   function openModal() {
     setModalOpen(true);
@@ -277,9 +211,9 @@ export default function Home() {
         <section className="mood-section"><p className="mood-label">Filter by mood</p><div className="mood-chips">{moods.map((mood) => <button key={mood} className={`mood-chip ${activeMood === mood ? 'active' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>
         <section className="genre-tabs">{genres.map((genre) => <button key={genre} className={`gtab ${activeGenre === genre ? 'active' : ''}`} onClick={() => setActiveGenre(genre)}>{genre}</button>)}</section>
 
-        <Row title="Watch List">{watchListFilms.slice(0, 5).map((film) => <WideCard key={film.title} film={film} />)}</Row>
-        <Row title="Recommended for you">{recommendedFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
-        <Row title="Trending this week">{trendingFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
+        <Row title="Watch List">{films.slice(0, 5).map((film) => <WideCard key={film.title} film={film} />)}</Row>
+        <Row title="Recommended for you">{recommended.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
+        <Row title="Trending this week">{films.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
       </main>
 
       <footer><div className="logo footer-logo">CINE<span>forge</span></div><span>© 2026 Cineforge</span></footer>
