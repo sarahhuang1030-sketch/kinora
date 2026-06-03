@@ -11,6 +11,10 @@ type Film = {
   // colors: [string, string, string];
   progress: number;
   isNew: boolean;
+  channels: {
+  name: string;
+  logo: string;
+}[];
 };
 
 // hero slides
@@ -38,33 +42,108 @@ const modalGenres = ['Drama', 'Sci-Fi', 'Noir', 'Horror', 'Romance', 'Thriller',
 
 //watch list options
 const watchListFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/watchlist/w1.webp', progress: 0.65, isNew: true },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/watchlist/w2.webp', progress: 0.3, isNew: false },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/watchlist/w3.webp', progress: 0.8, isNew: true },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/watchlist/w4.webp', progress: 0.45, isNew: false },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/watchlist/w5.webp', progress: 0.1, isNew: false },
+  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/watchlist/w1.webp', progress: 0.65, isNew: true, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Disney+", logo: "/platforms/disney.png" }
+  ] },
+  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/watchlist/w2.webp', progress: 0.3, isNew: false, channels: [
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Netflix", logo: "/platforms/netflix.webp" }
+  ] },
+  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/watchlist/w3.webp', progress: 0.8, isNew: true, channels: [
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Disney+", logo: "/platforms/disney.png" }
+  ] },
+  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/watchlist/w4.webp', progress: 0.45, isNew: false, channels: [
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
+  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/watchlist/w5.webp', progress: 0.1, isNew: false, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+    { name: "Prime Video", logo: "/platforms/prime.jpg" }
+  ] },
  ];
 
 const recommendedFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/recommended/r1.webp', progress: 0.65, isNew: true },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/recommended/r2.webp', progress: 0.3, isNew: false },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/recommended/r3.webp', progress: 0.8, isNew: true },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/recommended/r4.webp', progress: 0.45, isNew: false },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/recommended/r5.webp', progress: 0.1, isNew: false },
-  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/recommended/r6.webp', progress: 0.55, isNew: true },
-  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/recommended/r7.webp', progress: 0.9, isNew: false },
-  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/recommended/r8.webp', progress: 0.2, isNew: true },
+  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/recommended/r1.webp', progress: 0.65, isNew: true, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
+  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/recommended/r2.webp', progress: 0.3, isNew: false, channels: [
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/recommended/r3.webp', progress: 0.8, isNew: true, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
+  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/recommended/r4.webp', progress: 0.45, isNew: false, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/recommended/r5.webp', progress: 0.1, isNew: false, channels: [
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/recommended/r6.webp', progress: 0.55, isNew: true, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
+  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/recommended/r7.webp', progress: 0.9, isNew: false, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+  ] },
+  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/recommended/r8.webp', progress: 0.2, isNew: true, channels: [
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
 ];
 
 const trendingFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/trending/t1.webp', progress: 0.65, isNew: true },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/trending/t2.webp', progress: 0.3, isNew: false },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/trending/t3.webp', progress: 0.8, isNew: true },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/trending/t4.webp', progress: 0.45, isNew: false },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/trending/t5.webp', progress: 0.1, isNew: false },
-  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/trending/t6.webp', progress: 0.55, isNew: true },
-  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/trending/t7.webp', progress: 0.9, isNew: false },
-  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/trending/t8.webp', progress: 0.2, isNew: true },
+  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/trending/t1.webp', progress: 0.65, isNew: true, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+  ]  },
+  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/trending/t2.webp', progress: 0.3, isNew: false, channels: [
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
+  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/trending/t3.webp', progress: 0.8, isNew: true, channels: [
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/trending/t4.webp', progress: 0.45, isNew: false, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/trending/t5.webp', progress: 0.1, isNew: false, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+  ] },
+  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/trending/t6.webp', progress: 0.55, isNew: true, channels: [
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/trending/t7.webp', progress: 0.9, isNew: false, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Prime Video", logo: "/platforms/prime.jpg" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ]  },
+  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/trending/t8.webp', progress: 0.2, isNew: true, channels: [
+    { name: "Netflix", logo: "/platforms/netflix.webp" },
+    { name: "Apple TV+", logo: "/platforms/apple.png" },
+    { name: "Disney+", logo: "/platforms/disney.png" },
+    { name: "Crave", logo: "/platforms/crave.png" }
+  ] },
 ];
 
 
@@ -87,6 +166,19 @@ function PosterCard({ film }: { film: Film }) {
       </div>
       <p className="pcard-title">{film.title}</p>
       <p className="pcard-meta">{film.genre} · {film.year}</p>
+      {/* <p className="available-on">Available on: {film.channels.join(', ')}</p> */}
+      <div className="platform-list">
+        <p className="available-on">Available on:</p>
+      {film.channels.map((channel) => (
+        <img
+          key={channel.name}
+          src={channel.logo}
+          alt={channel.name}
+          title={channel.name}
+          className="platform-logo"
+        />
+      ))}
+    </div>
     </article>
   );
 }
@@ -104,6 +196,19 @@ function WideCard({ film }: { film: Film }) {
       </div>
       <p className="wcard-title">{film.title}</p>
       <p className="wcard-meta">{film.genre} · {pct}% watched</p>
+      {/* <p className="available-on">Available on: {film.channels.join(', ')}</p> */}
+      <div className="platform-list">
+        <p className="available-on">Available on:</p>
+      {film.channels.map((channel) => (
+        <img
+          key={channel.name}
+          src={channel.logo}
+          alt={channel.name}
+          title={channel.name}
+          className="platform-logo"
+        />
+      ))}
+    </div>
     </article>
   );
 }
@@ -277,7 +382,7 @@ export default function Home() {
         <section className="mood-section"><p className="mood-label">Filter by mood</p><div className="mood-chips">{moods.map((mood) => <button key={mood} className={`mood-chip ${activeMood === mood ? 'active' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>
         <section className="genre-tabs">{genres.map((genre) => <button key={genre} className={`gtab ${activeGenre === genre ? 'active' : ''}`} onClick={() => setActiveGenre(genre)}>{genre}</button>)}</section>
 
-        <Row title="Watch List">{watchListFilms.slice(0, 5).map((film) => <WideCard key={film.title} film={film} />)}</Row>
+        <Row title="Wish List">{watchListFilms.slice(0, 5).map((film) => <WideCard key={film.title} film={film} />)}</Row>
         <Row title="Recommended for you">{recommendedFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
         <Row title="Trending this week">{trendingFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
       </main>

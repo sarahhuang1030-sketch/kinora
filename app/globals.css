@@ -282,3 +282,26 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   width: 100%;
   height: clamp(148px, 11vw, 205px);
 }
+
+/*available channel  */
+.available-on {
+  font-size: 11px;
+  color: var(--brand);
+  margin-top: 4px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.platform-list {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+
+.platform-logo {
+  width: 20px;
+  height: 20px;
+  object-fit: contain;
+  border-radius: 4px;
+}
