@@ -305,3 +305,9 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   object-fit: contain;
   border-radius: 4px;
 }
+
+/* style for mood selection */
+.feeling-modal {
+  width: min(700px, 92vw);
+  text-align: center;
+}

@@ -17,6 +17,7 @@ type Film = {
 }[];
 };
 
+
 // hero slides
 const heroSlides = [
   {
@@ -282,6 +283,10 @@ export default function Home() {
   const [selectedGenres, setSelectedGenres] = useState(['Drama', 'Noir']);
   const [generated, setGenerated] = useState(false);
   const [generating, setGenerating] = useState(false);
+  //popup asking mood question
+const [feelingPopupOpen, setFeelingPopupOpen] = useState(true);
+const [todayFeeling, setTodayFeeling] = useState('');
+
 
   // const recommended = useMemo(() => films.slice().reverse(), []);
 
@@ -388,6 +393,59 @@ export default function Home() {
       </main>
 
       <footer><div className="logo footer-logo">CINE<span>forge</span></div><span>© 2026 Cineforge</span></footer>
+
+      {feelingPopupOpen && (
+  <div className="modal-backdrop open">
+    <div className="modal feeling-modal">
+      <div className="modal-header">
+        <div>
+          <h2 className="modal-title">How are you feeling today?</h2>
+          <p className="modal-subtitle">
+            We’ll personalize your recommendations based on your mood.
+          </p>
+        </div>
+        <button
+          className="modal-close"
+          onClick={() => setFeelingPopupOpen(false)}
+        >
+          ✕
+        </button>
+      </div>
+
+     <div className="modal-grid" style={{margin: '20px'}}>
+  {modalMoods.map((mood) => (
+    <button
+      key={mood}
+      className={`choice ${todayFeeling === mood ? 'active' : ''}`}
+      onClick={() => setTodayFeeling(mood)}
+    >
+      {mood}
+    </button>
+  ))}
+</div>
+
+<div className="modal-footer" style={{marginTop: '20px'}}>
+  <button
+    className="btn-back"
+    onClick={() => setFeelingPopupOpen(false)}
+  >
+    Maybe Later
+  </button>
+
+  <button
+    className="btn-next"
+    disabled={!todayFeeling}
+    onClick={() => {
+      setActiveMood(todayFeeling);
+      setFeelingPopupOpen(false);
+    }}
+  >
+    Continue →
+  </button>
+</div>
+    </div>
+  </div>
+)}
 
       {modalOpen && (
         <div className="modal-backdrop open" onClick={() => setModalOpen(false)}>
