@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 type Film = {
   title: string;
@@ -15,6 +15,18 @@ type Film = {
   name: string;
   logo: string;
 }[];
+};
+
+type DbMovie = {
+  movie_id: number;
+  title: string;
+  release_year: number;
+  poster_url: string | null;
+  genre: string | null;
+  rating?: string;
+  recommendation_score?: string;
+  trend_score?: string;
+  platforms: string | null;
 };
 
 
@@ -35,118 +47,10 @@ const heroSlides = [
 ];
 
 //options for the mood and genre filters, as well as the modal choices
-const moods = ['All', '🔥 Intense', '🌙 Melancholic', '✨ Euphoric', '💫 Romantic', '🌿 Tranquil', '👁 Unsettling', '🏆 Nostalgic'];
-const genres = ['All', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Romance', 'Noir', 'Fantasy', '1970s', '1980s', '1990s', '2000s'];
+// const moods = ['All', '🔥 Intense', '🌙 Melancholic', '✨ Euphoric', '💫 Romantic', '🌿 Tranquil', '👁 Unsettling', '🏆 Nostalgic'];
+// const genres = ['All', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Romance', 'Noir', 'Fantasy', '1970s', '1980s', '1990s', '2000s'];
 const modalMoods = ['🌙 Melancholic', '🔥 Intense', '✨ Euphoric', '🌿 Tranquil', '👁 Unsettling', '💫 Romantic'];
 const modalGenres = ['Drama', 'Sci-Fi', 'Noir', 'Horror', 'Romance', 'Thriller', 'Fantasy', 'Action', 'Comedy'];
-
-
-//watch list options
-const watchListFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/watchlist/w1.webp', progress: 0.65, isNew: true, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Disney+", logo: "/platforms/disney.png" }
-  ] },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/watchlist/w2.webp', progress: 0.3, isNew: false, channels: [
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Netflix", logo: "/platforms/netflix.webp" }
-  ] },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/watchlist/w3.webp', progress: 0.8, isNew: true, channels: [
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Disney+", logo: "/platforms/disney.png" }
-  ] },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/watchlist/w4.webp', progress: 0.45, isNew: false, channels: [
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/watchlist/w5.webp', progress: 0.1, isNew: false, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-    { name: "Prime Video", logo: "/platforms/prime.jpg" }
-  ] },
- ];
-
-const recommendedFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/recommended/r1.webp', progress: 0.65, isNew: true, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/recommended/r2.webp', progress: 0.3, isNew: false, channels: [
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/recommended/r3.webp', progress: 0.8, isNew: true, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/recommended/r4.webp', progress: 0.45, isNew: false, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/recommended/r5.webp', progress: 0.1, isNew: false, channels: [
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/recommended/r6.webp', progress: 0.55, isNew: true, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/recommended/r7.webp', progress: 0.9, isNew: false, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-  ] },
-  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/recommended/r8.webp', progress: 0.2, isNew: true, channels: [
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-];
-
-const trendingFilms: Film[] = [
-  { title: 'Hollow Ground', year: '2023', genre: 'Thriller', rating: '8.4', image: '/trending/t1.webp', progress: 0.65, isNew: true, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-  ]  },
-  { title: 'Neon Requiem', year: '2022', genre: 'Drama', rating: '9.1', image: '/trending/t2.webp', progress: 0.3, isNew: false, channels: [
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-  { title: 'The Last Signal', year: '2024', genre: 'Sci-Fi', rating: '8.7', image: '/trending/t3.webp', progress: 0.8, isNew: true, channels: [
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'Crimson Shore', year: '2021', genre: 'Horror', rating: '7.9', image: '/trending/t4.webp', progress: 0.45, isNew: false, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'Desert Hour', year: '2023', genre: 'Drama', rating: '8.2', image: '/trending/t5.webp', progress: 0.1, isNew: false, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-  ] },
-  { title: 'Blue Meridian', year: '2024', genre: 'Sci-Fi', rating: '9.0', image: '/trending/t6.webp', progress: 0.55, isNew: true, channels: [
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'Pale Archive', year: '2022', genre: 'Thriller', rating: '8.5', image: '/trending/t7.webp', progress: 0.9, isNew: false, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Prime Video", logo: "/platforms/prime.jpg" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ]  },
-  { title: 'Woven Dark', year: '2024', genre: 'Horror', rating: '8.1', image: '/trending/t8.webp', progress: 0.2, isNew: true, channels: [
-    { name: "Netflix", logo: "/platforms/netflix.webp" },
-    { name: "Apple TV+", logo: "/platforms/apple.png" },
-    { name: "Disney+", logo: "/platforms/disney.png" },
-    { name: "Crave", logo: "/platforms/crave.png" }
-  ] },
-];
-
 
 
 function Art({ colors }: { colors: [string, string, string] }) {
@@ -182,6 +86,28 @@ function PosterCard({ film }: { film: Film }) {
     </div>
     </article>
   );
+}
+
+//helper
+function mapMovie(movie: DbMovie, fallbackImage: string): Film {
+  return {
+    title: movie.title,
+    genre: movie.genre || "Unknown",
+    year: String(movie.release_year),
+    channels: movie.platforms
+      ? movie.platforms.split(",").map((item: string) => {
+          const [name, logo] = item.split("|");
+          return {
+            name,
+            logo: logo || "/platforms/netflix.webp",
+          };
+        })
+      : [],
+    rating: String(movie.recommendation_score || movie.trend_score || "8.5"),
+    image: movie.poster_url || fallbackImage,
+    progress: 0.4,
+    isNew: Number(movie.release_year) >= 2025,
+  };
 }
 
 //this is for the watch list cards
@@ -287,6 +213,61 @@ export default function Home() {
 const [feelingPopupOpen, setFeelingPopupOpen] = useState(true);
 const [todayFeeling, setTodayFeeling] = useState('');
 
+const [recommendedMovies, setRecommendedMovies] = useState<DbMovie[]>([]);
+const [trendingMovies, setTrendingMovies] = useState<DbMovie[]>([]);
+const [watchlistMovies, setWatchlistMovies] = useState<DbMovie[]>([]);
+
+const [moods, setMoods] = useState<string[]>(["All"]);
+const [genres, setGenres] = useState<string[]>(["All"]);
+
+const yearFilters = [
+  "All",
+  "1970s",
+  "1980s",
+  "1990s",
+  "2000s",
+  "2010s",
+  "2020s",
+];
+
+const [activeYear, setActiveYear] = useState("All");
+
+useEffect(() => {
+  async function loadHomeMovies() {
+    const res = await fetch("/api/home");
+    const data = await res.json();
+
+    setRecommendedMovies(data.recommended || []);
+    setTrendingMovies(data.trending || []);
+    setWatchlistMovies(data.watchlist || []);
+  }
+
+  async function loadMoods() {
+    const moodRes = await fetch("/api/moods");
+    const moodData = await moodRes.json();
+
+    setMoods([
+      "All",
+      ...moodData.map((m: { mood_name: string }) => m.mood_name),
+    ]);
+  }
+
+  async function loadGenres() {
+  const genreRes = await fetch("/api/genres");
+  const genreData = await genreRes.json();
+
+  //  console.log("GENRES FROM API:", genreData);
+
+  setGenres([
+    "All",
+    ...genreData.map((g: { genre_name: string }) => g.genre_name),
+  ]);
+}
+
+  loadHomeMovies();
+  loadMoods();
+  loadGenres();
+}, []);
 
   // const recommended = useMemo(() => films.slice().reverse(), []);
 
@@ -318,8 +299,13 @@ const [todayFeeling, setTodayFeeling] = useState('');
     <>
       <nav>
         <div className="logo">CINE<span>forge</span></div>
-        <div className="nav-links"><a className="active">Home</a><a>My List</a><a>New & Hot</a><a>Browse</a><a>My Films</a></div>
-        <div className="nav-right"><button className="nav-icon-btn">⌕</button><button className="nav-icon-btn">🔔</button><div className="nav-avatar">S</div></div>
+        <div className="nav-links"><a className="active">Home</a><a>For you</a><a>Explore</a><a>Trending</a><a>My List</a></div>
+       <div className="nav-right">
+  <button className="nav-icon-btn">⌕</button>
+  <button className="nav-icon-btn">🔔</button>
+  <a href="/register" className="login-btn">Register</a>
+  <a href="/login" className="login-btn">Login</a>
+</div>
       </nav>
 
       <header className="hero">
@@ -379,17 +365,42 @@ const [todayFeeling, setTodayFeeling] = useState('');
 </header>
 
       <main>
-        <button className="personalize-strip" onClick={openModal}>
+        {/* <button className="personalize-strip" onClick={openModal}>
           <div className="ps-left"><div className="ps-icon">🎬</div><div><p className="ps-title">Create your personalized film</p><p className="ps-sub">Choose your mood, era, genre & duration.</p></div></div>
           <span className="btn-create">Start Creating →</span>
-        </button>
+        </button> */}
 
         <section className="mood-section"><p className="mood-label">Filter by mood</p><div className="mood-chips">{moods.map((mood) => <button key={mood} className={`mood-chip ${activeMood === mood ? 'active' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>
-        <section className="genre-tabs">{genres.map((genre) => <button key={genre} className={`gtab ${activeGenre === genre ? 'active' : ''}`} onClick={() => setActiveGenre(genre)}>{genre}</button>)}</section>
+        <section className="mood-section"><p className="mood-label">Filter by Genre</p><div className="mood-chips">{genres.map((genre) => (<button key={genre} className={`gtab ${activeGenre === genre ? 'active' : ''}`} onClick={() => setActiveGenre(genre)}>{genre}</button>))}</div></section>
+        <section className="year-tabs" style={{ marginBottom: '40px' }}><p className="mood-label">Filter by Year</p><div className="mood-chips">{yearFilters.map((year) => (<button key={year} className={`gtab ${activeYear === year ? "active" : ""}`} onClick={() => setActiveYear(year)}>{year}</button>))}</div></section>
+       
+       
 
-        <Row title="Wish List">{watchListFilms.slice(0, 5).map((film) => <WideCard key={film.title} film={film} />)}</Row>
-        <Row title="Recommended for you">{recommendedFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
-        <Row title="Trending this week">{trendingFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row>
+       <Row title="Wish List" >
+  {watchlistMovies.map((movie, index) => (
+    <WideCard
+      key={movie.movie_id}
+      film={mapMovie(movie, `/watchlist/w${(index % 5) + 1}.webp`)}
+    />
+  ))}
+</Row>
+        {/* <Row title="Recommended for you">{recommendedFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row> */}
+       <Row title="Recommended for you">
+  {recommendedMovies.map((movie, index) => (
+    <PosterCard
+      key={movie.movie_id}
+      film={mapMovie(movie, `/recommended/r${(index % 8) + 1}.webp`)}
+    />
+  ))}
+</Row>
+       <Row title="Trending this week">
+  {trendingMovies.map((movie, index) => (
+    <PosterCard
+      key={movie.movie_id}
+      film={mapMovie(movie, `/trending/t${(index % 8) + 1}.webp`)}
+    />
+  ))}
+</Row>
       </main>
 
       <footer><div className="logo footer-logo">CINE<span>forge</span></div><span>© 2026 Cineforge</span></footer>

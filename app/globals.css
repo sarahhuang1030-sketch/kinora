@@ -311,3 +311,159 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   width: min(700px, 92vw);
   text-align: center;
 }
+
+
+/* ===== Auth Pages login and register ===== */
+
+.auth-page {
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+
+  background:
+    radial-gradient(circle at top, #2a0e00 0%, #090909 45%),
+    #090909;
+}
+
+.auth-card {
+  width: 420px;
+  padding: 40px;
+
+  background: rgba(20, 20, 20, 0.95);
+
+  border-radius: 24px;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  box-shadow:
+    0 20px 60px rgba(0,0,0,0.6);
+
+  backdrop-filter: blur(10px);
+}
+
+.auth-card h1 {
+  color: white;
+  text-align: center;
+  margin-bottom: 30px;
+  font-size: 2rem;
+}
+
+.auth-card form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.auth-card input {
+  width: 100%;
+  height: 54px;
+
+  padding: 0 16px;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.1);
+
+  background: rgba(255,255,255,0.05);
+
+  color: white;
+  font-size: 15px;
+}
+
+.auth-card input::placeholder {
+  color: #999;
+}
+
+.auth-card input:focus {
+  outline: none;
+  border-color: #ff7b29;
+}
+
+.auth-card button {
+  height: 54px;
+
+  border: none;
+  border-radius: 12px;
+
+  background: linear-gradient(
+    135deg,
+    #ff7b29,
+    #ff5500
+  );
+
+  color: white;
+  font-size: 16px;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition: all 0.3s ease;
+}
+
+.auth-card button:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+    0 10px 25px rgba(255,123,41,0.35);
+}
+
+.auth-link {
+  margin-top: 20px;
+  text-align: center;
+  color: #aaa;
+}
+
+.auth-link a {
+  color: #ff7b29;
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.auth-error {
+  color: #ff6666;
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* password toggle */
+.password-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.password-wrapper input {
+  padding-right: 52px;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+
+  padding: 0;
+  width: auto;
+  height: auto;
+
+  color: #999;
+  cursor: pointer;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.password-toggle:hover {
+  background: transparent !important;
+  box-shadow: none !important;
+  transform: translateY(-50%) !important;
+  color: #ccc;
+}
+
+.password-toggle svg {
+  font-size: 20px;
+}
