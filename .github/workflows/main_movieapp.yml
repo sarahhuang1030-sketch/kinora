@@ -40,7 +40,6 @@ jobs:
             package.json
             package-lock.json
             next.config.ts
-            node_modules
 
   deploy:
     runs-on: ubuntu-latest
