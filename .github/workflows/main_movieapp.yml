@@ -36,7 +36,11 @@ jobs:
         with:
           name: node-app
           path: |
-            .next/standalone
+            .next
+            public
+            package.json
+            package-lock.json
+            node_modules
 
   deploy:
     runs-on: ubuntu-latest
