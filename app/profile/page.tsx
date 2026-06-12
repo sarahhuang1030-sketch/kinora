@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState,Suspense } from "react";
 import Navbar from "../components/Navbar";
 
 type User = {
@@ -27,6 +27,14 @@ type ContentTypeOption = { type_name: string };
 type Section = "genres" | "streamingServices" | "contentTypes" | "preferences";
 
 export default function ProfilePage() {
+  return (
+    <Suspense fallback={<div>Loading profile...</div>}>
+      <ProfileContent />
+    </Suspense>
+  );
+}
+
+function ProfileContent() {
   const searchParams = useSearchParams();
   const email = searchParams.get("email");
   const isNewUser = searchParams.get("newUser") === "true";
