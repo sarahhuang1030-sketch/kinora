@@ -137,6 +137,11 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   .modal-grid { grid-template-columns: 1fr 1fr; }
 }
 
+/* for registration and login buttons */
+.login-btn {
+  color: var(--text-dim); font-size: 13px; font-weight: 500;
+}
+
 /* hero slide style */
 .hero-slide {
   width: 100%;
@@ -487,3 +492,4 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 .form-row input {
   flex: 1;
 }
+

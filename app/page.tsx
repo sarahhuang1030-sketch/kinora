@@ -299,7 +299,7 @@ useEffect(() => {
     <>
       <nav>
         <div className="logo">CINE<span>forge</span></div>
-        <div className="nav-links"><a className="active">Home</a><a>For you</a><a>Explore</a><a>Trending</a><a>My List</a></div>
+        <div className="nav-links"><a className="active">Home</a><a>For you</a><a>Explore</a><a>Trending</a><a>My List</a><a>About Us</a></div>
        <div className="nav-right">
   <button className="nav-icon-btn">⌕</button>
   <button className="nav-icon-btn">🔔</button>
