@@ -316,10 +316,13 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 /* ===== Auth Pages login and register ===== */
 
 .auth-page {
-  min-height: 100vh;
+  min-height: calc(100vh - 64px);
+
   display: flex;
   justify-content: center;
   align-items: center;
+
+  padding: 100px 20px 60px;
 
   background:
     radial-gradient(circle at top, #2a0e00 0%, #090909 45%),
@@ -466,4 +469,21 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 
 .password-toggle svg {
   font-size: 20px;
+}
+
+/* making registeration page two boxes are in one row */
+
+.form-row {
+  display: flex;
+  gap: 12px;
+}
+
+@media (max-width: 600px) {
+  .form-row {
+    flex-direction: column;
+  }
+}
+
+.form-row input {
+  flex: 1;
 }

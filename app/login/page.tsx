@@ -85,7 +85,7 @@ try {
         </form>
 
         <p className="auth-link">
-          Don't have an account?
+          Don&apos;t have an account?
           <a href="/register"> Register</a>
         </p>
       </div>

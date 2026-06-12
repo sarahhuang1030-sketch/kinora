@@ -15,6 +15,11 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
+  const [phone, setPhone] = useState("");
+
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+
  async function handleRegister(e: React.FormEvent) {
   e.preventDefault();
 
@@ -23,7 +28,7 @@ export default function RegisterPage() {
     headers: {
       "Content-Type": "application/json",
     },
-    body: JSON.stringify({ username, email, password }),
+    body: JSON.stringify({ username, email, password, phone, firstName, lastName }),
   });
 
   const text = await res.text();
@@ -43,29 +48,74 @@ export default function RegisterPage() {
 }
 
   alert("Registration successful!");
-  router.push("/login");
+  // router.push("/login");
+  router.push(`/profile?email=${encodeURIComponent(email)}&newUser=true`);
+}
+
+// helper to format phone number as user types
+function formatPhoneNumber(value: string) {
+  const digits = value.replace(/\D/g, "").slice(0, 10);
+
+  if (digits.length < 4) {
+    return digits;
+  }
+
+  if (digits.length < 7) {
+    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+  }
+
+  return `(${digits.slice(0, 3)}) ${digits.slice(
+    3,
+    6
+  )}-${digits.slice(6)}`;
 }
 
   return (
 
     <>
     <Navbar />
-    <div className="auth-page" style={{marginTop: "40px"}}>
+    <div className="auth-page">
     <div className="auth-card">
               <h1>Create Account</h1>
 
               <form onSubmit={handleRegister}>
-                  <input
-                      type="text"
-                      placeholder="Username"
-                      value={username}
-                      onChange={(e) => setUsername(e.target.value)} />
+                <div className="form-row">
+                <input
+                    type="text"
+                    placeholder="John"
+                    value={firstName}
+                    onChange={(e) => setFirstName(e.target.value)}
+                  />
 
                   <input
+                    type="text"
+                    placeholder="Doe"
+                    value={lastName}
+                    onChange={(e) => setLastName(e.target.value)}
+                  />
+                  </div>
+                  <div className="form-row">
+                  <input
                       type="email"
-                      placeholder="Email Address"
+                      placeholder="john@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)} />
+
+                  <input
+                      type="tel"
+                      placeholder="(403) 123-4567"
+                      value={phone}
+                      onChange={(e) => {
+                        const formatted = formatPhoneNumber(e.target.value);
+                        setPhone(formatted);
+                      }}
+                    />
+                   </div>
+                    <input
+                      type="text"
+                      placeholder="Bluejay123"
+                      value={username}
+                      onChange={(e) => setUsername(e.target.value)} />
 
                  <div className="password-wrapper">
                     <input

@@ -4,8 +4,11 @@ import type { RowDataPacket } from "mysql2";
 
 type UserRow = RowDataPacket & {
   user_id: number;
+  first_name: string;
+  last_name: string;
   username: string;
   email: string;
+  phone: string;
 };
 
 export async function POST(req: Request) {
@@ -13,7 +16,18 @@ export async function POST(req: Request) {
     const { email, password } = await req.json();
 
     const [rows] = await pool.execute<UserRow[]>(
-      "SELECT user_id, username, email FROM users WHERE email = ? AND password = ?",
+      `
+      SELECT 
+        user_id,
+        first_name,
+        last_name,
+        username,
+        email,
+        phone
+      FROM users 
+      WHERE email = ? 
+      AND password = ?
+      `,
       [email, password]
     );
 
