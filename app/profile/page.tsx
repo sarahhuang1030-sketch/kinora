@@ -12,6 +12,7 @@ type User = {
   username: string;
   email: string;
   phone: string;
+  profile_image?: string;
 };
 
 type Answers = {
@@ -55,6 +56,7 @@ function ProfileContent() {
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
+  const [profileImage, setProfileImage] = useState<string>("");
 
   useEffect(() => {
     async function loadUser() {
@@ -63,7 +65,7 @@ function ProfileContent() {
       setUser(data.user);
       setEditUser(data.user);
       setUser(data.user);
-
+      setProfileImage(data.user?.profile_image || "");
       if (data.answers) {
         setAnswers(data.answers);
       }
@@ -111,133 +113,302 @@ function ProfileContent() {
       <Navbar />
 
       <div className="auth-page">
-        <div className="auth-card">
-          <h1>My Profile</h1>
+        <div className="profile-page-card">
+         
 
           {user && (
             <>
               {user && !isEditingProfile && (
   <>
-    <p><strong>Name:</strong> {user.first_name} {user.last_name}</p>
-    <p><strong>Username:</strong> {user.username}</p>
-    <p><strong>Email:</strong> {user.email}</p>
-    <p><strong>Phone:</strong> {user.phone || "Not added"}</p>
+    <div className="disney-profile-layout">
+  <div className="disney-profile-left">
+    <h1>Edit Profile</h1>
+    <p className="profile-note">
+      Manage your personal information and movie preferences.
+    </p>
 
-    <button onClick={() => setIsEditingProfile(true)}>
+    <div className="profile-field">
+      {user.first_name} {user.last_name}
+    </div>
+
+    <div className="profile-section-title">Personal Information</div>
+
+    <div className="profile-info-row">
+      <span>Username</span>
+      <span>{user.username}</span>
+    </div>
+
+    <div className="profile-info-row">
+      <span>Email</span>
+      <span>{user.email}</span>
+    </div>
+
+    <div className="profile-info-row">
+      <span>Phone</span>
+      <span>{user.phone || "Not added"}</span>
+    </div>
+
+    <button className="profile-main-btn" onClick={() => setIsEditingProfile(true)}>
       Edit Profile
     </button>
+  </div>
+
+  <div className="disney-profile-avatar-wrap">
+    <div className="disney-avatar">
+      {profileImage ? (
+        <img src={profileImage} alt="Profile" />
+      ) : (
+        <span>{user.first_name?.charAt(0)}{user.last_name?.charAt(0)}</span>
+      )}
+
+      <label className="avatar-edit-btn">
+        ✎
+        <input
+          type="file"
+          accept="image/*"
+          hidden
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file || !user) return;
+
+            const reader = new FileReader();
+
+            reader.onloadend = async () => {
+              const imageBase64 = reader.result as string;
+              setProfileImage(imageBase64);
+
+              await fetch("/api/profile-image", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  userId: user.user_id,
+                  profileImage: imageBase64,
+                }),
+              });
+            };
+
+            reader.readAsDataURL(file);
+          }}
+        />
+      </label>
+
+    </div>
+    <button
+  className="remove-avatar-btn"
+  onClick={async () => {
+    if (!user) return;
+
+    setProfileImage("");
+
+    await fetch("/api/profile-image", {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.user_id,
+        profileImage: "",
+      }),
+    });
+  }}
+>
+  Remove Image
+</button>
+  </div>
+  
+</div>
+
   </>
 )}
 
 {user && isEditingProfile && editUser && (
   <>
-    <input
-      value={editUser.first_name}
-      onChange={(e) => setEditUser({ ...editUser, first_name: e.target.value })}
-      placeholder="First Name"
-    />
+    <div className="disney-profile-layout">
+      <div className="disney-profile-left">
+        <h1>Edit Profile</h1>
 
-    <input
-      value={editUser.last_name}
-      onChange={(e) => setEditUser({ ...editUser, last_name: e.target.value })}
-      placeholder="Last Name"
-    />
+        <p className="profile-note">
+          Update your personal information.
+        </p>
 
-    <input
-      value={editUser.username}
-      onChange={(e) => setEditUser({ ...editUser, username: e.target.value })}
-      placeholder="Username"
-    />
+        <div className="profile-section-title">
+          Personal Information
+        </div>
 
-    <input
-  value={editUser.phone || ""}
-  onChange={(e) =>
-    setEditUser({
-      ...editUser,
-      phone: formatPhoneNumber(e.target.value),
-    })
-  }
-  placeholder="Phone"
-/>
+        <div className="profile-info-row">
+          <span>First Name</span>
+          <input
+            value={editUser.first_name}
+            onChange={(e) =>
+              setEditUser({
+                ...editUser,
+                first_name: e.target.value,
+              })
+            }
+          />
+        </div>
 
-    <button
-      onClick={async () => {
-  const nameRegex = /^[A-Za-z]{2,}$/;
-  const usernameRegex = /^[A-Za-z0-9_]{3,}$/;
-  const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$/;
+        <div className="profile-info-row">
+          <span>Last Name</span>
+          <input
+            value={editUser.last_name}
+            onChange={(e) =>
+              setEditUser({
+                ...editUser,
+                last_name: e.target.value,
+              })
+            }
+          />
+        </div>
 
-  if (!nameRegex.test(editUser.first_name.trim())) {
-    alert("First name must be at least 2 letters.");
-    return;
-  }
+        <div className="profile-info-row">
+          <span>Username</span>
+          <input
+            value={editUser.username}
+            onChange={(e) =>
+              setEditUser({
+                ...editUser,
+                username: e.target.value,
+              })
+            }
+          />
+        </div>
 
-  if (!nameRegex.test(editUser.last_name.trim())) {
-    alert("Last name must be at least 2 letters.");
-    return;
-  }
+        <div className="profile-info-row">
+          <span>Phone</span>
+          <input
+            value={editUser.phone || ""}
+            onChange={(e) =>
+              setEditUser({
+                ...editUser,
+                phone: formatPhoneNumber(e.target.value),
+              })
+            }
+          />
+        </div>
 
-  if (!usernameRegex.test(editUser.username.trim())) {
-    alert("Username must be at least 3 characters and can only use letters, numbers, or underscore.");
-    return;
-  }
+        <div
+          style={{
+            display: "flex",
+            gap: "12px",
+            marginTop: "24px",
+          }}
+        >
+          <button
+            className="profile-main-btn"
+            onClick={async () => {
+              const nameRegex = /^[A-Za-z]{2,}$/;
+              const usernameRegex = /^[A-Za-z0-9_]{3,}$/;
+              const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$/;
 
-  if (editUser.phone && !phoneRegex.test(editUser.phone)) {
-    alert("Phone number must be in this format: (403) 123-4567");
-    return;
-  }
+              if (!nameRegex.test(editUser.first_name.trim())) {
+                alert("First name must be at least 2 letters.");
+                return;
+              }
 
-  const cleanedUser = {
-    ...editUser,
-    first_name: editUser.first_name.trim(),
-    last_name: editUser.last_name.trim(),
-    username: editUser.username.trim(),
-    phone: editUser.phone.trim(),
-  };
+              if (!nameRegex.test(editUser.last_name.trim())) {
+                alert("Last name must be at least 2 letters.");
+                return;
+              }
 
-  const res = await fetch("/api/profile", {
-    method: "PUT",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(cleanedUser),
-  });
+              if (!usernameRegex.test(editUser.username.trim())) {
+                alert(
+                  "Username must be at least 3 characters and can only use letters, numbers, or underscore."
+                );
+                return;
+              }
 
-  if (!res.ok) {
-    alert("Could not update profile.");
-    return;
-  }
+              if (
+                editUser.phone &&
+                !phoneRegex.test(editUser.phone)
+              ) {
+                alert(
+                  "Phone number must be in this format: (403) 123-4567"
+                );
+                return;
+              }
 
-  setUser(cleanedUser);
-  setIsEditingProfile(false);
-}}
-    >
-      Save Profile
-    </button>
+              const cleanedUser = {
+                ...editUser,
+                first_name: editUser.first_name.trim(),
+                last_name: editUser.last_name.trim(),
+                username: editUser.username.trim(),
+                phone: editUser.phone.trim(),
+              };
 
-    <button
-      onClick={() => {
-        setEditUser(user);
-        setIsEditingProfile(false);
-      }}
-    >
-      Cancel
-    </button>
+              const res = await fetch("/api/profile", {
+                method: "PUT",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(cleanedUser),
+              });
+
+              if (!res.ok) {
+                alert("Could not update profile.");
+                return;
+              }
+
+              setUser(cleanedUser);
+              setIsEditingProfile(false);
+            }}
+          >
+            Save Changes
+          </button>
+
+          <button
+            className="remove-avatar-btn"
+            onClick={() => {
+              setEditUser(user);
+              setIsEditingProfile(false);
+            }}
+          >
+            Cancel
+          </button>
+        </div>
+      </div>
+
+      <div className="disney-profile-avatar-wrap">
+        <div className="disney-avatar">
+          {profileImage ? (
+            <img src={profileImage} alt="Profile" />
+          ) : (
+            <span>
+              {user.first_name?.charAt(0)}
+              {user.last_name?.charAt(0)}
+            </span>
+          )}
+        </div>
+      </div>
+    </div>
   </>
 )}
 
               <hr style={{ margin: "24px 0" }} />
 
-              <h2>My Preferences</h2>
+              <div className="profile-section-title">My Preferences</div>
 
-              <p><strong>Genres:</strong> {answers.genres.length ? answers.genres.join(", ") : "Not answered yet"}</p>
-              <button onClick={() => setEditingSection("genres")}>Edit Genres</button>
+<div className="profile-info-row">
+  <span>Genres</span>
+  <span>{answers.genres.length ? answers.genres.join(", ") : "Not answered yet"}</span>
+  <button onClick={() => setEditingSection("genres")}>Edit</button>
+</div>
 
-              <p><strong>Streaming Services:</strong> {answers.streamingServices.length ? answers.streamingServices.join(", ") : "Not answered yet"}</p>
-              <button onClick={() => setEditingSection("streamingServices")}>Edit Services</button>
+<div className="profile-info-row">
+  <span>Streaming Services</span>
+  <span>{answers.streamingServices.length ? answers.streamingServices.join(", ") : "Not answered yet"}</span>
+  <button onClick={() => setEditingSection("streamingServices")}>Edit</button>
+</div>
 
-              <p><strong>Content Type:</strong> {answers.contentTypes.length ? answers.contentTypes.join(", ") : "Not answered yet"}</p>
-              <button onClick={() => setEditingSection("contentTypes")}>Edit Content Type</button>
+<div className="profile-info-row">
+  <span>Content Type</span>
+  <span>{answers.contentTypes.length ? answers.contentTypes.join(", ") : "Not answered yet"}</span>
+  <button onClick={() => setEditingSection("contentTypes")}>Edit</button>
+</div>
 
-              <p><strong>What Matters Most:</strong> {answers.preferences.length ? answers.preferences.join(", ") : "Not answered yet"}</p>
-              <button onClick={() => setEditingSection("preferences")}>Edit Matters</button>
+<div className="profile-info-row">
+  <span>What Matters Most</span>
+  <span>{answers.preferences.length ? answers.preferences.join(", ") : "Not answered yet"}</span>
+  <button onClick={() => setEditingSection("preferences")}>Edit</button>
+</div>
             </>
           )}
         </div>
