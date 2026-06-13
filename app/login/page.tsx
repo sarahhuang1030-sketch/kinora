@@ -4,6 +4,9 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Navbar from "../components/Navbar";
 import { FiEye, FiEyeOff } from "react-icons/fi";
+import { signIn } from "next-auth/react";
+import { FcGoogle } from "react-icons/fc";
+import { FaApple } from "react-icons/fa";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -78,7 +81,23 @@ try {
                             
                              {error && <p className="auth-error">{error}</p>}
                            </div>
+              <div className="social-login">
+                <button
+                  type="button"
+                  className="social-btn"
+                  onClick={() => signIn("google", { callbackUrl: "/profile" })}
+                >
+                  <FcGoogle size={24} />
+                </button>
 
+                <button
+                  type="button"
+                  className="social-btn"
+                  onClick={() => signIn("apple", { callbackUrl: "/profile" })}
+                >
+                  <FaApple size={24} />
+                </button>
+              </div>
           <button type="submit">
             Login
           </button>

@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Navbar from "./components/Navbar";
 
 type Film = {
   title: string;
@@ -297,16 +298,7 @@ useEffect(() => {
 
   return (
     <>
-      <nav>
-        <div className="logo">CINE<span>forge</span></div>
-        <div className="nav-links"><a className="active">Home</a><a>For you</a><a>Explore</a><a>Trending</a><a>My List</a><a>About Us</a></div>
-       <div className="nav-right">
-  <button className="nav-icon-btn">⌕</button>
-  <button className="nav-icon-btn">🔔</button>
-  <a href="/register" className="login-btn">Register</a>
-  <a href="/login" className="login-btn">Login</a>
-</div>
-      </nav>
+      <Navbar />
 
       <header className="hero">
   <div className="hero-bg" />
