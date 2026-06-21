@@ -11,12 +11,12 @@ export default function Footer() {
             <Link href="/" className="logo">
         <Image
           src="/CINERI-favicon.png"
-          alt="CINEforge"
+          alt="CINERI"
           width={40}
           height={40}
           priority
         />
-        <span>CINEforge</span>
+        <span>CINERI</span>
       </Link>
           </div>
           <p className="footer-tagline">

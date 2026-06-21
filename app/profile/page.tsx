@@ -1,7 +1,7 @@
 "use client";
 
 import { useSearchParams } from "next/navigation";
-import { useEffect, useState,Suspense } from "react";
+import { useEffect, useState, Suspense } from "react";
 import { useSession } from "next-auth/react";
 
 type User = {
@@ -38,10 +38,15 @@ export default function ProfilePage() {
 function ProfileContent() {
   const { data: session } = useSession();
   const searchParams = useSearchParams();
+
   const emailFromUrl = searchParams.get("email");
   const email = emailFromUrl || session?.user?.email;
   const isNewUser = searchParams.get("newUser") === "true";
+  const isSocialNewUser = searchParams.get("socialNewUser") === "true";
+
   const [user, setUser] = useState<User | null>(null);
+  const [editUser, setEditUser] = useState<User | null>(null);
+
   const [answers, setAnswers] = useState<Answers>({
     genres: [],
     streamingServices: [],
@@ -54,19 +59,33 @@ function ProfileContent() {
   const [hasStartedOnboarding, setHasStartedOnboarding] = useState(false);
 
   const [isEditingProfile, setIsEditingProfile] = useState(false);
-  const [editUser, setEditUser] = useState<User | null>(null);
   const [profileImage, setProfileImage] = useState<string>("");
-  const isSocialNewUser = searchParams.get("socialNewUser") === "true";
+
+  const [connectedServices, setConnectedServices] = useState<string[]>(() => {
+  if (typeof window === "undefined") return [];
+
+  const saved = localStorage.getItem("connectedServices");
+  return saved ? JSON.parse(saved) : [];
+});
+
+  const [connectingService, setConnectingService] = useState<string | null>(null);
+  const [connectSuccess, setConnectSuccess] = useState(false);
+  const fakeWatchHistory: Record<string, string[]> = {
+    Netflix: ["The Last Signal", "Echoes of Tomorrow", "Hidden Ground"],
+    "Disney+": ["Lost Horizon", "Beyond Reality", "Northern Lights"],
+    Crave: ["Crimson Tide", "Last Stand", "The Long Road"],
+    "Prime Video": ["Silent Code", "Quantum Rift", "The Forgotten City"],
+  };
 
   useEffect(() => {
     async function loadUser() {
       const res = await fetch(`/api/profile?email=${email}`);
       const data = await res.json();
-      console.log("PROFILE DATA:", data);
+
       setUser(data.user);
       setEditUser(data.user);
-      setUser(data.user);
       setProfileImage(data.user?.profile_image || "");
+
       if (data.answers) {
         setAnswers(data.answers);
       }
@@ -75,45 +94,47 @@ function ProfileContent() {
     if (email) loadUser();
   }, [email]);
 
+  
+
   useEffect(() => {
-  async function savePendingSocialAnswers() {
-    if (!isSocialNewUser || !user) return;
+    async function savePendingSocialAnswers() {
+      if (!isSocialNewUser || !user) return;
 
-    const saved = localStorage.getItem("pendingOnboardingAnswers");
-    if (!saved) return;
+      const saved = localStorage.getItem("pendingOnboardingAnswers");
+      if (!saved) return;
 
-    const pendingAnswers = JSON.parse(saved);
+      const pendingAnswers = JSON.parse(saved);
 
-    const res = await fetch("/api/onboarding", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.user_id,
-        ...pendingAnswers,
-      }),
-    });
+      const res = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          userId: user.user_id,
+          ...pendingAnswers,
+        }),
+      });
 
       if (res.ok) {
-      setAnswers(pendingAnswers);
-      localStorage.removeItem("pendingOnboardingAnswers");
-
-      window.history.replaceState({}, "", "/profile");
+        setAnswers(pendingAnswers);
+        localStorage.removeItem("pendingOnboardingAnswers");
+        window.history.replaceState({}, "", "/profile");
+      }
     }
-  }
 
-  savePendingSocialAnswers();
-}, [isSocialNewUser, user]);
+    savePendingSocialAnswers();
+  }, [isSocialNewUser, user]);
 
- useEffect(() => {
-  if (isNewUser && user && !hasStartedOnboarding) {
-    const timer = setTimeout(() => {
-      setOnboardingStep("genres");
-      setHasStartedOnboarding(true);
-    }, 0);
+  useEffect(() => {
+    if (isNewUser && user && !hasStartedOnboarding) {
+      const timer = setTimeout(() => {
+        setOnboardingStep("genres");
+        setHasStartedOnboarding(true);
+      }, 0);
 
-    return () => clearTimeout(timer);
-  }
-}, [isNewUser, user, hasStartedOnboarding]);
+      return () => clearTimeout(timer);
+    }
+  }, [isNewUser, user, hasStartedOnboarding]);
+
   function goToNextOnboardingStep() {
     if (onboardingStep === "genres") {
       setOnboardingStep("streamingServices");
@@ -127,348 +148,534 @@ function ProfileContent() {
   }
 
   function formatPhoneNumber(value: string) {
-  const digits = value.replace(/\D/g, "").slice(0, 10);
+    const digits = value.replace(/\D/g, "").slice(0, 10);
 
-  if (digits.length < 4) return digits;
+    if (digits.length < 4) return digits;
 
-  if (digits.length < 7) {
-    return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    if (digits.length < 7) {
+      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
+    }
+
+    return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
 
-  return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
+  function openConnectModal(service: string) {
+  setConnectingService(service);
+  setConnectSuccess(false);
+}
+
+function finishFakeConnect() {
+  if (!connectingService) return;
+
+  setConnectedServices((current) => {
+    const updatedServices = current.includes(connectingService)
+      ? current
+      : [...current, connectingService];
+
+    localStorage.setItem(
+      "connectedServices",
+      JSON.stringify(updatedServices)
+    );
+
+    return updatedServices;
+  });
+
+  setConnectSuccess(true);
+}
+
+function disconnectService(service: string) {
+  if (
+    !confirm(
+      `Disconnect ${service} and remove imported watch history?`
+    )
+  ) {
+    return;
+  }
+
+  const updatedServices = connectedServices.filter(
+    (s) => s !== service
+  );
+
+  setConnectedServices(updatedServices);
+
+  localStorage.setItem(
+    "connectedServices",
+    JSON.stringify(updatedServices)
+  );
 }
 
   return (
     <>
-
       <div className="auth-page">
         <div className="profile-page-card">
-         
-
           {user && (
             <>
-              {user && !isEditingProfile && (
-  <>
-    <div className="disney-profile-layout">
-  <div className="disney-profile-left">
-    <h1>Edit Profile</h1>
-    <p className="profile-note">
-      Manage your personal information and movie preferences.
-    </p>
+              {!isEditingProfile && (
+                <div className="disney-profile-layout">
+                  <div className="disney-profile-left">
+                    <h1>Edit Profile</h1>
 
-    <div className="profile-field">
-      {user.first_name} {user.last_name}
-    </div>
+                    <p className="profile-note">
+                      Manage your personal information and movie preferences.
+                    </p>
 
-    <div className="profile-section-title">Personal Information</div>
+                    <div className="profile-field">
+                      {user.first_name} {user.last_name}
+                    </div>
 
-    <div className="profile-info-row">
-      <span>Username</span>
-      <span>{user.username}</span>
-    </div>
+                    <div className="profile-section-title">
+                      Personal Information
+                    </div>
 
-    <div className="profile-info-row">
-      <span>Email</span>
-      <span>{user.email}</span>
-    </div>
+                    <div className="profile-info-row">
+                      <span>Username</span>
+                      <span>{user.username}</span>
+                    </div>
 
-    <div className="profile-info-row">
-      <span>Phone</span>
-      <span>{user.phone || "Not added"}</span>
-    </div>
+                    <div className="profile-info-row">
+                      <span>Email</span>
+                      <span>{user.email}</span>
+                    </div>
 
-    <button className="profile-main-btn" onClick={() => setIsEditingProfile(true)}>
-      Edit Profile
-    </button>
-  </div>
+                    <div className="profile-info-row">
+                      <span>Phone</span>
+                      <span>{user.phone || "Not added"}</span>
+                    </div>
 
-  <div className="disney-profile-avatar-wrap">
-    <div className="disney-avatar">
-      {profileImage ? (
-        <img src={profileImage} alt="Profile" />
-      ) : (
-        <span>{user.first_name?.charAt(0)}{user.last_name?.charAt(0)}</span>
-      )}
+                    <button
+                      className="profile-main-btn"
+                      onClick={() => setIsEditingProfile(true)}
+                    >
+                      Edit Profile
+                    </button>
+                  </div>
 
-      <label className="avatar-edit-btn">
-        ✎
-        <input
-          type="file"
-          accept="image/*"
-          hidden
-          onChange={async (e) => {
-            const file = e.target.files?.[0];
-            if (!file || !user) return;
+                  <div className="disney-profile-avatar-wrap">
+                    <div className="disney-avatar">
+                      {profileImage ? (
+                        <img src={profileImage} alt="Profile" />
+                      ) : (
+                        <span>
+                          {user.first_name?.charAt(0)}
+                          {user.last_name?.charAt(0)}
+                        </span>
+                      )}
 
-            const reader = new FileReader();
+                      <label className="avatar-edit-btn">
+                        ✎
+                        <input
+                          type="file"
+                          accept="image/*"
+                          hidden
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !user) return;
 
-            reader.onloadend = async () => {
-              const imageBase64 = reader.result as string;
-              setProfileImage(imageBase64);
+                            const reader = new FileReader();
 
-              await fetch("/api/profile-image", {
-                method: "PUT",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  userId: user.user_id,
-                  profileImage: imageBase64,
-                }),
-              });
-            };
+                            reader.onloadend = async () => {
+                              const imageBase64 = reader.result as string;
+                              setProfileImage(imageBase64);
 
-            reader.readAsDataURL(file);
-          }}
-        />
-      </label>
+                              await fetch("/api/profile-image", {
+                                method: "PUT",
+                                headers: { "Content-Type": "application/json" },
+                                body: JSON.stringify({
+                                  userId: user.user_id,
+                                  profileImage: imageBase64,
+                                }),
+                              });
+                            };
 
-    </div>
-    <button
-  className="remove-avatar-btn"
-  onClick={async () => {
-    if (!user) return;
+                            reader.readAsDataURL(file);
+                          }}
+                        />
+                      </label>
+                    </div>
 
-    setProfileImage("");
+                    <button
+                      className="remove-avatar-btn"
+                      onClick={async () => {
+                        if (!user) return;
 
-    await fetch("/api/profile-image", {
-      method: "PUT",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        userId: user.user_id,
-        profileImage: "",
-      }),
-    });
-  }}
->
-  Remove Image
-</button>
-  </div>
-  
-</div>
+                        setProfileImage("");
 
-  </>
-)}
+                        await fetch("/api/profile-image", {
+                          method: "PUT",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({
+                            userId: user.user_id,
+                            profileImage: "",
+                          }),
+                        });
+                      }}
+                    >
+                      Remove Image
+                    </button>
+                  </div>
+                </div>
+              )}
 
-{user && isEditingProfile && editUser && (
-  <>
-    <div className="disney-profile-layout">
-      <div className="disney-profile-left">
-        <h1>Edit Profile</h1>
+              {isEditingProfile && editUser && (
+                <div className="disney-profile-layout">
+                  <div className="disney-profile-left">
+                    <h1>Edit Profile</h1>
 
-        <p className="profile-note">
-          Update your personal information.
-        </p>
+                    <p className="profile-note">
+                      Update your personal information.
+                    </p>
 
-        <div className="profile-section-title">
-          Personal Information
-        </div>
+                    <div className="profile-section-title">
+                      Personal Information
+                    </div>
 
-        <div className="profile-info-row">
-          <span>First Name</span>
-          <input
-            value={editUser.first_name}
-            onChange={(e) =>
-              setEditUser({
-                ...editUser,
-                first_name: e.target.value,
-              })
-            }
-          />
-        </div>
+                    <div className="profile-info-row">
+                      <span>First Name</span>
+                      <input
+                        value={editUser.first_name}
+                        onChange={(e) =>
+                          setEditUser({
+                            ...editUser,
+                            first_name: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
 
-        <div className="profile-info-row">
-          <span>Last Name</span>
-          <input
-            value={editUser.last_name}
-            onChange={(e) =>
-              setEditUser({
-                ...editUser,
-                last_name: e.target.value,
-              })
-            }
-          />
-        </div>
+                    <div className="profile-info-row">
+                      <span>Last Name</span>
+                      <input
+                        value={editUser.last_name}
+                        onChange={(e) =>
+                          setEditUser({
+                            ...editUser,
+                            last_name: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
 
-        <div className="profile-info-row">
-          <span>Username</span>
-          <input
-            value={editUser.username}
-            onChange={(e) =>
-              setEditUser({
-                ...editUser,
-                username: e.target.value,
-              })
-            }
-          />
-        </div>
+                    <div className="profile-info-row">
+                      <span>Username</span>
+                      <input
+                        value={editUser.username}
+                        onChange={(e) =>
+                          setEditUser({
+                            ...editUser,
+                            username: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
 
-        <div className="profile-info-row">
-          <span>Phone</span>
-          <input
-            value={editUser.phone || ""}
-            onChange={(e) =>
-              setEditUser({
-                ...editUser,
-                phone: formatPhoneNumber(e.target.value),
-              })
-            }
-          />
-        </div>
+                    <div className="profile-info-row">
+                      <span>Phone</span>
+                      <input
+                        value={editUser.phone || ""}
+                        onChange={(e) =>
+                          setEditUser({
+                            ...editUser,
+                            phone: formatPhoneNumber(e.target.value),
+                          })
+                        }
+                      />
+                    </div>
 
-        <div
-          style={{
-            display: "flex",
-            gap: "12px",
-            marginTop: "24px",
-          }}
-        >
-          <button
-            className="profile-main-btn"
-            onClick={async () => {
-              const nameRegex = /^[A-Za-z]{2,}$/;
-              const usernameRegex = /^[A-Za-z0-9_]{3,}$/;
-              const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$/;
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        marginTop: "24px",
+                      }}
+                    >
+                      <button
+                        className="profile-main-btn"
+                        onClick={async () => {
+                          const nameRegex = /^[A-Za-z]{2,}$/;
+                          const usernameRegex = /^[A-Za-z0-9_]{3,}$/;
+                          const phoneRegex = /^\(\d{3}\)\s\d{3}-\d{4}$/;
 
-              if (!nameRegex.test(editUser.first_name.trim())) {
-                alert("First name must be at least 2 letters.");
-                return;
-              }
+                          if (!nameRegex.test(editUser.first_name.trim())) {
+                            alert("First name must be at least 2 letters.");
+                            return;
+                          }
 
-              if (!nameRegex.test(editUser.last_name.trim())) {
-                alert("Last name must be at least 2 letters.");
-                return;
-              }
+                          if (!nameRegex.test(editUser.last_name.trim())) {
+                            alert("Last name must be at least 2 letters.");
+                            return;
+                          }
 
-              if (!usernameRegex.test(editUser.username.trim())) {
-                alert(
-                  "Username must be at least 3 characters and can only use letters, numbers, or underscore."
-                );
-                return;
-              }
+                          if (!usernameRegex.test(editUser.username.trim())) {
+                            alert(
+                              "Username must be at least 3 characters and can only use letters, numbers, or underscore."
+                            );
+                            return;
+                          }
 
-              if (
-                editUser.phone &&
-                !phoneRegex.test(editUser.phone)
-              ) {
-                alert(
-                  "Phone number must be in this format: (403) 123-4567"
-                );
-                return;
-              }
+                          if (
+                            editUser.phone &&
+                            !phoneRegex.test(editUser.phone)
+                          ) {
+                            alert(
+                              "Phone number must be in this format: (403) 123-4567"
+                            );
+                            return;
+                          }
 
-              const cleanedUser = {
-                ...editUser,
-                first_name: editUser.first_name.trim(),
-                last_name: editUser.last_name.trim(),
-                username: editUser.username.trim(),
-                phone: editUser.phone.trim(),
-              };
+                          const cleanedUser = {
+                            ...editUser,
+                            first_name: editUser.first_name.trim(),
+                            last_name: editUser.last_name.trim(),
+                            username: editUser.username.trim(),
+                            phone: editUser.phone.trim(),
+                          };
 
-              const res = await fetch("/api/profile", {
-                method: "PUT",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(cleanedUser),
-              });
+                          const res = await fetch("/api/profile", {
+                            method: "PUT",
+                            headers: {
+                              "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify(cleanedUser),
+                          });
 
-              if (!res.ok) {
-                alert("Could not update profile.");
-                return;
-              }
+                          if (!res.ok) {
+                            alert("Could not update profile.");
+                            return;
+                          }
 
-              setUser(cleanedUser);
-              setIsEditingProfile(false);
-            }}
-          >
-            Save Changes
-          </button>
+                          setUser(cleanedUser);
+                          setIsEditingProfile(false);
+                        }}
+                      >
+                        Save Changes
+                      </button>
 
-          <button
-            className="remove-avatar-btn"
-            onClick={() => {
-              setEditUser(user);
-              setIsEditingProfile(false);
-            }}
-          >
-            Cancel
-          </button>
-        </div>
-      </div>
+                      <button
+                        className="remove-avatar-btn"
+                        onClick={() => {
+                          setEditUser(user);
+                          setIsEditingProfile(false);
+                        }}
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
 
-      <div className="disney-profile-avatar-wrap">
-        <div className="disney-avatar">
-          {profileImage ? (
-            <img src={profileImage} alt="Profile" />
-          ) : (
-            <span>
-              {user.first_name?.charAt(0)}
-              {user.last_name?.charAt(0)}
-            </span>
-          )}
-        </div>
-      </div>
-    </div>
-  </>
-)}
+                  <div className="disney-profile-avatar-wrap">
+                    <div className="disney-avatar">
+                      {profileImage ? (
+                        <img src={profileImage} alt="Profile" />
+                      ) : (
+                        <span>
+                          {user.first_name?.charAt(0)}
+                          {user.last_name?.charAt(0)}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
 
               <hr style={{ margin: "24px 0" }} />
 
               <div className="profile-section-title">My Preferences</div>
 
-<div className="profile-info-row">
-  <span>Genres</span>
-  <span>{answers.genres.length ? answers.genres.join(", ") : "Not answered yet"}</span>
-  <button onClick={() => setEditingSection("genres")}>Edit</button>
-</div>
+              <div className="profile-info-row">
+                <span>Genres</span>
+                <span>
+                  {answers.genres.length
+                    ? answers.genres.join(", ")
+                    : "Not answered yet"}
+                </span>
+                <button onClick={() => setEditingSection("genres")}>
+                  Edit
+                </button>
+              </div>
 
-<div className="profile-info-row">
-  <span>Streaming Services</span>
-  <span>{answers.streamingServices.length ? answers.streamingServices.join(", ") : "Not answered yet"}</span>
-  <button onClick={() => setEditingSection("streamingServices")}>Edit</button>
-</div>
+              <div className="profile-info-row">
+                <span>Streaming Services</span>
+                <span>
+                  {answers.streamingServices.length
+                    ? answers.streamingServices.join(", ")
+                    : "Not answered yet"}
+                </span>
+                <button onClick={() => setEditingSection("streamingServices")}>
+                  Edit
+                </button>
+              </div>
 
-<div className="profile-info-row">
-  <span>Content Type</span>
-  <span>{answers.contentTypes.length ? answers.contentTypes.join(", ") : "Not answered yet"}</span>
-  <button onClick={() => setEditingSection("contentTypes")}>Edit</button>
-</div>
+              <div className="profile-info-row">
+                <span>Content Type</span>
+                <span>
+                  {answers.contentTypes.length
+                    ? answers.contentTypes.join(", ")
+                    : "Not answered yet"}
+                </span>
+                <button onClick={() => setEditingSection("contentTypes")}>
+                  Edit
+                </button>
+              </div>
 
-<div className="profile-info-row">
-  <span>What Matters Most</span>
-  <span>{answers.preferences.length ? answers.preferences.join(", ") : "Not answered yet"}</span>
-  <button onClick={() => setEditingSection("preferences")}>Edit</button>
-</div>
-<div className="profile-info-row">
-  <span>Connect Streaming Services</span>
- <div className="streaming-service-card">
-  <img src="/platforms/netflix.webp" alt="Netflix" style={{ width: "24px", height: "24px" }} />
-  <span>Not connected</span>
-  <button>Connect</button>
-</div>
+              <div className="profile-info-row">
+                <span>What Matters Most</span>
+                <span>
+                  {answers.preferences.length
+                    ? answers.preferences.join(", ")
+                    : "Not answered yet"}
+                </span>
+                <button onClick={() => setEditingSection("preferences")}>
+                  Edit
+                </button>
+              </div>
 
-<div className="streaming-service-card">
-  <img src="/platforms/disney.png" alt="Disney+" style={{ width: "24px", height: "24px" }} />
-  <span>Not connected</span>
-  <button onClick={() => alert("Disney+ connected!")}>Connect</button>
-</div>
+              <hr style={{ margin: "24px 0" }} />
 
-<div className="streaming-service-card">
-  <img src="/platforms/crave.jpg" alt="Crave" style={{ width: "24px", height: "24px" }} />
-  <span>Not connected</span>
-  <button onClick={() => alert("Crave connected!")}>Connect</button>
-</div>
+              <div className="profile-section-title">
+                Connect Streaming Services
+              </div>
 
-<div className="streaming-service-card">
-  <img src="/platforms/prime.jpg" alt="Prime Video" style={{ width: "24px", height: "24px" }} />
-  <span>Not connected</span>
-  <button onClick={() => alert("Prime Video connected!")}>Connect</button></div>
-</div>
+              <div className="profile-info-row">
+                <span>Streaming Accounts</span>
+
+                <div className="streaming-service-card">
+                  <img
+                    src="/platforms/netflix.webp"
+                    alt="Netflix"
+                    style={{ width: "24px", height: "24px" }}
+                  />
+
+                  <span>
+                    {connectedServices.includes("Netflix")
+                      ? "Connected"
+                      : "Not connected"}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      if (connectedServices.includes("Netflix")) {
+                        disconnectService("Netflix");
+                      } else {
+                        openConnectModal("Netflix");
+                      }
+                    }}
+                  >
+                    {connectedServices.includes("Netflix")
+                      ? "Disconnect"
+                      : "Connect"}
+                  </button>
+                </div>
+
+                <div className="streaming-service-card">
+                  <img
+                    src="/platforms/disney.png"
+                    alt="Disney+"
+                    style={{ width: "24px", height: "24px" }}
+                  />
+
+                  <span>
+                    {connectedServices.includes("Disney+")
+                      ? "Connected"
+                      : "Not connected"}
+                  </span>
+
+                 <button
+                    onClick={() => {
+                      if (connectedServices.includes("Disney+")) {
+                        disconnectService("Disney+");
+                      } else {
+                        openConnectModal("Disney+");
+                      }
+                    }}
+                  >
+                    {connectedServices.includes("Disney+")
+                      ? "Disconnect"
+                      : "Connect"}
+                  </button>
+                </div>
+
+              
+
+                <div className="streaming-service-card">
+                  <img
+                    src="/platforms/crave.jpg"
+                    alt="Crave"
+                    style={{ width: "24px", height: "24px" }}
+                  />
+
+                  <span>
+                    {connectedServices.includes("Crave")
+                      ? "Connected"
+                      : "Not connected"}
+                  </span>
+
+                 <button
+                    onClick={() => {
+                      if (connectedServices.includes("Crave")) {
+                        disconnectService("Crave");
+                      } else {
+                        openConnectModal("Crave");
+                      }
+                    }}
+                  >
+                    {connectedServices.includes("Crave")
+                      ? "Disconnect"
+                      : "Connect"}
+                  </button>
+                </div>
+
+                <div className="streaming-service-card">
+                  <img
+                    src="/platforms/prime.jpg"
+                    alt="Prime Video"
+                    style={{ width: "24px", height: "24px" }}
+                  />
+
+                  <span>
+                    {connectedServices.includes("Prime Video")
+                      ? "Connected"
+                      : "Not connected"}
+                  </span>
+
+                  <button
+                    onClick={() => {
+                      if (connectedServices.includes("Prime Video")) {
+                        disconnectService("Prime Video");
+                      } else {
+                        openConnectModal("Prime Video");
+                      }
+                    }}
+                  >
+                    {connectedServices.includes("Prime Video")
+                      ? "Disconnect"
+                      : "Connect"}
+                  </button>
+                </div>
+              </div>
+
+              {connectedServices.length > 0 && (
+                <div
+                  style={{
+                    marginTop: "24px",
+                    padding: "20px",
+                    borderRadius: "12px",
+                    background: "#1b2536",
+                  }}
+                >
+                  <h3>Imported Watch History</h3>
+
+                  {connectedServices.map((service) => (
+                    <div key={service} style={{ marginBottom: "12px" }}>
+                      <strong>{service}</strong>
+                      <p>{fakeWatchHistory[service]?.join(", ")}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </>
           )}
         </div>
       </div>
-
-
 
       {onboardingStep && user && (
         <div className="modal-backdrop open">
@@ -477,11 +684,15 @@ function ProfileContent() {
               <div>
                 <h2 className="modal-title">Let’s personalize your profile</h2>
                 <p className="modal-subtitle">
-                  Answer a few quick questions so we can recommend better movies and shows.
+                  Answer a few quick questions so we can recommend better movies
+                  and shows.
                 </p>
               </div>
 
-              <button className="modal-close" onClick={() => setOnboardingStep(null)}>
+              <button
+                className="modal-close"
+                onClick={() => setOnboardingStep(null)}
+              >
                 ✕
               </button>
             </div>
@@ -492,7 +703,9 @@ function ProfileContent() {
               answers={answers}
               onClose={goToNextOnboardingStep}
               onSaved={(savedAnswers) => setAnswers(savedAnswers)}
-              buttonText={onboardingStep === "preferences" ? "Finish" : "Continue →"}
+              buttonText={
+                onboardingStep === "preferences" ? "Finish" : "Continue →"
+              }
             />
           </div>
         </div>
@@ -509,7 +722,10 @@ function ProfileContent() {
                 </p>
               </div>
 
-              <button className="modal-close" onClick={() => setEditingSection(null)}>
+              <button
+                className="modal-close"
+                onClick={() => setEditingSection(null)}
+              >
                 ✕
               </button>
             </div>
@@ -525,14 +741,81 @@ function ProfileContent() {
           </div>
         </div>
       )}
-     
-      
 
+        {connectingService && (
+  <div className="modal-backdrop open">
+    <div className="modal feeling-modal">
+      <div className="modal-header">
+        <div>
+          <h2 className="modal-title">Connect {connectingService}</h2>
+          <p className="modal-subtitle">
+            Sign in to import your watch history.
+          </p>
+        </div>
+
+        <button
+          className="modal-close"
+          onClick={() => {
+            setConnectingService(null);
+            setConnectSuccess(false);
+          }}
+        >
+          ✕
+        </button>
+      </div>
+
+      {!connectSuccess ? (
+        <>
+          <div className="profile-info-row">
+            <span>Email</span>
+            <input placeholder="Enter email" />
+          </div>
+
+          <div className="profile-info-row">
+            <span>Password</span>
+            <input type="password" placeholder="Enter password" />
+          </div>
+
+          <div className="modal-footer">
+            <button
+              className="btn-back"
+              onClick={() => setConnectingService(null)}
+            >
+              Cancel
+            </button>
+
+            <button className="btn-next" onClick={finishFakeConnect}>
+              Connect
+            </button>
+          </div>
+        </>
+      ) : (
+        <>
+          <div style={{ margin: "20px" }}>
+            <p>✓ Imported 327 watched titles</p>
+            <p>✓ Imported 42 liked titles</p>
+            <p>✓ Imported 18 watchlist titles</p>
+          </div>
+
+          <div className="modal-footer">
+           <button
+              className="btn-next"
+              onClick={() => {
+                setConnectingService(null);
+                setConnectSuccess(false);
+              }}
+            >
+              Done
+            </button>
+          </div>
+        </>
+      )}
+    </div>
+  </div>
+)}
     </>
-    
   );
 }
-
 
 function EditPreferenceModal({
   userId,
@@ -552,13 +835,16 @@ function EditPreferenceModal({
   const [options, setOptions] = useState<string[]>([]);
   const [selected, setSelected] = useState<string[]>(answers[section]);
 
- useEffect(() => {
-  const timer = setTimeout(() => {
-    setSelected(answers[section]);
-  }, 0);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSelected(answers[section]);
+    }, 0);
 
-  return () => clearTimeout(timer);
-}, [answers, section]);
+    
+
+    return () => clearTimeout(timer);
+  }, [answers, section]);
+
 
 
   useEffect(() => {
@@ -566,7 +852,9 @@ function EditPreferenceModal({
       if (section === "preferences") {
         const res = await fetch("/api/recommendation-factors");
         const data = await res.json();
-        setOptions(data.map((item: { factor_name: string }) => item.factor_name));
+        setOptions(
+          data.map((item: { factor_name: string }) => item.factor_name)
+        );
         return;
       }
 
@@ -663,4 +951,3 @@ function EditPreferenceModal({
     </>
   );
 }
-

@@ -61,7 +61,7 @@ export default function Navbar() {
             height={40}
             priority
           />
-          <span>CINEforge</span>
+          <span>CINERI</span>
         </Link>
       </div>
 
