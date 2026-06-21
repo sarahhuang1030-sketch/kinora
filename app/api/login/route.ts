@@ -38,6 +38,13 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log("USER LOGIN SUCCESS", {
+    userId: rows[0].user_id,
+    username: rows[0].username,
+    email: rows[0].email,
+    loginTime: new Date().toISOString(),
+    });
+
     return NextResponse.json({
       message: "Login successful",
       user: rows[0],

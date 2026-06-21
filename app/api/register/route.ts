@@ -63,32 +63,39 @@ export async function POST(req: Request) {
     }
 
     const [result] = await pool.execute<ResultSetHeader>(
-      `
-      INSERT INTO users
-      (
-        first_name,
-        last_name,
-        username,
-        email,
-        phone,
-        password
-      )
-      VALUES (?, ?, ?, ?, ?, ?)
-      `,
-      [
-        firstName.trim(),
-        lastName.trim(),
-        username.trim(),
-        email.trim(),
-        phone?.trim() || "",
-        password,
-      ]
-    );
+  `
+  INSERT INTO users
+  (
+    first_name,
+    last_name,
+    username,
+    email,
+    phone,
+    password
+  )
+  VALUES (?, ?, ?, ?, ?, ?)
+  `,
+  [
+    firstName.trim(),
+    lastName.trim(),
+    username.trim(),
+    email.trim(),
+    phone?.trim() || "",
+    password,
+  ]
+);
 
-    return NextResponse.json({
-      message: "Registration successful",
-      userId: result.insertId,
-    });
+console.log("NEW USER REGISTERED", {
+  userId: result.insertId,
+  username: username.trim(),
+  email: email.trim(),
+  createdAt: new Date().toISOString(),
+});
+
+return NextResponse.json({
+  message: "Registration successful",
+  userId: result.insertId,
+});
   } catch (error) {
     console.error("REGISTER ERROR:", error);
     return NextResponse.json({ message: "Server error" }, { status: 500 });

@@ -27,5 +27,11 @@ export async function GET(req: Request) {
   [`%${query}%`]
 );
 
+console.log("MOVIE SEARCH", {
+  query,
+  resultsFound: movies.length,
+  searchedAt: new Date().toISOString(),
+});
+
   return NextResponse.json(movies);
 }

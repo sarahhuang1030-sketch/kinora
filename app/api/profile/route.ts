@@ -32,6 +32,12 @@ export async function GET(req: Request) {
 
     const user = rows[0];
 
+    console.log("PROFILE VIEWED", {
+      userId: user?.user_id,
+      email: user?.email,
+      viewedAt: new Date().toISOString(),
+    });
+
     if (!user) {
       return NextResponse.json({ user: null });
     }
@@ -91,6 +97,12 @@ export async function PUT(req: Request) {
       `,
       [first_name, last_name, username, phone, user_id]
     );
+
+    console.log("PROFILE UPDATED", {
+    userId: user_id,
+    username,
+    updatedAt: new Date().toISOString(),
+  });
 
     return NextResponse.json({ message: "Profile updated successfully" });
   } catch (error) {

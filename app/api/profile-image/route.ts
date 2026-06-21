@@ -17,6 +17,11 @@ export async function PUT(req: Request) {
       [profileImage, userId]
     );
 
+    console.log("PROFILE IMAGE UPDATED", {
+      userId,
+      updatedAt: new Date().toISOString(),
+    });
+
     return NextResponse.json({ message: "Profile image updated" });
   } catch (error) {
     console.error("Profile image update error:", error);
