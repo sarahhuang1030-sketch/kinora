@@ -34,6 +34,12 @@ export default function RegisterPage() {
   const [contentTypeOptions, setContentTypeOptions] = useState<string[]>([]);
   const [preferenceOptions, setPreferenceOptions] = useState<string[]>([]);
 
+type AnswerCategory =
+  | "genres"
+  | "streamingServices"
+  | "contentTypes"
+  | "preferences";
+
   useEffect(() => {
     async function loadOptions() {
       const genreRes = await fetch("/api/genres");
@@ -64,14 +70,34 @@ export default function RegisterPage() {
     loadOptions();
   }, []);
 
-  function toggleAnswer(section: keyof typeof answers, item: string) {
-    setAnswers((current) => ({
-      ...current,
-      [section]: current[section].includes(item)
-        ? current[section].filter((value) => value !== item)
-        : [...current[section], item],
-    }));
-  }
+  const toggleAnswer = (category: AnswerCategory, value: string) => {
+  setAnswers((prev) => {
+    let current = [...prev[category]];
+
+    if (category === "contentTypes") {
+      if (value === "No Preference") {
+        current = ["No Preference"];
+      } else {
+        current = current.filter((v) => v !== "No Preference");
+
+        if (current.includes(value)) {
+          current = current.filter((v) => v !== value);
+        } else {
+          current.push(value);
+        }
+      }
+    } else {
+      current = current.includes(value)
+        ? current.filter((v) => v !== value)
+        : [...current, value];
+    }
+
+    return {
+      ...prev,
+      [category]: current,
+    };
+  });
+};
 
   function savePendingAnswers() {
     localStorage.setItem("pendingOnboardingAnswers", JSON.stringify(answers));
