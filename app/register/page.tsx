@@ -378,9 +378,6 @@ if (loginResult?.ok) {
         </div>
       </div>
 
-    
-
-
       <div
         style={{
           display: "flex",
