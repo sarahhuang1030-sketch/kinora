@@ -31,7 +31,7 @@ const handler = NextAuth({
     if (!login || !password) {
       return null;
     }
-    const [users]: any = await pool.query(
+    const [users] = await pool.query<UserRow[]>(
       `
       SELECT *
       FROM users
