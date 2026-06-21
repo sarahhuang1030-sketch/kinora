@@ -1,57 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Navbar from "../components/Navbar";
 import { FiEye, FiEyeOff } from "react-icons/fi";
 import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 
 export default function LoginPage() {
-  const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [login, setLogin] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-
   async function handleLogin(e: React.FormEvent) {
     e.preventDefault();
+    setError("");
 
-    const res = await fetch("/api/login", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ email, password }),
+    const result = await signIn("credentials", {
+      redirect: false,
+      login,
+      email: login,
+      username: login,
+      password,
     });
 
-   const text = await res.text();
-console.log("LOGIN RESPONSE:", text);
-
-let data;
-try {
-  data = JSON.parse(text);
-} catch {
-  setError("Server error. Check VS Code terminal.");
-  return;
-}
-
-    if (!res.ok) {
-      setError(data.message || "Login failed");
-      return;
+    if (result?.ok) {
+      window.location.href = "/profile";
+    } else {
+      setError("Invalid email/username or password");
     }
-
-    localStorage.setItem("user", JSON.stringify(data.user));
-    router.push("/");
   }
 
   return (
-
-     <>
-     <Navbar />
-     <div className="auth-page">
+    <div className="auth-page">
       <div className="auth-card">
         <h1>Welcome Back</h1>
 
@@ -59,48 +40,48 @@ try {
 
         <form onSubmit={handleLogin}>
           <input
-            type="email"
-            placeholder="Email Address"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)} />
+            type="text"
+            placeholder="Email or Username"
+            value={login}
+            onChange={(e) => setLogin(e.target.value)}
+          />
 
-         <div className="password-wrapper">
-                             <input
-                               type={showPassword ? "text" : "password"}
-                               placeholder="Password"
-                               value={password}
-                               onChange={(e) => setPassword(e.target.value)}
-                             />                            
-                               <button
-                                 type="button"
-                                 className="password-toggle"
-                                 onClick={() => setShowPassword(!showPassword)}
-                               >
-                                 {showPassword ? <FiEyeOff /> : <FiEye />}
-                               </button>
-                            
-                             {error && <p className="auth-error">{error}</p>}
-                           </div>
-              <div className="social-login">
-                <button
-                  type="button"
-                  className="social-btn"
-                  onClick={() => signIn("google", { callbackUrl: "/profile" })}
-                >
-                  <FcGoogle size={24} />
-                </button>
+          <div className="password-wrapper">
+            <input
+              type={showPassword ? "text" : "password"}
+              placeholder="Password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+            />
 
-                <button
-                  type="button"
-                  className="social-btn"
-                  onClick={() => signIn("apple", { callbackUrl: "/profile" })}
-                >
-                  <FaApple size={24} />
-                </button>
-              </div>
-          <button type="submit">
-            Login
-          </button>
+            <button
+              type="button"
+              className="password-toggle"
+              onClick={() => setShowPassword(!showPassword)}
+            >
+              {showPassword ? <FiEyeOff /> : <FiEye />}
+            </button>
+          </div>
+
+          <div className="social-login">
+            <button
+              type="button"
+              className="social-btn"
+              onClick={() => signIn("google", { callbackUrl: "/profile" })}
+            >
+              <FcGoogle size={24} />
+            </button>
+
+            <button
+              type="button"
+              className="social-btn"
+              onClick={() => signIn("apple", { callbackUrl: "/profile" })}
+            >
+              <FaApple size={24} />
+            </button>
+          </div>
+
+          <button type="submit">Login</button>
         </form>
 
         <p className="auth-link">
@@ -108,6 +89,6 @@ try {
           <a href="/register"> Register</a>
         </p>
       </div>
-    </div></>
-);
+    </div>
+  );
 }

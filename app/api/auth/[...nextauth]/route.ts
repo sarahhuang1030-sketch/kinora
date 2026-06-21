@@ -3,13 +3,59 @@ import GoogleProvider from "next-auth/providers/google";
 import AppleProvider from "next-auth/providers/apple";
 import type { RowDataPacket } from "mysql2";
 import pool from "../../../src/lib/db";
+import CredentialsProvider from "next-auth/providers/credentials";
+import bcrypt from "bcryptjs";
 
 type UserRow = RowDataPacket & {
   user_id: number;
+  first_name: string;
+  last_name: string;
+  email: string;
+  password: string;
 };
 
 const handler = NextAuth({
   providers: [
+
+    CredentialsProvider({
+  name: "Credentials",
+  credentials: {
+    login: { label: "Email or Username", type: "text" },
+    password: { label: "Password", type: "password" },
+  },
+
+  async authorize(credentials) {
+    const login = credentials?.login || credentials?.email || credentials?.username;
+    const password = credentials?.password;
+
+    if (!login || !password) return null;
+
+    const [users]: any = await pool.query(
+      `
+      SELECT *
+      FROM users
+      WHERE email = ? OR username = ?
+      LIMIT 1
+      `,
+      [login, login]
+    );
+
+    const user = users[0];
+
+    if (!user) return null;
+
+    if (String(user.password) !== String(password)) {
+      return null;
+    }
+
+    return {
+      id: String(user.user_id),
+      name: `${user.first_name} ${user.last_name}`,
+      email: user.email,
+    };
+  },
+}),
+
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID!,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET!,

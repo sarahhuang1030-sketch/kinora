@@ -2,7 +2,6 @@
 
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState,Suspense } from "react";
-import Navbar from "../components/Navbar";
 import { useSession } from "next-auth/react";
 
 type User = {
@@ -57,11 +56,13 @@ function ProfileContent() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [editUser, setEditUser] = useState<User | null>(null);
   const [profileImage, setProfileImage] = useState<string>("");
+  const isSocialNewUser = searchParams.get("socialNewUser") === "true";
 
   useEffect(() => {
     async function loadUser() {
       const res = await fetch(`/api/profile?email=${email}`);
       const data = await res.json();
+      console.log("PROFILE DATA:", data);
       setUser(data.user);
       setEditUser(data.user);
       setUser(data.user);
@@ -73,6 +74,35 @@ function ProfileContent() {
 
     if (email) loadUser();
   }, [email]);
+
+  useEffect(() => {
+  async function savePendingSocialAnswers() {
+    if (!isSocialNewUser || !user) return;
+
+    const saved = localStorage.getItem("pendingOnboardingAnswers");
+    if (!saved) return;
+
+    const pendingAnswers = JSON.parse(saved);
+
+    const res = await fetch("/api/onboarding", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userId: user.user_id,
+        ...pendingAnswers,
+      }),
+    });
+
+      if (res.ok) {
+      setAnswers(pendingAnswers);
+      localStorage.removeItem("pendingOnboardingAnswers");
+
+      window.history.replaceState({}, "", "/profile");
+    }
+  }
+
+  savePendingSocialAnswers();
+}, [isSocialNewUser, user]);
 
  useEffect(() => {
   if (isNewUser && user && !hasStartedOnboarding) {
@@ -110,7 +140,6 @@ function ProfileContent() {
 
   return (
     <>
-      <Navbar />
 
       <div className="auth-page">
         <div className="profile-page-card">
@@ -409,10 +438,37 @@ function ProfileContent() {
   <span>{answers.preferences.length ? answers.preferences.join(", ") : "Not answered yet"}</span>
   <button onClick={() => setEditingSection("preferences")}>Edit</button>
 </div>
+<div className="profile-info-row">
+  <span>Connect Streaming Services</span>
+ <div className="streaming-service-card">
+  <img src="/platforms/netflix.webp" alt="Netflix" style={{ width: "24px", height: "24px" }} />
+  <span>Not connected</span>
+  <button>Connect</button>
+</div>
+
+<div className="streaming-service-card">
+  <img src="/platforms/disney.png" alt="Disney+" style={{ width: "24px", height: "24px" }} />
+  <span>Not connected</span>
+  <button onClick={() => alert("Disney+ connected!")}>Connect</button>
+</div>
+
+<div className="streaming-service-card">
+  <img src="/platforms/crave.jpg" alt="Crave" style={{ width: "24px", height: "24px" }} />
+  <span>Not connected</span>
+  <button onClick={() => alert("Crave connected!")}>Connect</button>
+</div>
+
+<div className="streaming-service-card">
+  <img src="/platforms/prime.jpg" alt="Prime Video" style={{ width: "24px", height: "24px" }} />
+  <span>Not connected</span>
+  <button onClick={() => alert("Prime Video connected!")}>Connect</button></div>
+</div>
             </>
           )}
         </div>
       </div>
+
+
 
       {onboardingStep && user && (
         <div className="modal-backdrop open">
@@ -469,9 +525,14 @@ function ProfileContent() {
           </div>
         </div>
       )}
+     
+      
+
     </>
+    
   );
 }
+
 
 function EditPreferenceModal({
   userId,
@@ -503,7 +564,9 @@ function EditPreferenceModal({
   useEffect(() => {
     async function loadOptions() {
       if (section === "preferences") {
-        setOptions(["Cast", "Director", "Reviews/Rating", "Year of release", "Duration", "Other"]);
+        const res = await fetch("/api/recommendation-factors");
+        const data = await res.json();
+        setOptions(data.map((item: { factor_name: string }) => item.factor_name));
         return;
       }
 
@@ -600,3 +663,4 @@ function EditPreferenceModal({
     </>
   );
 }
+

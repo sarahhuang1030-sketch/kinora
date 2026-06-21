@@ -395,7 +395,7 @@ useEffect(() => {
 </Row>
       </main>
 
-      <footer><div className="logo footer-logo">CINE<span>forge</span></div><span>© 2026 Cineforge</span></footer>
+     
 
       {feelingPopupOpen && (
   <div className="modal-backdrop open">
