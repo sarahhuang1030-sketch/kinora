@@ -163,7 +163,7 @@ function Row({
   const rowId = title.replace(/\s+/g, "-");
 
   return (
-    <section className="content-section">
+    <section className="content-section" style={{marginTop:'40px'}}>
       <div className="row-header">
         <h2 className="row-title">{title}</h2>
         <span className="row-see-all">See all</span>
@@ -330,7 +330,6 @@ const filteredTrendingMovies = trendingMovies.filter((movie) => {
 
   return (
     <>
-      <Navbar />
 
       <header className="hero">
   <div className="hero-bg" />
@@ -388,15 +387,57 @@ const filteredTrendingMovies = trendingMovies.filter((movie) => {
   </div>
 </header>
 
+<section className="hero-feature-strip">
+  <div className="hero-feature">
+    <span className="hero-feature-icon">👤</span>
+    <div>
+      <h4>Personalized</h4>
+      <p>Just for you.</p>
+    </div>
+  </div>
+
+  <div className="hero-feature">
+    <span className="hero-feature-icon">✨</span>
+    <div>
+      <h4>Smart Discovery</h4>
+      <p>Find what fits your mood.</p>
+    </div>
+  </div>
+
+  <div className="hero-feature">
+    <span className="hero-feature-icon">▶</span>
+    <div>
+      <h4>Cinematic Experience</h4>
+      <p>Immersive and beautiful.</p>
+    </div>
+  </div>
+
+  <div className="hero-feature">
+    <span className="hero-feature-icon">♡</span>
+    <div>
+      <h4>Your World of Stories</h4>
+      <p>One app. Infinite stories.</p>
+    </div>
+  </div>
+
+  <div className="hero-feature">
+    <span className="hero-feature-icon">🛡</span>
+    <div>
+      <h4>Trusted & Secure</h4>
+      <p>Safe. Reliable. Yours.</p>
+    </div>
+  </div>
+</section>
+
       <main>
         {/* <button className="personalize-strip" onClick={openModal}>
           <div className="ps-left"><div className="ps-icon">🎬</div><div><p className="ps-title">Create your personalized film</p><p className="ps-sub">Choose your mood, era, genre & duration.</p></div></div>
           <span className="btn-create">Start Creating →</span>
         </button> */}
 
-        <section className="mood-section"><p className="mood-label">Filter by mood</p><div className="mood-chips">{moods.map((mood) => <button key={mood} className={`mood-chip ${activeMood === mood ? 'active' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>
+        <section className="mood-section" style={{marginTop: '50px'}}><p className="mood-label">Filter by mood</p><div className="mood-chips">{moods.map((mood) => <button key={mood} className={`mood-chip ${activeMood === mood ? 'active' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>
         <section className="mood-section"><p className="mood-label">Filter by Genre</p><div className="mood-chips">{genres.map((genre) => (<button key={genre} className={`gtab ${activeGenre === genre ? 'active' : ''}`} onClick={() => setActiveGenre(genre)}>{genre}</button>))}</div></section>
-        <section className="year-tabs" style={{ marginBottom: '40px' }}><p className="mood-label">Filter by Year</p><div className="mood-chips">{yearFilters.map((year) => (<button key={year} className={`gtab ${activeYear === year ? "active" : ""}`} onClick={() => setActiveYear(year)}>{year}</button>))}</div></section>
+        <section className="mood-section"><p className="mood-label">Filter by Year</p><div className="mood-chips">{yearFilters.map((year) => (<button key={year} className={`gtab ${activeYear === year ? "active" : ""}`} onClick={() => setActiveYear(year)}>{year}</button>))}</div></section>
        
        
 

@@ -67,9 +67,9 @@ export default function Navbar() {
 
       <div className="nav-links">
         <Link href="/">Home</Link>
-        <Link href="/for-you">For you</Link>
-        <Link href="/explore">Explore</Link>
-        <Link href="/trending">Trending</Link>
+        <Link href="/movies">Movies</Link>
+        <Link href="/shows">shows</Link>
+        <Link href="/for-you">For you</Link> 
         <Link href="/my-list">My List</Link>
         <Link href="https://forms.gle/t2sZWzapbnGrMyKq7"
               target="_blank"
@@ -135,8 +135,12 @@ export default function Navbar() {
 
         {session ? (
           <>
-            <Link href="/profile" className="login-btn">
-              My Profile
+            <Link href="/profile" className="nav-profile">
+              <img
+                src={session?.user?.image || "/default-profile.png"}
+                alt="Profile"
+                className="nav-profile-img"
+              />
             </Link>
 
             <button

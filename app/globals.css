@@ -228,6 +228,66 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   background: white;
 }
 
+/* personalized section below hero section in homepage */
+.nav-profile {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.nav-profile-img {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2px solid #ff6a00;
+}
+
+.hero-feature-strip {
+  margin-bottom: 20px;
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+
+  padding: 18px 22px;
+
+  background: rgba(5, 10, 25, 0.9);
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 14px;
+
+  position: relative;
+  z-index: 5;
+}
+
+.hero-feature {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 0 18px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.hero-feature:last-child {
+  border-right: none;
+}
+
+.hero-feature-icon {
+  font-size: 22px;
+  color: #ff6a00;
+}
+
+.hero-feature h4 {
+  margin: 0;
+  font-size: 13px;
+  color: white;
+}
+
+.hero-feature p {
+  margin: 3px 0 0;
+  font-size: 11px;
+  color: #9ca3af;
+}
+
 /* poster image style */
 .poster-image {
   width: 100%;
