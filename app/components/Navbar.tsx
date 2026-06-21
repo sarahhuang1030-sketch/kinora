@@ -71,6 +71,10 @@ export default function Navbar() {
         <Link href="/explore">Explore</Link>
         <Link href="/trending">Trending</Link>
         <Link href="/my-list">My List</Link>
+        <Link  href="https://forms.gle/t2sZWzapbnGrMyKq7"
+  target="_blank"
+  rel="noopener noreferrer"
+>User Feedback</Link>
       </div>
 
       <div className="nav-right">
