@@ -25,11 +25,12 @@ const handler = NextAuth({
   },
 
   async authorize(credentials) {
-    const login = credentials?.login || credentials?.email || credentials?.username;
+    const login = credentials?.login;
     const password = credentials?.password;
 
-    if (!login || !password) return null;
-
+    if (!login || !password) {
+      return null;
+    }
     const [users]: any = await pool.query(
       `
       SELECT *
