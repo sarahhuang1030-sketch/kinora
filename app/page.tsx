@@ -235,7 +235,13 @@ const [activeYear, setActiveYear] = useState("All");
 
 useEffect(() => {
   async function loadHomeMovies() {
-    const res = await fetch("/api/home");
+    const params = new URLSearchParams({
+      mood: activeMood,
+      genre: activeGenre,
+      year: activeYear,
+    });
+
+    const res = await fetch(`/api/home?${params.toString()}`);
     const data = await res.json();
 
     setRecommendedMovies(data.recommended || []);
@@ -243,6 +249,10 @@ useEffect(() => {
     setWatchlistMovies(data.watchlist || []);
   }
 
+  loadHomeMovies();
+}, [activeMood, activeGenre, activeYear]);
+
+useEffect(() => {
   async function loadMoods() {
     const moodRes = await fetch("/api/moods");
     const moodData = await moodRes.json();
@@ -254,18 +264,15 @@ useEffect(() => {
   }
 
   async function loadGenres() {
-  const genreRes = await fetch("/api/genres");
-  const genreData = await genreRes.json();
+    const genreRes = await fetch("/api/genres");
+    const genreData = await genreRes.json();
 
-  //  console.log("GENRES FROM API:", genreData);
+    setGenres([
+      "All",
+      ...genreData.map((g: { genre_name: string }) => g.genre_name),
+    ]);
+  }
 
-  setGenres([
-    "All",
-    ...genreData.map((g: { genre_name: string }) => g.genre_name),
-  ]);
-}
-
-  loadHomeMovies();
   loadMoods();
   loadGenres();
 }, []);
@@ -295,6 +302,31 @@ useEffect(() => {
       setGenerated(true);
     }, 1800);
   }
+
+  function matchesYear(movieYear: number, selectedYear: string) {
+  if (selectedYear === "All") return true;
+
+  const startYear = Number(selectedYear.replace("s", ""));
+  return movieYear >= startYear && movieYear <= startYear + 9;
+}
+
+const filteredRecommendedMovies = recommendedMovies.filter((movie) => {
+  const genreMatch =
+    activeGenre === "All" || movie.genre === activeGenre;
+
+  const yearMatch = matchesYear(movie.release_year, activeYear);
+
+  return genreMatch && yearMatch;
+});
+
+const filteredTrendingMovies = trendingMovies.filter((movie) => {
+  const genreMatch =
+    activeGenre === "All" || movie.genre === activeGenre;
+
+  const yearMatch = matchesYear(movie.release_year, activeYear);
+
+  return genreMatch && yearMatch;
+});
 
   return (
     <>
@@ -378,7 +410,7 @@ useEffect(() => {
 </Row>
         {/* <Row title="Recommended for you">{recommendedFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row> */}
        <Row title="Recommended for you">
-  {recommendedMovies.map((movie, index) => (
+  {filteredRecommendedMovies.map((movie, index) => (
     <PosterCard
       key={movie.movie_id}
       film={mapMovie(movie, `/recommended/r${(index % 8) + 1}.webp`)}
@@ -386,7 +418,7 @@ useEffect(() => {
   ))}
 </Row>
        <Row title="Trending this week">
-  {trendingMovies.map((movie, index) => (
+  {filteredTrendingMovies.map((movie, index) => (
     <PosterCard
       key={movie.movie_id}
       film={mapMovie(movie, `/trending/t${(index % 8) + 1}.webp`)}
