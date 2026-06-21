@@ -68,7 +68,7 @@ export default function Navbar() {
       <div className="nav-links">
         <Link href="/">Home</Link>
         <Link href="/movies">Movies</Link>
-        <Link href="/shows">shows</Link>
+        <Link href="/shows">Shows</Link>
         <Link href="/for-you">For you</Link> 
         <Link href="/my-list">My List</Link>
         <Link href="https://forms.gle/t2sZWzapbnGrMyKq7"
