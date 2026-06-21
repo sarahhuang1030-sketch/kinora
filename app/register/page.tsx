@@ -10,7 +10,7 @@ import { FaApple } from "react-icons/fa";
 export default function RegisterPage() {
   const router = useRouter();
 
-  const [step, setStep] = useState(1);
+  const [step, setStep] = useState(0);
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -268,15 +268,169 @@ if (loginResult?.ok) {
       {step < 5 && (
         <div className="modal-backdrop open">
           <div className="modal feeling-modal">
-            <div className="modal-header">
-              <div>
-                <h2 className="modal-title">Tell us what you like</h2>
-                <p className="modal-subtitle">
-                  We’ll personalize your recommendations based on your choices.
-                </p>
-              </div>
-            </div>
+            {step > 0 && (
+        <div className="modal-header">
+          <div>
+            <h2 className="modal-title">Tell us what you like</h2>
+            <p className="modal-subtitle">
+              We’ll personalize your recommendations based on your choices.
+            </p>
+          </div>
+        </div>
+      )}
 
+            {step === 0 && (
+  <>
+    <div
+      style={{
+        textAlign: "center",
+        marginBottom: "40px",
+        marginTop: "20px"
+      }}
+    >
+      <h2 className="modal-title">Create an account</h2>
+
+      <p className="modal-subtitle">
+        Here&apos;s how it works:
+      </p>
+    </div>
+
+    <div
+      style={{
+        display: "flex",
+        flexDirection: "column",
+        alignItems: "center",
+        gap: "28px",
+        marginBottom: "50px",
+      }}
+    >
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+          width: "420px",
+        }}
+      >
+        <div className="choice active">1</div>
+
+        <div style={{ textAlign: "left" }}>
+          <strong>Tell us your favorite genres</strong>
+          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
+            1 questions
+          </p>
+        </div>
+      </div>
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+          width: "420px",
+        }}
+      >
+        <div className="choice active">2</div>
+
+        <div style={{ textAlign: "left" }}>
+          <strong>Tell us your streaming services</strong>
+          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
+            1 question
+          </p>
+        </div>
+      </div>
+
+         <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+          width: "420px",
+        }}
+      >
+        <div className="choice active">3</div>
+
+        <div style={{ textAlign: "left" }}>
+          <strong>Tell us your preferred content type</strong>
+          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
+            1 question
+          </p>
+        </div>
+      </div>
+
+      
+
+        <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+          width: "420px",
+        }}
+      >
+        <div className="choice active">4</div>
+
+        <div style={{ textAlign: "left" }}>
+          <strong>Tell us what matters to you</strong>
+          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
+            1 question
+          </p>
+        </div>
+      </div>
+
+    
+
+
+      <div
+        style={{
+          display: "flex",
+          alignItems: "center",
+          gap: "20px",
+          width: "420px",
+        }}
+      >
+
+        <div className="choice active">5</div>
+
+        <div style={{ textAlign: "left" }}>
+          <strong>Fill in information to complte the registration process</strong>
+          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
+            1 question
+          </p>
+        </div>
+      </div>
+    </div>
+
+    <div
+      className="modal-footer"
+      style={{
+        justifyContent: "center",
+      }}
+    >
+      <button
+        type="button"
+        className="btn-next"
+        onClick={() => setStep(1)}
+      >
+        Let&apos;s get started
+      </button>
+    </div>
+
+    <p
+      className="auth-link"
+      style={{
+        textAlign: "center",
+        marginTop: "5px",
+        marginBottom: "20px",
+
+      }}
+    >
+      Already have an account?
+      <a href="/login"> Log in</a>
+    </p>
+  </>
+)}
+{/* for genres */}
             {step === 1 && (
               <>
                 <h3>Which genres do you prefer?</h3>
@@ -316,7 +470,7 @@ if (loginResult?.ok) {
                 </div>
               </>
             )}
-
+{/* for streaming services */}
             {step === 2 && (
               <>
                 <h3>Which streaming services are you currently using?</h3>
@@ -356,7 +510,7 @@ if (loginResult?.ok) {
                 </div>
               </>
             )}
-
+{/* preferred content type */}
             {step === 3 && (
               <>
                 <h3>What is your preferred content type?</h3>
@@ -396,7 +550,7 @@ if (loginResult?.ok) {
                 </div>
               </>
             )}
-
+{/* matters to you  */}
             {step === 4 && (
               <>
                 <h3>What matters to you the most?</h3>
