@@ -71,6 +71,13 @@ export async function GET(req) {
   const genre = searchParams.get("genre") || "All";
   const year = searchParams.get("year") || "All";
 
+  console.log("HOME PAGE / FILTER USED", {
+      mood,
+      genre,
+      year,
+      visitedAt: new Date().toISOString(),
+    });
+
   const watchlist = await getMovies("watchlist", "All", "All", "All");
   const recommended = await getMovies("recommended_movies", mood, genre, year);
   const trending = await getMovies("trending_movies", mood, genre, year);

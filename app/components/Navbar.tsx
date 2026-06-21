@@ -71,10 +71,21 @@ export default function Navbar() {
         <Link href="/explore">Explore</Link>
         <Link href="/trending">Trending</Link>
         <Link href="/my-list">My List</Link>
-        <Link  href="https://forms.gle/t2sZWzapbnGrMyKq7"
-  target="_blank"
-  rel="noopener noreferrer"
->User Feedback</Link>
+        <Link href="https://forms.gle/t2sZWzapbnGrMyKq7"
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={async () => {
+                try {
+                  await fetch("/api/feedback-click", {
+                    method: "POST",
+                  });
+                } catch (error) {
+                  console.error("Feedback tracking failed", error);
+                }
+              }}
+            >
+              User Feedback
+            </Link>
       </div>
 
       <div className="nav-right">
@@ -130,7 +141,23 @@ export default function Navbar() {
 
             <button
               className="login-btn"
-              onClick={() => signOut({ callbackUrl: "/" })}
+              onClick={async () => {
+                try {
+                  await fetch("/api/logout", {
+                    method: "POST",
+                    headers: {
+                      "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                      email: session?.user?.email,
+                    }),
+                  });
+                } catch (error) {
+                  console.error("Logout tracking failed", error);
+                }
+
+                signOut({ callbackUrl: "/" });
+              }}
             >
               Logout
             </button>

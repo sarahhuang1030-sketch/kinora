@@ -51,6 +51,15 @@ export async function POST(req: Request) {
       );
     }
 
+    console.log("ONBOARDING / PREFERENCES UPDATED", {
+      userId,
+      genres,
+      streamingServices,
+      contentTypes,
+      preferences,
+      updatedAt: new Date().toISOString(),
+    });
+
     return NextResponse.json({ message: "Onboarding saved successfully" });
   } catch (error) {
     console.error("ONBOARDING ERROR:", error);
