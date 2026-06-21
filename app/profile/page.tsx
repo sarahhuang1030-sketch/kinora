@@ -164,8 +164,21 @@ function ProfileContent() {
   setConnectSuccess(false);
 }
 
-function finishFakeConnect() {
-  if (!connectingService) return;
+async function finishFakeConnect() {
+  if (!connectingService || !user) return;
+
+  await fetch("/api/activity-log", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({
+      action: "CONNECT_STREAMING_SERVICE",
+      userId: user.user_id,
+      email: user.email,
+      service: connectingService,
+    }),
+  });
 
   setConnectedServices((current) => {
     const updatedServices = current.includes(connectingService)
@@ -183,7 +196,7 @@ function finishFakeConnect() {
   setConnectSuccess(true);
 }
 
-function disconnectService(service: string) {
+async function disconnectService(service: string) {
   if (
     !confirm(
       `Disconnect ${service} and remove imported watch history?`
@@ -195,6 +208,19 @@ function disconnectService(service: string) {
   const updatedServices = connectedServices.filter(
     (s) => s !== service
   );
+
+  await fetch("/api/activity-log", {
+  method: "POST",
+  headers: {
+    "Content-Type": "application/json",
+  },
+ body: JSON.stringify({
+  action: "DISCONNECT_STREAMING_SERVICE",
+  userId: user?.user_id,
+  email: user?.email,
+  service,
+}),
+});
 
   setConnectedServices(updatedServices);
 
