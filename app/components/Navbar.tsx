@@ -67,10 +67,8 @@ export default function Navbar() {
 
       <div className="nav-links">
         <Link href="/">Home</Link>
-        <Link href="/movies">Movies</Link>
-        <Link href="/shows">Shows</Link>
-        <Link href="/for-you">For you</Link> 
-        <Link href="/my-list">My List</Link>
+        <Link href="/discover">Discover</Link>
+        <Link href="/about">About</Link>
         <Link href="https://forms.gle/t2sZWzapbnGrMyKq7"
               target="_blank"
               rel="noopener noreferrer"

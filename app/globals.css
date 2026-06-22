@@ -13,10 +13,13 @@
   --radius: 8px;
   --radius-lg: 12px;
   /* --font-dongle: "Dongle", sans-serif; */
+  --font-moderustic: "Moderustic", sans-serif;
 }
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; overflow-x: hidden; }
+/* body { background: var(--bg); color: var(--text); font-family: 'Outfit', sans-serif; overflow-x: hidden; } */
+body { background: var(--bg); color: var(--text); font-family: var(--font-moderustic); overflow-x: hidden; }
+/* body { background: var(--bg); color: var(--text); font-family: var(--font-dongle); overflow-x: hidden; } */
 button { font-family: inherit; cursor: pointer; }
 a { color: inherit; text-decoration: none; }
 
