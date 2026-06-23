@@ -25,13 +25,14 @@ export default function Footer() {
         </div>
 
         <div className="footer-links">
-          <Link href="/">Home</Link>
-          <Link href="/discovery">Discovery</Link>
-          <Link href="/profile">Profile</Link>
+          <Link href="/privacy">Privacy</Link>
+          <Link href="/terms">Terms</Link>
+          <Link href="/help">Help</Link>
+          <Link href="/contact">Contact</Link>
         </div>
 
         <div className="footer-copy">
-          © 2026 Cineforge. All rights reserved.
+          © 2026 CINERI. All rights reserved.
         </div>
 
       </div>

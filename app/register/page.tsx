@@ -2,14 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FiEye, FiEyeOff } from "react-icons/fi";
+import { FiEye, FiEyeOff, FiUser } from "react-icons/fi";
 import { signIn } from "next-auth/react";
 import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 
+type AnswerCategory = "genres" | "contentTypes" | "preferences";
+
 export default function RegisterPage() {
   const router = useRouter();
-
   const [step, setStep] = useState(0);
 
   const [username, setUsername] = useState("");
@@ -24,21 +25,17 @@ export default function RegisterPage() {
 
   const [answers, setAnswers] = useState({
     genres: [] as string[],
-    streamingServices: [] as string[],
     contentTypes: [] as string[],
     preferences: [] as string[],
   });
 
   const [genreOptions, setGenreOptions] = useState<string[]>([]);
-  const [streamingOptions, setStreamingOptions] = useState<string[]>([]);
   const [contentTypeOptions, setContentTypeOptions] = useState<string[]>([]);
   const [preferenceOptions, setPreferenceOptions] = useState<string[]>([]);
 
-type AnswerCategory =
-  | "genres"
-  | "streamingServices"
-  | "contentTypes"
-  | "preferences";
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [country, setCountry] = useState("");
 
   useEffect(() => {
     async function loadOptions() {
@@ -46,12 +43,6 @@ type AnswerCategory =
       const genreData = await genreRes.json();
       setGenreOptions(
         genreData.map((item: { genre_name: string }) => item.genre_name)
-      );
-
-      const streamingRes = await fetch("/api/streaming-services");
-      const streamingData = await streamingRes.json();
-      setStreamingOptions(
-        streamingData.map((item: { platform_name: string }) => item.platform_name)
       );
 
       const contentRes = await fetch("/api/content-types");
@@ -71,46 +62,48 @@ type AnswerCategory =
   }, []);
 
   const toggleAnswer = (category: AnswerCategory, value: string) => {
-  setAnswers((prev) => {
-    let current = [...prev[category]];
+    setAnswers((prev) => {
+      let current = [...prev[category]];
 
-    if (category === "contentTypes") {
-      if (value === "No Preference") {
-        current = ["No Preference"];
-      } else {
-        current = current.filter((v) => v !== "No Preference");
-
-        if (current.includes(value)) {
-          current = current.filter((v) => v !== value);
+      if (category === "contentTypes") {
+        if (value === "No Preference") {
+          current = ["No Preference"];
         } else {
-          current.push(value);
+          current = current.filter((v) => v !== "No Preference");
+          current = current.includes(value)
+            ? current.filter((v) => v !== value)
+            : [...current, value];
         }
+      } else {
+        current = current.includes(value)
+          ? current.filter((v) => v !== value)
+          : [...current, value];
       }
-    } else {
-      current = current.includes(value)
-        ? current.filter((v) => v !== value)
-        : [...current, value];
-    }
 
-    return {
-      ...prev,
-      [category]: current,
-    };
-  });
-};
+      return {
+        ...prev,
+        [category]: current,
+      };
+    });
+  };
 
   function savePendingAnswers() {
-    localStorage.setItem("pendingOnboardingAnswers", JSON.stringify(answers));
+    localStorage.setItem(
+      "pendingOnboardingAnswers",
+      JSON.stringify({
+        genres: answers.genres,
+        streamingServices: [],
+        contentTypes: answers.contentTypes,
+        preferences: answers.preferences,
+      })
+    );
   }
 
   function formatPhoneNumber(value: string) {
     const digits = value.replace(/\D/g, "").slice(0, 10);
 
     if (digits.length < 4) return digits;
-
-    if (digits.length < 7) {
-      return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
-    }
+    if (digits.length < 7) return `(${digits.slice(0, 3)}) ${digits.slice(3)}`;
 
     return `(${digits.slice(0, 3)}) ${digits.slice(3, 6)}-${digits.slice(6)}`;
   }
@@ -118,6 +111,26 @@ type AnswerCategory =
   async function handleRegister(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+
+    if (password !== confirmPassword) {
+  setError("Passwords do not match.");
+  return;
+}
+
+if (
+  !firstName ||
+  !lastName ||
+  !username ||
+  !email ||
+  !phone ||
+  !country ||
+  !dateOfBirth ||
+  !password ||
+  !confirmPassword
+) {
+  setError("Please fill in all fields.");
+  return;
+}
 
     const res = await fetch("/api/register", {
       method: "POST",
@@ -135,7 +148,6 @@ type AnswerCategory =
     });
 
     const text = await res.text();
-
     let data;
 
     try {
@@ -160,7 +172,7 @@ type AnswerCategory =
       body: JSON.stringify({
         userId: newUserId,
         genres: answers.genres,
-        streamingServices: answers.streamingServices,
+        streamingServices: [],
         contentTypes: answers.contentTypes,
         preferences: answers.preferences,
       }),
@@ -173,449 +185,465 @@ type AnswerCategory =
     }
 
     const loginResult = await signIn("credentials", {
-  redirect: false,
-  login: email,
-  password,
-});
+      redirect: false,
+      login: email,
+      password,
+    });
 
-console.log("loginResult:", loginResult);
-
-if (loginResult?.ok) {
-  window.location.href = "/profile";
-} else {
-  alert("Registration successful! Please log in.");
-  router.push("/login");
-}
+    if (loginResult?.ok) {
+      window.location.href = "/profile";
+    } else {
+      alert("Registration successful! Please log in.");
+      router.push("/login");
+    }
   }
 
   return (
-    <>
-      <div className="auth-page">
-        <div className="auth-card">
-          <h1>Create Account</h1>
+    <main className="register-page">
+      <div className="register-shell">
+        {step > 0 && <ProgressBar step={step} />}
 
-          {error && <p className="auth-error">{error}</p>}
+        <section className="register-card">
+          {step === 0 && (
+            <>
+              <div className="step-eyebrow">New Account</div>
 
-          <form onSubmit={handleRegister}>
-            <div className="form-row">
-              <input
-                type="text"
-                placeholder="John"
-                value={firstName}
-                onChange={(e) => setFirstName(e.target.value)}
-              />
+              <h1>Create an account</h1>
+              <p className="register-subtitle">Here&apos;s how it works:</p>
 
-              <input
-                type="text"
-                placeholder="Doe"
-                value={lastName}
-                onChange={(e) => setLastName(e.target.value)}
-              />
-            </div>
+              <div className="onboarding-list">
+                <InfoRow
+                  number="1"
+                  title="Pick your favorite genres"
+                  subtitle="Choose one or more genres"
+                />
+                <InfoRow
+                  number="2"
+                  title="Select your content type"
+                  subtitle="Movies, TV shows, or both"
+                />
+                <InfoRow
+                  number="3"
+                  title="Tell us what matters most"
+                  subtitle="Help us improve your recommendations"
+                />
+                <InfoRow
+                  number="4"
+                  title="Create your account"
+                  subtitle="Save your personalized profile"
+                />
+              </div>
 
-            <div className="form-row">
-              <input
-                type="email"
-                placeholder="john@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-              />
+              <button className="primary-btn" onClick={() => setStep(1)}>
+                Let&apos;s get started
+              </button>
 
-              <input
-                type="tel"
-                placeholder="(403) 123-4567"
-                value={phone}
-                onChange={(e) => setPhone(formatPhoneNumber(e.target.value))}
-              />
-            </div>
+              <p className="register-login-link">Already have an account?</p>
 
-            <input
-              type="text"
-              placeholder="Bluejay123"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              <button className="login-btn2" type="button">
+                <a href="/login">Log in</a>
+              </button>
+            </>
+          )}
+
+          {step === 1 && (
+            <QuestionStep
+              stepNumber="1"
+              eyebrow="Step 1 of 3"
+              title="Pick your genres"
+              subtitle="Choose as many as you like."
+              label="Genres"
+              options={genreOptions}
+              selected={answers.genres}
+              onToggle={(item) => toggleAnswer("genres", item)}
+              onBack={() => setStep(0)}
+              onNext={() => setStep(2)}
+              onSkip={() => setStep(2)}
+              nextDisabled={answers.genres.length === 0}
             />
+          )}
 
-            <div className="password-wrapper">
-              <input
-                type={showPassword ? "text" : "password"}
-                placeholder="Password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-              />
+          {step === 2 && (
+            <QuestionStep
+              stepNumber="2"
+              eyebrow="Step 2 of 3"
+              title="What do you mostly watch?"
+              subtitle="You can choose more than one, unless you select no preference."
+              label="Content Type"
+              options={contentTypeOptions}
+              selected={answers.contentTypes}
+              onToggle={(item) => toggleAnswer("contentTypes", item)}
+              onBack={() => setStep(1)}
+              onNext={() => setStep(3)}
+              onSkip={() => setStep(3)}
+              nextDisabled={answers.contentTypes.length === 0}
+            />
+          )}
 
-              <button
-                type="button"
-                className="password-toggle"
-                onClick={() => setShowPassword(!showPassword)}
-              >
-                {showPassword ? <FiEyeOff /> : <FiEye />}
-              </button>
-            </div>
+          {step === 3 && (
+            <QuestionStep
+              stepNumber="3"
+              eyebrow="Step 3 of 3"
+              title="What matters most to you?"
+              subtitle="Choose what influences your recommendations."
+              label="Preferences"
+              options={preferenceOptions}
+              selected={answers.preferences}
+              onToggle={(item) => toggleAnswer("preferences", item)}
+              onBack={() => setStep(2)}
+              onNext={() => setStep(4)}
+              onSkip={() => setStep(4)}
+              nextDisabled={answers.preferences.length === 0}
+              nextText="Continue"
+            />
+          )}
 
-            <div className="social-login">
-              <button
-                type="button"
-                className="social-btn"
-                onClick={() => {
-                  savePendingAnswers();
-                  signIn("google", {
-                    callbackUrl: "/profile?socialNewUser=true",
-                  });
-                }}
-              >
-                <FcGoogle size={24} />
-              </button>
+          {step === 4 && (
+            <>
+              <div className="thank-icon">
+                <FiUser />
+              </div>
 
-              <button
-                type="button"
-                className="social-btn"
-                onClick={() => {
-                  savePendingAnswers();
-                  signIn("apple", {
-                    callbackUrl: "/profile?socialNewUser=true",
-                  });
-                }}
-              >
-                <FaApple size={24} />
-              </button>
-            </div>
+              <h1 className="thank-title">Thank you!</h1>
+              <p className="thank-orange">you&apos;re all set.</p>
 
-            <button type="submit">Create Account</button>
-          </form>
+              <p className="thank-text">
+                Your personalized suggestions are ready. Complete registration
+                to start watching exactly what fits your mood, across every
+                platform you love.
+              </p>
 
-          <p className="auth-link">
-            Already have an account?
-            <a href="/login"> Login</a>
-          </p>
-        </div>
-      </div>
+              <h3 className="next-title">Here&apos;s what next:</h3>
 
-      {step < 5 && (
-        <div className="modal-backdrop open">
-          <div className="modal feeling-modal">
-            {step > 0 && (
-        <div className="modal-header">
-          <div>
-            <h2 className="modal-title">Tell us what you like</h2>
-            <p className="modal-subtitle">
-              We’ll personalize your recommendations based on your choices.
-            </p>
-          </div>
-        </div>
-      )}
+              <div className="thank-next-list">
+                <NextRow
+                  number="✓"
+                  title="Tell us your favorite movies and genres"
+                  subtitle="Complete"
+                  complete
+                />
 
-            {step === 0 && (
-  <>
-    <div
-      style={{
-        textAlign: "center",
-        marginBottom: "40px",
-        marginTop: "20px"
-      }}
-    >
-      <h2 className="modal-title">Create an account</h2>
+                <NextRow
+                  number="2"
+                  title="Add your personal details"
+                  subtitle="1 question"
+                />
 
-      <p className="modal-subtitle">
-        Here&apos;s how it works:
-      </p>
+                <NextRow
+                  number="3"
+                  title="Create your account"
+                  subtitle="Save your profile"
+                />
+              </div>
+
+
+               <p className="thank-text">
+               By continuing you agree to Cineri&apos;s <a href="/terms">Terms of Serivce </a> and <a href="/privacy">Privacy Policy</a>.<span> Your preferences can be updated any time in Settings</span></p>
+               
+
+              <div className="step-actions">
+                <button
+                  type="button"
+                  className="secondary-btn"
+                  onClick={() => setStep(3)}
+                >
+                  Back
+                </button>
+
+                <button
+                  type="button"
+                  className="primary-btn"
+                  onClick={() => setStep(5)}
+                >
+                  Continue
+                </button>
+              </div>
+            </>
+          )}
+
+          {step === 5 && (
+            <>
+              <div className="step-eyebrow">Personal Details</div>
+              <h1>Fill out your details</h1>
+              <p className="register-subtitle">
+                Almost there! Just a few details to complete your profile.
+              </p>
+
+             
+
+              {error && <p className="auth-error">{error}</p>}
+
+             <form className="register-form personal-details-form" onSubmit={handleRegister}>
+  <div className="register-grid">
+    <div className="field-group">
+      <label>FIRST NAME *</label>
+      <input type="text" value={firstName} onChange={(e) => setFirstName(e.target.value)} />
     </div>
 
-    <div
-      style={{
-        display: "flex",
-        flexDirection: "column",
-        alignItems: "center",
-        gap: "28px",
-        marginBottom: "50px",
-      }}
-    >
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-          width: "420px",
-        }}
-      >
-        <div className="choice active">1</div>
+    <div className="field-group">
+      <label>LAST NAME *</label>
+      <input type="text" value={lastName} onChange={(e) => setLastName(e.target.value)} />
+    </div>
+    
+     <div className="field-group full-width">
+      <label>EMAIL *</label>
+      <input
+        type="email"
+        value={email}
+        onChange={(e) => setEmail(e.target.value)}
+      />
+    </div>
 
-        <div style={{ textAlign: "left" }}>
-          <strong>Tell us your favorite genres</strong>
-          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
-            1 questions
-          </p>
-        </div>
+    <div className="field-group">
+      <label>USERNAME *</label>
+      <input type="text" value={username} onChange={(e) => setUsername(e.target.value)} />
+    </div>
+
+    <div className="field-group">
+      <label>PHONE *</label>
+      <input type="tel" value={phone} onChange={(e) => setPhone(formatPhoneNumber(e.target.value))} />
+    </div>
+
+   
+
+    <div className="field-group">
+      <label>DATE OF BIRTH *</label>
+      <input type="date" value={dateOfBirth} onChange={(e) => setDateOfBirth(e.target.value)} />
+    </div>
+
+    <div className="field-group">
+      <label>COUNTRY *</label>
+      <select className="register-select" value={country} onChange={(e) => setCountry(e.target.value)}>
+        <option value="">Select Country</option>
+        <option value="Canada">Canada</option>
+        <option value="United States">United States</option>
+        <option value="Taiwan">Taiwan</option>
+      </select>
+    </div>
+
+
+    <div className="field-group">
+      <label>PASSWORD *</label>
+      <div className="password-wrapper">
+        <input
+          type={showPassword ? "text" : "password"}
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+        <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <FiEyeOff /> : <FiEye />}
+        </button>
       </div>
+    </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-          width: "420px",
-        }}
-      >
-        <div className="choice active">2</div>
-
-        <div style={{ textAlign: "left" }}>
-          <strong>Tell us your streaming services</strong>
-          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
-            1 question
-          </p>
-        </div>
+    <div className="field-group">
+      <label>CONFIRM PASSWORD *</label>
+      <div className="password-wrapper">
+        <input
+          type={showPassword ? "text" : "password"}
+          value={confirmPassword}
+          onChange={(e) => setConfirmPassword(e.target.value)}
+        />
+        <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
+          {showPassword ? <FiEyeOff /> : <FiEye />}
+        </button>
       </div>
+    </div>
+  </div>
 
-         <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-          width: "420px",
-        }}
-      >
-        <div className="choice active">3</div>
+  <button type="submit" className="primary-btn create-account-btn">
+    Create Account
+  </button>
+</form>
 
-        <div style={{ textAlign: "left" }}>
-          <strong>Tell us your preferred content type</strong>
-          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
-            1 question
-          </p>
-        </div>
+              <div className="social-divider">
+                <span></span>
+                <p>or continue with</p>
+                <span></span>
+              </div>
+
+              <div className="social-login">
+                <button
+                  type="button"
+                  className="social-btn"
+                  onClick={() => {
+                    savePendingAnswers();
+                    signIn("google", {
+                      callbackUrl: "/profile?socialNewUser=true",
+                    });
+                  }}
+                >
+                  <FcGoogle size={22} />
+                  Google
+                </button>
+
+                <button
+                  type="button"
+                  className="social-btn"
+                  onClick={() => {
+                    savePendingAnswers();
+                    signIn("apple", {
+                      callbackUrl: "/profile?socialNewUser=true",
+                    });
+                  }}
+                >
+                  <FaApple size={22} />
+                  Apple
+                </button>
+              </div>
+
+              <button className="text-btn" onClick={() => setStep(4)}>
+                ← Back
+              </button>
+            </>
+          )}
+        </section>
       </div>
+    </main>
+  );
+}
 
-      
-
+function ProgressBar({ step }: { step: number }) {
+  return (
+    <div className="register-progress-lines">
+      {[1, 2, 3, 4, 5].map((item) => (
         <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-          width: "420px",
-        }}
-      >
-        <div className="choice active">4</div>
+          key={item}
+          className={`progress-line-block ${step >= item ? "active" : ""}`}
+        />
+      ))}
+    </div>
+  );
+}
 
-        <div style={{ textAlign: "left" }}>
-          <strong>Tell us what matters to you</strong>
-          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
-            1 question
-          </p>
+function InfoRow({
+  number,
+  title,
+  subtitle,
+}: {
+  number: string;
+  title: string;
+  subtitle: string;
+}) {
+  return (
+    <div className="info-row">
+      <div className="info-number">{number}</div>
+
+      <div className="info-text">
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+      </div>
+    </div>
+  );
+}
+
+function NextRow({
+  number,
+  title,
+  subtitle,
+  complete = false,
+}: {
+  number: string;
+  title: string;
+  subtitle: string;
+  complete?: boolean;
+}) {
+  return (
+    <div className="thank-next-row">
+      <div className={`thank-next-number ${complete ? "complete" : ""}`}>
+        {number}
+      </div>
+
+      <div>
+        <strong>{title}</strong>
+        <span>{subtitle}</span>
+      </div>
+    </div>
+  );
+}
+
+function QuestionStep({
+  stepNumber,
+  eyebrow,
+  title,
+  subtitle,
+  label,
+  options,
+  selected,
+  onToggle,
+  onBack,
+  onNext,
+  onSkip,
+  nextDisabled,
+  nextText = "Continue",
+}: {
+  stepNumber: string;
+  eyebrow: string;
+  title: string;
+  subtitle: string;
+  label: string;
+  options: string[];
+  selected: string[];
+  onToggle: (item: string) => void;
+  onBack: () => void;
+  onNext: () => void;
+  onSkip: () => void;
+  nextDisabled: boolean;
+  nextText?: string;
+}) {
+  return (
+    <>
+      <div className="question-header">
+        <div className="question-number">{stepNumber}</div>
+
+        <div>
+          <p className="step-eyebrow2">{eyebrow}</p>
+          <h1>{title}</h1>
+          <p className="register-subtitle">{subtitle}</p>
         </div>
       </div>
 
-      <div
-        style={{
-          display: "flex",
-          alignItems: "center",
-          gap: "20px",
-          width: "420px",
-        }}
-      >
+      <p className="question-label">{label}</p>
 
-        <div className="choice active">5</div>
+      <div className="choice-grid">
+        {options.map((item) => (
+          <button
+            key={item}
+            type="button"
+            className={`choice-pill ${selected.includes(item) ? "active" : ""}`}
+            onClick={() => onToggle(item)}
+          >
+            <span className="choice-icon">
+              {selected.includes(item) ? "✓" : ""}
+            </span>
 
-        <div style={{ textAlign: "left" }}>
-          <strong>Fill in information to complte the registration process</strong>
-          <p style={{ margin: "4px 0 0", fontSize: "13px" }}>
-            1 question
-          </p>
-        </div>
+            <span>{item}</span>
+          </button>
+        ))}
       </div>
-    </div>
 
-    <div
-      className="modal-footer"
-      style={{
-        justifyContent: "center",
-      }}
-    >
-      <button
-        type="button"
-        className="btn-next"
-        onClick={() => setStep(1)}
-      >
-        Let&apos;s get started
-      </button>
-    </div>
-
-    <p
-      className="auth-link"
-      style={{
-        textAlign: "center",
-        marginTop: "5px",
-        marginBottom: "20px",
-
-      }}
-    >
-      Already have an account?
-      <a href="/login"> Log in</a>
-    </p>
-  </>
-)}
-{/* for genres */}
-            {step === 1 && (
-              <>
-                <h3>Which genres do you prefer?</h3>
-
-                <div className="modal-grid" style={{ margin: "20px" }}>
-                  {genreOptions.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      className={`choice ${
-                        answers.genres.includes(item) ? "active" : ""
-                      }`}
-                      onClick={() => toggleAnswer("genres", item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="modal-footer" style={{ marginTop: "20px" }}>
-                  <button
-                    type="button"
-                    className="btn-back"
-                    onClick={() => setStep(5)}
-                  >
-                    Skip
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-next"
-                    disabled={answers.genres.length === 0}
-                    onClick={() => setStep(2)}
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            )}
-{/* for streaming services */}
-            {step === 2 && (
-              <>
-                <h3>Which streaming services are you currently using?</h3>
-
-                <div className="modal-grid" style={{ margin: "20px" }}>
-                  {streamingOptions.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      className={`choice ${
-                        answers.streamingServices.includes(item) ? "active" : ""
-                      }`}
-                      onClick={() => toggleAnswer("streamingServices", item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="modal-footer" style={{ marginTop: "20px" }}>
-                  <button
-                    type="button"
-                    className="btn-back"
-                    onClick={() => setStep(1)}
-                  >
-                    ← Back
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-next"
-                    disabled={answers.streamingServices.length === 0}
-                    onClick={() => setStep(3)}
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            )}
-{/* preferred content type */}
-            {step === 3 && (
-              <>
-                <h3>What is your preferred content type?</h3>
-
-                <div className="modal-grid" style={{ margin: "20px" }}>
-                  {contentTypeOptions.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      className={`choice ${
-                        answers.contentTypes.includes(item) ? "active" : ""
-                      }`}
-                      onClick={() => toggleAnswer("contentTypes", item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="modal-footer" style={{ marginTop: "20px" }}>
-                  <button
-                    type="button"
-                    className="btn-back"
-                    onClick={() => setStep(2)}
-                  >
-                    ← Back
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-next"
-                    disabled={answers.contentTypes.length === 0}
-                    onClick={() => setStep(4)}
-                  >
-                    Continue →
-                  </button>
-                </div>
-              </>
-            )}
-{/* matters to you  */}
-            {step === 4 && (
-              <>
-                <h3>What matters to you the most?</h3>
-
-                <div className="modal-grid" style={{ margin: "20px" }}>
-                  {preferenceOptions.map((item) => (
-                    <button
-                      key={item}
-                      type="button"
-                      className={`choice ${
-                        answers.preferences.includes(item) ? "active" : ""
-                      }`}
-                      onClick={() => toggleAnswer("preferences", item)}
-                    >
-                      {item}
-                    </button>
-                  ))}
-                </div>
-
-                <div className="modal-footer" style={{ marginTop: "20px" }}>
-                  <button
-                    type="button"
-                    className="btn-back"
-                    onClick={() => setStep(3)}
-                  >
-                    ← Back
-                  </button>
-
-                  <button
-                    type="button"
-                    className="btn-next"
-                    disabled={answers.preferences.length === 0}
-                    onClick={() => setStep(5)}
-                  >
-                    Continue to Register →
-                  </button>
-                </div>
-              </>
-            )}
-          </div>
-        </div>
+      {nextDisabled && (
+        <p className="step-warning">Select at least one option to continue</p>
       )}
+
+      <div className="step-actions">
+        <button type="button" className="secondary-btn" onClick={onBack}>
+          Back
+        </button>
+
+        <button
+          type="button"
+          className="primary-btn"
+          disabled={nextDisabled}
+          onClick={onNext}
+        >
+          {nextText}
+        </button>
+      </div>
+
+      <button type="button" className="skip-btn" onClick={onSkip}>
+        Skip for now
+      </button>
     </>
   );
 }

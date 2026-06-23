@@ -86,7 +86,7 @@ export default function Navbar() {
             </Link>
       </div>
 
-      <div className="nav-right">
+      <div className="nav-links">
         <div className="search-wrapper">
           {showSearch && (
             <form onSubmit={handleSearch} className="nav-search-form">
@@ -129,7 +129,7 @@ export default function Navbar() {
           )}
         </div>
 
-        <button className="nav-icon-btn">🔔</button>
+        {/* <button className="nav-icon-btn">🔔</button> */}
 
         {session ? (
           <>
