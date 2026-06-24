@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
-import Navbar from "./components/Navbar";
+import { useEffect, useState } from 'react';
+import { useSession } from "next-auth/react";
 
 type Film = {
   title: string;
@@ -30,6 +30,12 @@ type DbMovie = {
   platforms: string | null;
 };
 
+type SessionUser = {
+  user_id?: number;
+  email?: string | null;
+  name?: string | null;
+  image?: string | null;
+};
 
 // hero slides
 const heroSlides = [
@@ -104,7 +110,9 @@ function mapMovie(movie: DbMovie, fallbackImage: string): Film {
           };
         })
       : [],
-    rating: String(movie.recommendation_score || movie.trend_score || "8.5"),
+    rating: movie.recommendation_score
+  ? Number(movie.recommendation_score).toFixed(1)
+  : "8.5",
     image: movie.poster_url || fallbackImage,
     progress: 0.4,
     isNew: Number(movie.release_year) >= 2025,
@@ -198,6 +206,9 @@ function Row({
 }
 
 export default function Home() {
+  const { data: session } = useSession();
+  const user = session?.user as SessionUser | undefined;
+  console.log("SESSION USER:", user);
   const [activeHero, setActiveHero] = useState(0);
   const slide = heroSlides[activeHero];
   const [activeMood, setActiveMood] = useState('All');
@@ -218,6 +229,8 @@ const [recommendedMovies, setRecommendedMovies] = useState<DbMovie[]>([]);
 const [trendingMovies, setTrendingMovies] = useState<DbMovie[]>([]);
 const [watchlistMovies, setWatchlistMovies] = useState<DbMovie[]>([]);
 
+
+
 const [moods, setMoods] = useState<string[]>(["All"]);
 const [genres, setGenres] = useState<string[]>(["All"]);
 
@@ -232,7 +245,7 @@ const yearFilters = [
 ];
 
 const [activeYear, setActiveYear] = useState("All");
-
+const [modalMoods, setModalMoods] = useState<string[]>([]);
 useEffect(() => {
   async function loadHomeMovies() {
     const params = new URLSearchParams({
@@ -240,6 +253,10 @@ useEffect(() => {
       genre: activeGenre,
       year: activeYear,
     });
+
+    if (user?.user_id) {
+      params.set("userId", String(user.user_id));
+    }
 
     const res = await fetch(`/api/home?${params.toString()}`);
     const data = await res.json();
@@ -250,18 +267,18 @@ useEffect(() => {
   }
 
   loadHomeMovies();
-}, [activeMood, activeGenre, activeYear]);
+}, [activeMood, activeGenre, activeYear, user?.user_id]);
 
 useEffect(() => {
   async function loadMoods() {
-    const moodRes = await fetch("/api/moods");
-    const moodData = await moodRes.json();
+  const moodRes = await fetch("/api/moods");
+  const moodData = await moodRes.json();
 
-    setMoods([
-      "All",
-      ...moodData.map((m: { mood_name: string }) => m.mood_name),
-    ]);
-  }
+  const moodNames = moodData.map((m: { mood_name: string }) => m.mood_name);
+
+  setMoods(["All", ...moodNames]);
+  setModalMoods(moodNames);
+}
 
   async function loadGenres() {
     const genreRes = await fetch("/api/genres");
@@ -277,7 +294,6 @@ useEffect(() => {
   loadGenres();
 }, []);
 
-  // const recommended = useMemo(() => films.slice().reverse(), []);
 
   function openModal() {
     setModalOpen(true);

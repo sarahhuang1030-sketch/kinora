@@ -88,6 +88,13 @@ const handler = NextAuth({
           [email]
         );
 
+        if (existingUsers.length > 0 && user.image) {
+          await pool.query(
+            "UPDATE users SET profile_image = ? WHERE email = ? AND (profile_image IS NULL OR profile_image = '')",
+            [user.image, email]
+          );
+        }
+
         if (existingUsers.length === 0) {
           let username = baseUsername;
 
@@ -101,18 +108,19 @@ const handler = NextAuth({
           }
 
           await pool.query(
-            `INSERT INTO users
-            (first_name, last_name, username, email, phone, password)
-            VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-              firstName,
-              lastName,
-              username,
-              email,
-              "",
-              `${account?.provider}-login`,
-            ]
-          );
+                `INSERT INTO users
+                (first_name, last_name, username, email, phone, password, profile_image)
+                VALUES (?, ?, ?, ?, ?, ?, ?)`,
+                [
+                  firstName,
+                  lastName,
+                  username,
+                  email,
+                  "",
+                  `${account?.provider}-login`,
+                  user.image || "",
+                ]
+              );
         }
 
         return true;

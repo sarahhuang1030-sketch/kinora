@@ -22,6 +22,7 @@ export default function RegisterPage() {
 
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [answers, setAnswers] = useState({
     genres: [] as string[],
@@ -191,7 +192,7 @@ if (
     });
 
     if (loginResult?.ok) {
-      window.location.href = "/profile";
+  window.location.href = "/connect-streaming";
     } else {
       alert("Registration successful! Please log in.");
       router.push("/login");
@@ -249,7 +250,7 @@ if (
           {step === 1 && (
             <QuestionStep
               stepNumber="1"
-              eyebrow="Step 1 of 3"
+              eyebrow="Step 1 of 5"
               title="Pick your genres"
               subtitle="Choose as many as you like."
               label="Genres"
@@ -266,7 +267,7 @@ if (
           {step === 2 && (
             <QuestionStep
               stepNumber="2"
-              eyebrow="Step 2 of 3"
+              eyebrow="Step 2 of 5"
               title="What do you mostly watch?"
               subtitle="You can choose more than one, unless you select no preference."
               label="Content Type"
@@ -439,13 +440,18 @@ if (
     <div className="field-group">
       <label>CONFIRM PASSWORD *</label>
       <div className="password-wrapper">
-        <input
-          type={showPassword ? "text" : "password"}
+       <input
+          type={showConfirmPassword ? "text" : "password"}
           value={confirmPassword}
           onChange={(e) => setConfirmPassword(e.target.value)}
         />
-        <button type="button" className="password-toggle" onClick={() => setShowPassword(!showPassword)}>
-          {showPassword ? <FiEyeOff /> : <FiEye />}
+
+        <button
+          type="button"
+          className="password-toggle"
+          onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+        >
+          {showConfirmPassword ? <FiEyeOff /> : <FiEye />}
         </button>
       </div>
     </div>
@@ -465,30 +471,30 @@ if (
               <div className="social-login">
                 <button
                   type="button"
-                  className="social-btn"
+                  className="social-btn google-btn"
                   onClick={() => {
                     savePendingAnswers();
-                    signIn("google", {
-                      callbackUrl: "/profile?socialNewUser=true",
+                   signIn("google", {
+                      callbackUrl: "/profile-complete",
                     });
                   }}
                 >
-                  <FcGoogle size={22} />
-                  Google
+                  <FcGoogle />
+                  <span>Log in with Gmail</span>
                 </button>
 
                 <button
                   type="button"
-                  className="social-btn"
+                  className="social-btn apple-btn"
                   onClick={() => {
                     savePendingAnswers();
                     signIn("apple", {
-                      callbackUrl: "/profile?socialNewUser=true",
+                      callbackUrl: "/profile-complete",
                     });
                   }}
                 >
-                  <FaApple size={22} />
-                  Apple
+                  <FaApple />
+                  <span>Log in with Apple</span>
                 </button>
               </div>
 

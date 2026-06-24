@@ -10,8 +10,16 @@ type UserRow = RowDataPacket & {
 
 export async function POST(req: Request) {
   try {
-    const { firstName, lastName, username, email, phone, password } =
-      await req.json();
+    const {
+  firstName,
+  lastName,
+  username,
+  email,
+  phone,
+  password,
+  country,
+  dateOfBirth,
+} = await req.json();
 
     if (!firstName.trim()) {
       return NextResponse.json({ message: "First name is required" }, { status: 400 });
@@ -65,24 +73,28 @@ export async function POST(req: Request) {
     const [result] = await pool.execute<ResultSetHeader>(
   `
   INSERT INTO users
-  (
-    first_name,
-    last_name,
-    username,
-    email,
-    phone,
-    password
-  )
-  VALUES (?, ?, ?, ?, ?, ?)
+(
+  first_name,
+  last_name,
+  username,
+  email,
+  phone,
+  password,
+  country,
+  date_of_birth
+)
+VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
   [
-    firstName.trim(),
-    lastName.trim(),
-    username.trim(),
-    email.trim(),
-    phone?.trim() || "",
-    password,
-  ]
+  firstName.trim(),
+  lastName.trim(),
+  username.trim(),
+  email.trim(),
+  phone?.trim() || "",
+  password,
+  country,
+  dateOfBirth,
+]
 );
 
 console.log("NEW USER REGISTERED", {

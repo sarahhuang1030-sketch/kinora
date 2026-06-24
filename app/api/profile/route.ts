@@ -9,6 +9,8 @@ type UserRow = RowDataPacket & {
   username: string;
   email: string;
   phone: string;
+  country?: string;
+  date_of_birth?: string;
   profile_image?: string;
 };
 
@@ -23,9 +25,18 @@ export async function GET(req: Request) {
 
     const [rows] = await pool.execute<UserRow[]>(
       `
-      SELECT user_id, first_name, last_name, username, email, phone, profile_image
-      FROM users
-      WHERE email = ?
+      SELECT 
+  user_id,
+  first_name,
+  last_name,
+  username,
+  email,
+  phone,
+  country,
+  date_of_birth,
+  profile_image
+FROM users
+WHERE email = ?
       `,
       [email]
     );
@@ -83,7 +94,15 @@ const [preferenceRows] = await pool.execute<RowDataPacket[]>(
 
 export async function PUT(req: Request) {
   try {
-    const { user_id, first_name, last_name, username, phone } = await req.json();
+    const {
+  user_id,
+  first_name,
+  last_name,
+  username,
+  phone,
+  country,
+  date_of_birth,
+} = await req.json();
 
     if (!user_id) {
       return NextResponse.json({ message: "User ID is required" }, { status: 400 });
@@ -92,10 +111,10 @@ export async function PUT(req: Request) {
     await pool.execute(
       `
       UPDATE users
-      SET first_name = ?, last_name = ?, username = ?, phone = ?
+      SET first_name = ?, last_name = ?, username = ?, phone = ?, country = ?, date_of_birth = ?
       WHERE user_id = ?
       `,
-      [first_name, last_name, username, phone, user_id]
+      [first_name, last_name, username, phone, country, date_of_birth, user_id]
     );
 
     console.log("PROFILE UPDATED", {

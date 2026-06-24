@@ -6,6 +6,13 @@ type ExistingServiceRow = RowDataPacket & {
   id: number;
 };
 
+const sampleHistory: Record<string, number[]> = {
+  Netflix: [3, 5, 8],
+  "Disney+": [1, 4, 7],
+  Crave: [2, 6, 10],
+  "Prime Video": [9, 11, 12],
+};
+
 export async function POST(req: Request) {
   try {
     const { userId, service } = await req.json();
@@ -35,6 +42,19 @@ export async function POST(req: Request) {
         VALUES (?, ?)
         `,
         [userId, service]
+      );
+    }
+
+    const movieIds = sampleHistory[service] || [];
+
+    for (const movieId of movieIds) {
+      await pool.query(
+        `
+        INSERT IGNORE INTO user_watch_history
+        (user_id, movie_id)
+        VALUES (?, ?)
+        `,
+        [userId, movieId]
       );
     }
 

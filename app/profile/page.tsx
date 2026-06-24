@@ -11,6 +11,8 @@ type User = {
   username: string;
   email: string;
   phone: string;
+  country?: string;
+  date_of_birth?: string;
   profile_image?: string;
 };
 
@@ -61,12 +63,7 @@ function ProfileContent() {
   const [isEditingProfile, setIsEditingProfile] = useState(false);
   const [profileImage, setProfileImage] = useState<string>("");
 
-  const [connectedServices, setConnectedServices] = useState<string[]>(() => {
-  if (typeof window === "undefined") return [];
-
-  const saved = localStorage.getItem("connectedServices");
-  return saved ? JSON.parse(saved) : [];
-});
+  const [connectedServices, setConnectedServices] = useState<string[]>([]);
 
   const [connectingService, setConnectingService] = useState<string | null>(null);
   const [connectSuccess, setConnectSuccess] = useState(false);
@@ -78,13 +75,26 @@ function ProfileContent() {
   };
 
   useEffect(() => {
+  function loadConnectedServices() {
+    const saved = localStorage.getItem("connectedServices");
+
+    if (saved) {
+      setConnectedServices(JSON.parse(saved));
+    }
+  }
+
+  loadConnectedServices();
+}, []);
+  
+
+  useEffect(() => {
     async function loadUser() {
       const res = await fetch(`/api/profile?email=${email}`);
       const data = await res.json();
 
       setUser(data.user);
       setEditUser(data.user);
-      setProfileImage(data.user?.profile_image || "");
+      setProfileImage(data.user?.profile_image || session?.user?.image || "");
 
       if (data.answers) {
         setAnswers(data.answers);
@@ -180,6 +190,15 @@ async function finishFakeConnect() {
     }),
   });
 
+  await fetch("/api/connect-service", {
+  method: "POST",
+  headers: { "Content-Type": "application/json" },
+  body: JSON.stringify({
+    userId: user.user_id,
+    service: connectingService,
+  }),
+});
+
   setConnectedServices((current) => {
     const updatedServices = current.includes(connectingService)
       ? current
@@ -266,6 +285,20 @@ async function disconnectService(service: string) {
                     <div className="profile-info-row">
                       <span>Phone</span>
                       <span>{user.phone || "Not added"}</span>
+                    </div>
+
+                    <div className="profile-info-row">
+                      <span>Country</span>
+                      <span>{user.country || "Not added"}</span>
+                    </div>
+
+                    <div className="profile-info-row">
+                      <span>Date of Birth</span>
+                      <span>
+                        {user.date_of_birth
+                          ? new Date(user.date_of_birth).toLocaleDateString()
+                          : "Not added"}
+                      </span>
                     </div>
 
                     <button
@@ -407,6 +440,38 @@ async function disconnectService(service: string) {
                       />
                     </div>
 
+                    <div className="profile-info-row">
+                      <span>Country</span>
+                      <select
+                        value={editUser.country || ""}
+                        onChange={(e) =>
+                          setEditUser({
+                            ...editUser,
+                            country: e.target.value,
+                          })
+                        }
+                      >
+                        <option value="">Select Country</option>
+                        <option value="Canada">Canada</option>
+                        <option value="United States">United States</option>
+                        <option value="Taiwan">Taiwan</option>
+                      </select>
+                    </div>
+
+                    <div className="profile-info-row">
+                      <span>Date of Birth</span>
+                      <input
+                        type="date"
+                        value={editUser.date_of_birth ? editUser.date_of_birth.slice(0, 10) : ""}
+                        onChange={(e) =>
+                          setEditUser({
+                            ...editUser,
+                            date_of_birth: e.target.value,
+                          })
+                        }
+                      />
+                    </div>
+
                     <div
                       style={{
                         display: "flex",
@@ -449,12 +514,14 @@ async function disconnectService(service: string) {
                           }
 
                           const cleanedUser = {
-                            ...editUser,
-                            first_name: editUser.first_name.trim(),
-                            last_name: editUser.last_name.trim(),
-                            username: editUser.username.trim(),
-                            phone: editUser.phone.trim(),
-                          };
+                          ...editUser,
+                          first_name: editUser.first_name.trim(),
+                          last_name: editUser.last_name.trim(),
+                          username: editUser.username.trim(),
+                          phone: editUser.phone.trim(),
+                          country: editUser.country || "",
+                          date_of_birth: editUser.date_of_birth || "",
+                        };
 
                           const res = await fetch("/api/profile", {
                             method: "PUT",
@@ -679,7 +746,7 @@ async function disconnectService(service: string) {
                 </div>
               </div>
 
-              {connectedServices.length > 0 && (
+              {/* {connectedServices.length > 0 && (
                 <div
                   style={{
                     marginTop: "24px",
@@ -697,7 +764,7 @@ async function disconnectService(service: string) {
                     </div>
                   ))}
                 </div>
-              )}
+              )} */}
             </>
           )}
         </div>

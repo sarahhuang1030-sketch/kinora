@@ -13,6 +13,14 @@ type Movie = {
   release_year: number;
 };
 
+type NavUser = {
+  first_name: string;
+  last_name: string;
+  profile_image?: string;
+};
+
+
+
 export default function Navbar() {
   const { data: session } = useSession();
   const router = useRouter();
@@ -20,6 +28,7 @@ export default function Navbar() {
   const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<Movie[]>([]);
+  const [navUser, setNavUser] = useState<NavUser | null>(null);
 
  useEffect(() => {
   const query = searchText.trim();
@@ -49,6 +58,19 @@ export default function Navbar() {
     setSearchText("");
     setResults([]);
   };
+
+useEffect(() => {
+  async function loadNavUser() {
+    if (!session?.user?.email) return;
+
+    const res = await fetch(`/api/profile?email=${session.user.email}`);
+    const data = await res.json();
+
+    setNavUser(data.user);
+  }
+
+  loadNavUser();
+}, [session?.user?.email]);
 
   return (
     <nav>
@@ -134,12 +156,19 @@ export default function Navbar() {
         {session ? (
           <>
             <Link href="/profile" className="nav-profile">
-              <img
-                src={session?.user?.image || "/default-profile.png"}
-                alt="Profile"
-                className="nav-profile-img"
-              />
-            </Link>
+                {navUser?.profile_image || session?.user?.image ? (
+                  <img
+                    src={navUser?.profile_image || session?.user?.image || ""}
+                    alt="Profile"
+                    className="nav-profile-img"
+                  />
+                ) : (
+                  <span className="nav-profile-initials">
+                    {navUser?.first_name?.charAt(0)}
+                    {navUser?.last_name?.charAt(0)}
+                  </span>
+                )}
+              </Link>
 
             <button
               className="login-btn"
