@@ -22,7 +22,7 @@ type NavUser = {
 
 
 export default function Navbar() {
-  const { data: session } = useSession();
+  const { data: session, status } = useSession();
   const router = useRouter();
 
   const [showSearch, setShowSearch] = useState(false);
@@ -30,23 +30,40 @@ export default function Navbar() {
   const [results, setResults] = useState<Movie[]>([]);
   const [navUser, setNavUser] = useState<NavUser | null>(null);
 
- useEffect(() => {
-  const query = searchText.trim();
+  useEffect(() => {
+    const query = searchText.trim();
 
-  const timer = setTimeout(async () => {
-    if (!query) {
-      setResults([]);
-      return;
+    const timer = setTimeout(async () => {
+      if (!query) {
+        setResults([]);
+        return;
+      }
+
+      const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
+      const data: Movie[] = await res.json();
+
+      setResults(data);
+    }, 300);
+
+    return () => clearTimeout(timer);
+  }, [searchText]);
+
+  useEffect(() => {
+    async function loadNavUser() {
+      if (!session?.user?.email) return;
+
+      const res = await fetch(`/api/profile?email=${session.user.email}`);
+      const data = await res.json();
+
+      setNavUser(data.user);
     }
 
-    const res = await fetch(`/api/search?query=${encodeURIComponent(query)}`);
-    const data: Movie[] = await res.json();
+    loadNavUser();
+  }, [session?.user?.email]);
 
-    setResults(data);
-  }, 300);
-
-  return () => clearTimeout(timer);
-}, [searchText]);
+  if (status === "loading") {
+    return null;
+  }
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,19 +75,6 @@ export default function Navbar() {
     setSearchText("");
     setResults([]);
   };
-
-useEffect(() => {
-  async function loadNavUser() {
-    if (!session?.user?.email) return;
-
-    const res = await fetch(`/api/profile?email=${session.user.email}`);
-    const data = await res.json();
-
-    setNavUser(data.user);
-  }
-
-  loadNavUser();
-}, [session?.user?.email]);
 
   return (
     <nav>
@@ -157,7 +161,7 @@ useEffect(() => {
           <>
             <Link href="/profile" className="nav-profile">
                 {navUser?.profile_image || session?.user?.image ? (
-                  <img
+                  <Image
                     src={navUser?.profile_image || session?.user?.image || ""}
                     alt="Profile"
                     className="nav-profile-img"
