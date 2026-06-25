@@ -31,8 +31,10 @@ jobs:
 
       - name: npm install, build, and test
         run: |
-          npm install
-          npm run build --if-present
+          rm -rf .next
+          rm -rf node_modules
+          npm ci
+          npm run build
           mkdir -p .next/standalone/.next
           cp -r public .next/standalone/public
           cp -r .next/static .next/standalone/.next/static
