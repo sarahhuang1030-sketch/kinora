@@ -31,11 +31,11 @@ console.log("REGISTER DATA", {
   dateOfBirth,
 });
 
-    if (!firstName.trim()) {
+  if (!firstName?.trim()) {
       return NextResponse.json({ message: "First name is required" }, { status: 400 });
     }
 
-    if (!lastName.trim()) {
+   if (!lastName?.trim()) {
       return NextResponse.json({ message: "Last name is required" }, { status: 400 });
     }
 
@@ -75,10 +75,19 @@ console.log("REGISTER DATA", {
       return NextResponse.json({ message: "Password must be at least 6 characters" }, { status: 400 });
     }
 
+    const cleanFirstName = firstName.trim();
+    const cleanLastName = lastName.trim();
+    const cleanUsername = username.trim();
+    const cleanEmail = email.trim();
+    const cleanPhone = phone.trim();
+    const cleanCountry = country.trim();
+    const cleanPassword = password.trim();
+    const cleanDateOfBirth = dateOfBirth;
+
     const [existingUsers] = await pool.execute<UserRow[]>(
-      "SELECT user_id, username, email FROM users WHERE email = ? OR username = ?",
-      [email, username]
-    );
+  "SELECT user_id, username, email FROM users WHERE email = ? OR username = ?",
+  [cleanEmail, cleanUsername]
+);
 
     if (existingUsers.length > 0) {
       const existingUser = existingUsers[0];
@@ -108,14 +117,14 @@ console.log("REGISTER DATA", {
 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   `,
   [
-  firstName.trim(),
-  lastName.trim(),
-  username.trim(),
-  email.trim(),
-  phone.trim(),
-  password,
-  country.trim(),
-  dateOfBirth,
+  cleanFirstName,
+  cleanLastName,
+  cleanUsername,
+  cleanEmail,
+  cleanPhone,
+  cleanPassword,
+  cleanCountry,
+  cleanDateOfBirth,
 ]
 );
 
