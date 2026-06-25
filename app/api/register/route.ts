@@ -9,6 +9,8 @@ type UserRow = RowDataPacket & {
 };
 
 export async function POST(req: Request) {
+console.log("REGISTER ROUTE VERSION 4 - DEPLOY TEST");
+
   try {
     const {
   firstName,
@@ -30,6 +32,8 @@ console.log("REGISTER DATA", {
   country,
   dateOfBirth,
 });
+
+
 
   if (!firstName?.trim()) {
       return NextResponse.json({ message: "First name is required" }, { status: 400 });
