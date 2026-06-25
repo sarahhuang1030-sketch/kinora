@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const services = [
@@ -26,13 +26,23 @@ const services = [
   },
 ];
 
-
-
 export default function ConnectStreamingPage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <ConnectStreamingContent />
+    </Suspense>
+  );
+}
+
+function ConnectStreamingContent() {
   const router = useRouter();
-  const [connectedServices, setConnectedServices] = useState<string[]>([]);
   const searchParams = useSearchParams();
+
+  const [connectedServices, setConnectedServices] = useState<string[]>([]);
+
   const isSocialNewUser = searchParams.get("socialNewUser") === "true";
+  const email = searchParams.get("email");
+
   function toggleService(service: string) {
     setConnectedServices((current) =>
       current.includes(service)
@@ -40,21 +50,32 @@ export default function ConnectStreamingPage() {
         : [...current, service]
     );
   }
-const email = searchParams.get("email");
 
- function continueNext() {
-  localStorage.setItem(
-    "connectedServices",
-    JSON.stringify(connectedServices)
-  );
+  function buildNextUrl() {
+    const query = new URLSearchParams();
 
-  const query = new URLSearchParams();
+    if (email) query.set("email", email);
+    if (isSocialNewUser) query.set("socialNewUser", "true");
 
-  if (email) query.set("email", email);
-  if (isSocialNewUser) query.set("socialNewUser", "true");
+    const queryString = query.toString();
 
-  router.push(`/onboarding-complete?${query.toString()}`);
-}
+    return queryString
+      ? `/onboarding-complete?${queryString}`
+      : "/onboarding-complete";
+  }
+
+  function continueNext() {
+    localStorage.setItem(
+      "connectedServices",
+      JSON.stringify(connectedServices)
+    );
+
+    router.push(buildNextUrl());
+  }
+
+  function skipConnect() {
+    router.push(buildNextUrl());
+  }
 
   return (
     <main className="register-page">
@@ -78,11 +99,13 @@ const email = searchParams.get("email");
                     <img src={service.logo} alt={service.name} />
                     <div>
                       <strong>{service.name}</strong>
-                      <span>{isConnected ? "Connected" : "Not connected"}</span>
+                      <span>
+                        {isConnected ? "Connected" : "Not connected"}
+                      </span>
                     </div>
                   </div>
 
-                 <button
+                  <button
                     type="button"
                     className={
                       isConnected
@@ -111,23 +134,16 @@ const email = searchParams.get("email");
               Back
             </button>
 
-            <button type="button" className="primary-btn" onClick={continueNext}>
+            <button
+              type="button"
+              className="primary-btn"
+              onClick={continueNext}
+            >
               Continue
             </button>
           </div>
 
-          <button
-            type="button"
-            className="skip-btn"
-            onClick={() => {
-                const query = new URLSearchParams();
-
-                if (email) query.set("email", email);
-                if (isSocialNewUser) query.set("socialNewUser", "true");
-
-                router.push(`/onboarding-complete?${query.toString()}`);
-              }}
-          >
+          <button type="button" className="skip-btn" onClick={skipConnect}>
             Skip — connect services later
           </button>
         </section>
