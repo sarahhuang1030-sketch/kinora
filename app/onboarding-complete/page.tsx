@@ -1,7 +1,7 @@
 "use client";
 
+import { Suspense, useEffect, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { useEffect, useState } from "react";
 import { useSession } from "next-auth/react";
 import {
   FaBolt,
@@ -30,6 +30,14 @@ type Answers = {
 };
 
 export default function OnboardingCompletePage() {
+  return (
+    <Suspense fallback={<div>Loading...</div>}>
+      <OnboardingCompleteContent />
+    </Suspense>
+  );
+}
+
+function OnboardingCompleteContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { data: session } = useSession();
