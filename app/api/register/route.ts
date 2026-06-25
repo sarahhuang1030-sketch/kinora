@@ -9,9 +9,14 @@ type UserRow = RowDataPacket & {
 };
 
 export async function POST(req: Request) {
+
+  return Response.json({
+    success: true,
+    message: "REGISTER ROUTE HIT"
+  });
+
+
 console.error("REGISTER ROUTE VERSION 4 - DEPLOY TEST");
-
-
 
   try {
     const {
