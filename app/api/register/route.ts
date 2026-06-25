@@ -9,7 +9,9 @@ type UserRow = RowDataPacket & {
 };
 
 export async function POST(req: Request) {
-console.log("REGISTER ROUTE VERSION 4 - DEPLOY TEST");
+console.error("REGISTER ROUTE VERSION 4 - DEPLOY TEST");
+
+
 
   try {
     const {
@@ -22,6 +24,16 @@ console.log("REGISTER ROUTE VERSION 4 - DEPLOY TEST");
   country,
   dateOfBirth,
 } = await req.json();
+
+console.error("REGISTER DATA", {
+  firstName,
+  lastName,
+  username,
+  email,
+  phone,
+  country,
+  dateOfBirth,
+});
 
 console.log("REGISTER DATA", {
   firstName,
