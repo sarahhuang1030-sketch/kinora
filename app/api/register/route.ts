@@ -21,6 +21,16 @@ export async function POST(req: Request) {
   dateOfBirth,
 } = await req.json();
 
+console.log("REGISTER DATA", {
+  firstName,
+  lastName,
+  username,
+  email,
+  phone,
+  country,
+  dateOfBirth,
+});
+
     if (!firstName.trim()) {
       return NextResponse.json({ message: "First name is required" }, { status: 400 });
     }
