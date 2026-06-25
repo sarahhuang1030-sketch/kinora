@@ -463,7 +463,7 @@ if (
     </div>
   </div>
 
-  <button type="submit" className="primary-btn create-account-btn">
+  <button type="submit" className="primary-btn create-account-btn2">
     Create Account
   </button>
 </form>
