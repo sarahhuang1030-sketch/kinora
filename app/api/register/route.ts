@@ -39,9 +39,21 @@ console.log("REGISTER DATA", {
       return NextResponse.json({ message: "Last name is required" }, { status: 400 });
     }
 
-    if (!username || !email || !password) {
-      return NextResponse.json({ message: "Please fill in all fields" }, { status: 400 });
-    }
+   if (
+        !firstName?.trim() ||
+        !lastName?.trim() ||
+        !username?.trim() ||
+        !email?.trim() ||
+        !phone?.trim() ||
+        !country?.trim() ||
+        !dateOfBirth ||
+        !password
+      ) {
+        return NextResponse.json(
+          { message: "Please fill in all required fields" },
+          { status: 400 }
+        );
+      }
 
     if (username.trim().length < 3) {
       return NextResponse.json({ message: "Username must be at least 3 characters" }, { status: 400 });
@@ -100,9 +112,9 @@ VALUES (?, ?, ?, ?, ?, ?, ?, ?)
   lastName.trim(),
   username.trim(),
   email.trim(),
-  phone?.trim() || "",
+  phone.trim(),
   password,
-  country,
+  country.trim(),
   dateOfBirth,
 ]
 );
