@@ -1,6 +1,49 @@
+"use client";
+
 import Link from "next/link";
+import { useState } from "react";
+
 
 export default function ContactPage() {
+
+    const [name, setName] = useState("");
+    const [email, setEmail] = useState("");
+    const [message, setMessage] = useState("");
+    const [success, setSuccess] = useState("");
+    const [error, setError] = useState("");
+
+    const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    setSuccess("");
+    setError("");
+
+    const res = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+        "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+        name,
+        email,
+        message,
+        }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+        setError(data.error || "Something went wrong.");
+        return;
+    }
+
+    setSuccess("Message sent successfully.");
+    setName("");
+    setEmail("");
+    setMessage("");
+    };
+
+
   return (
     <div className="terms-page">
       <section className="terms-hero">
@@ -36,16 +79,34 @@ export default function ContactPage() {
           <section id="message">
             <h2>Send a Message</h2>
 
-            <form className="contact-form">
-              <input type="text" placeholder="Your Name" className="form-input" />
-              <input type="email" placeholder="Your Email" className="form-input" />
-              <textarea
-                placeholder="How can we help?"
-                rows={6}
-                className="form-input"
-              />
+            <form className="contact-form" onSubmit={handleSubmit}>
+              <input
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your Name"
+                    />
 
-              <button className="primary-btn" type="button">
+                    <input
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Your Email"
+                    />
+
+                    <textarea
+                    value={message}
+                    onChange={(e) => setMessage(e.target.value)}
+                    placeholder="How can we help?"
+                    />
+
+                {error && (
+                <p style={{ color: "#ff6b6b" }}>{error}</p>
+                )}
+
+                {success && (
+                <p style={{ color: "#4caf50" }}>{success}</p>
+                )}
+
+              <button className="primary-btn" type="submit">
                 Send Message
               </button>
             </form>
