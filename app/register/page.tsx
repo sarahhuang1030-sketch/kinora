@@ -118,6 +118,8 @@ export default function RegisterPage() {
   return;
 }
 
+
+
 if (
   !firstName ||
   !lastName ||
@@ -145,6 +147,8 @@ if (
         phone,
         firstName,
         lastName,
+        country,
+        dateOfBirth,
       }),
     });
 
@@ -192,11 +196,13 @@ if (
     });
 
     if (loginResult?.ok) {
-  window.location.href = "/connect-streaming";
-    } else {
-      alert("Registration successful! Please log in.");
-      router.push("/login");
-    }
+  const nextUrl = `/connect-streaming?userId=${newUserId}&email=${encodeURIComponent(email)}`;
+  console.log("GOING TO:", nextUrl);
+  window.location.href = nextUrl;
+} else {
+  alert("Registration successful! Please log in.");
+  router.push("/login");
+}
   }
 
   return (

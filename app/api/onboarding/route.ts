@@ -19,7 +19,7 @@ export async function POST(req: Request) {
     }
 
     await pool.execute("DELETE FROM user_genres WHERE user_id = ?", [userId]);
-    await pool.execute("DELETE FROM user_streaming_services WHERE user_id = ?", [userId]);
+    await pool.execute("DELETE FROM user_connected_services WHERE user_id = ?", [userId]);
     await pool.execute("DELETE FROM user_content_types WHERE user_id = ?", [userId]);
     await pool.execute("DELETE FROM user_preferences WHERE user_id = ?", [userId]);
 
@@ -32,7 +32,7 @@ export async function POST(req: Request) {
 
     for (const service of streamingServices || []) {
       await pool.execute(
-        "INSERT INTO user_streaming_services (user_id, service_name) VALUES (?, ?)",
+        "INSERT INTO user_connected_services (user_id, service_name) VALUES (?, ?)",
         [userId, service]
       );
     }

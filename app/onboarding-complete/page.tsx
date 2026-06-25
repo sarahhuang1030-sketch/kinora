@@ -29,6 +29,10 @@ type Answers = {
   preferences: string[];
 };
 
+function unique(items: string[] = []) {
+  return Array.from(new Set(items.filter(Boolean)));
+}
+
 export default function OnboardingCompletePage() {
   return (
     <Suspense fallback={<div>Loading...</div>}>
@@ -53,23 +57,71 @@ function OnboardingCompleteContent() {
     contentTypes: [],
     preferences: [],
   });
+ 
+
 
   useEffect(() => {
     async function loadUser() {
       if (!email) return;
 
-      const res = await fetch(`/api/profile?email=${email}`);
-      const data = await res.json();
+      try {
+        const res = await fetch(`/api/profile?email=${email}`);
+        const data = await res.json();
 
-      setUser(data.user);
+        setUser(data.user);
 
-      if (data.answers) {
-        setAnswers(data.answers);
+        if (data.answers) {
+          setAnswers({
+              genres: unique(data.answers.genres || []),
+              streamingServices: unique(data.answers.streamingServices || []),
+              contentTypes: unique(data.answers.contentTypes || []),
+              preferences: unique(data.answers.preferences || []),
+            });
+        }
+
+        if (data.user?.user_id) {
+  const servicesRes = await fetch(
+    `/api/connect-service/list?userId=${data.user.user_id}`
+  );
+
+  const servicesData = await servicesRes.json();
+
+  const profileServices = unique(data.answers?.streamingServices || []);
+  const connectedServices = unique(servicesData.services || []);
+
+  setAnswers((prev) => ({
+    ...prev,
+    streamingServices:
+      profileServices.length > 0 ? profileServices : connectedServices,
+  }));
+}
+      } catch (error) {
+        console.error("LOAD ONBOARDING COMPLETE ERROR:", error);
       }
     }
 
     loadUser();
   }, [email]);
+
+  function editStreamingServices() {
+    const query = new URLSearchParams();
+
+    if (email) query.set("email", email);
+    if (isSocialNewUser) query.set("socialNewUser", "true");
+    if (user?.user_id) query.set("userId", String(user.user_id));
+
+      const queryString = query.toString();
+
+      router.push(
+        queryString
+          ? `/connect-streaming?${queryString}`
+          : "/connect-streaming"
+      );
+        }
+
+  function editProfile() {
+    router.push("/profile");
+  }
 
   return (
     <main className="complete-page">
@@ -92,43 +144,41 @@ function OnboardingCompleteContent() {
             title="Favourite genres"
             countText={`${answers.genres.length} selected`}
             items={answers.genres}
+            onEdit={editProfile}
           />
 
-          <CompleteRow
-            color="streaming"
-            title="Streaming services"
-            text={
-              answers.streamingServices.length
-                ? `${answers.streamingServices.length} selected`
-                : "Not answered yet"
-            }
-          />
+          <CompleteOpenRow
+              color="streaming"
+              title="Streaming services"
+              countText={`${unique(answers.streamingServices).length} selected`}
+              items={unique(answers.streamingServices)}
+              onEdit={editStreamingServices}
+            />
 
-          <CompleteRow
-            color="content"
-            title="Content preference"
-            text={
-              answers.contentTypes.length
-                ? answers.contentTypes.join(", ")
-                : "Not answered yet"
-            }
-          />
+          <CompleteOpenRow
+  color="content"
+  title="Content preference"
+  countText={`${answers.contentTypes.length} selected`}
+  items={answers.contentTypes}
+  onEdit={editProfile}
+/>
+
+
 
           <CompleteRow
             color="account"
             title="Account details"
             text={user?.email || "Loading account..."}
+            onEdit={editProfile}
           />
 
-          <CompleteRow
-            color="content"
-            title="What matters most"
-            text={
-              answers.preferences.length
-                ? answers.preferences.join(", ")
-                : "Not answered yet"
-            }
-          />
+         <CompleteOpenRow
+  color="content"
+  title="What matters most"
+  countText={`${answers.preferences.length} selected`}
+  items={answers.preferences}
+  onEdit={editProfile}
+/>
         </div>
 
         <div className="complete-ready-bar">
@@ -136,6 +186,7 @@ function OnboardingCompleteContent() {
             <FaBolt />
             <span>Your personalized picks are ready!</span>
           </div>
+
           <strong>247 matches found</strong>
         </div>
 
@@ -166,17 +217,22 @@ function CompleteOpenRow({
   title,
   countText,
   items,
+  onEdit,
 }: {
   color: string;
   title: string;
   countText: string;
   items: string[];
+  onEdit: () => void;
 }) {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
     <div className="complete-section open">
       <div className="complete-section-top">
         <div className="complete-section-left">
           <div className={`complete-square ${color}`}></div>
+
           <div>
             <strong>{title}</strong>
             <p>{items.length ? countText : "Not answered yet"}</p>
@@ -184,18 +240,31 @@ function CompleteOpenRow({
         </div>
 
         <div className="complete-section-action">
-          <button type="button">Edit</button>
-          <FaChevronDown />
-        </div>
+  <button type="button" onClick={onEdit}>
+    Edit
+  </button>
+
+  <button
+    type="button"
+    className="toggle-btn"
+    onClick={() => setIsOpen(!isOpen)}
+  >
+    {isOpen ? <FaChevronUp /> : <FaChevronDown />}
+  </button>
+</div>
       </div>
 
-      <div className="complete-tags">
-        {items.length ? (
-          items.map((item) => <span key={item}>{item}</span>)
-        ) : (
-          <span>Not answered yet</span>
-        )}
-      </div>
+      {isOpen && (
+        <div className="complete-tags">
+          {items.length ? (
+            items.map((item) => (
+              <span key={item}>{item}</span>
+            ))
+          ) : (
+            <span>Not answered yet</span>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -204,27 +273,47 @@ function CompleteRow({
   color,
   title,
   text,
+  onEdit,
 }: {
   color: string;
   title: string;
   text: string;
+  onEdit: () => void;
 }) {
+  const [isOpen, setIsOpen] = useState(true);
+
   return (
     <div className="complete-section">
       <div className="complete-section-top">
         <div className="complete-section-left">
           <div className={`complete-square ${color}`}></div>
+
           <div>
             <strong>{title}</strong>
-            <p>{text}</p>
+            <p>{isOpen ? text : "Click arrow to view"}</p>
           </div>
         </div>
 
         <div className="complete-section-action">
-          <button type="button">Edit</button>
-          <FaChevronUp />
+          <button type="button" onClick={onEdit}>
+            Edit
+          </button>
+
+          <button
+            type="button"
+            className="toggle-btn"
+            onClick={() => setIsOpen(!isOpen)}
+          >
+            {isOpen ? <FaChevronUp /> : <FaChevronDown />}
+          </button>
         </div>
       </div>
+
+      {isOpen && (
+        <div className="complete-tags">
+          <span>{text}</span>
+        </div>
+      )}
     </div>
   );
 }

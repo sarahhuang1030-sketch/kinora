@@ -30,45 +30,113 @@ export default function ProfileCompletePage() {
   }
 
   async function handleSubmit(e: React.FormEvent) {
-    e.preventDefault();
+  e.preventDefault();
 
-    setError("");
+  setError("");
 
-    if (!phone || !country || !dateOfBirth) {
-      setError("Please complete all fields.");
+  // Required fields
+  if (!phone.trim()) {
+    setError("Phone number is required.");
+    return;
+  }
+
+  if (!dateOfBirth) {
+    setError("Date of birth is required.");
+    return;
+  }
+
+  if (!country) {
+    setError("Please select a country.");
+    return;
+  }
+
+  // Canadian phone format: (403) 123-4567
+  const canadianPhoneRegex = /^\([2-9]\d{2}\)\s\d{3}-\d{4}$/;
+
+  if (!canadianPhoneRegex.test(phone)) {
+    setError(
+      "Please enter a valid Canadian phone number in the format (403) 123-4567."
+    );
+    return;
+  }
+
+  // Must be at least 13 years old
+  const today = new Date();
+  const birthDate = new Date(dateOfBirth);
+
+  let age = today.getFullYear() - birthDate.getFullYear();
+
+  const monthDiff =
+    today.getMonth() - birthDate.getMonth();
+
+  if (
+    monthDiff < 0 ||
+    (monthDiff === 0 &&
+      today.getDate() < birthDate.getDate())
+  ) {
+    age--;
+  }
+
+  if (age < 13) {
+    setError(
+      "You must be at least 13 years old to create an account."
+    );
+    return;
+  }
+
+  setLoading(true);
+
+  try {
+    const res = await fetch("/api/complete-profile", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email: session?.user?.email,
+        phone,
+        country,
+        dateOfBirth,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setError(data.message || "Unable to save profile.");
       return;
     }
 
-    setLoading(true);
+    const profileRes = await fetch(
+  `/api/profile?email=${encodeURIComponent(session?.user?.email || "")}`
+);
+const profileData = await profileRes.json();
+const savedAnswers = localStorage.getItem("pendingOnboardingAnswers");
 
-    try {
-      const res = await fetch("/api/complete-profile", {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email: session?.user?.email,
-          phone,
-          country,
-          dateOfBirth,
-        }),
-      });
+if (savedAnswers && profileData.user?.user_id) {
+  const pendingAnswers = JSON.parse(savedAnswers);
 
-      const data = await res.json();
+  await fetch("/api/onboarding", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      userId: profileData.user.user_id,
+      ...pendingAnswers,
+    }),
+  });
 
-      if (!res.ok) {
-        setError(data.message || "Unable to save profile.");
-        return;
-      }
+  localStorage.removeItem("pendingOnboardingAnswers");
+}
 
-      router.push("/connect-streaming?socialNewUser=true");
-    } catch {
-      setError("Something went wrong.");
-    } finally {
-      setLoading(false);
-    }
+router.push(
+  `/connect-streaming?socialNewUser=true&userId=${profileData.user.user_id}&email=${encodeURIComponent(profileData.user.email)}`
+);
+  } catch {
+    setError("Something went wrong.");
+  } finally {
+    setLoading(false);
   }
+}
 
   return (
     <main className="register-page">
@@ -103,6 +171,7 @@ export default function ProfileCompletePage() {
                 <label>PHONE *</label>
                 <input
                   type="tel"
+                  required
                   value={phone}
                   onChange={(e) =>
                     setPhone(formatPhoneNumber(e.target.value))
@@ -114,6 +183,8 @@ export default function ProfileCompletePage() {
                 <label>DATE OF BIRTH *</label>
                 <input
                   type="date"
+                  required
+                  max={new Date().toISOString().split("T")[0]}
                   value={dateOfBirth}
                   onChange={(e) =>
                     setDateOfBirth(e.target.value)
@@ -126,6 +197,7 @@ export default function ProfileCompletePage() {
 
                 <select
                   className="register-select"
+                  required
                   value={country}
                   onChange={(e) => setCountry(e.target.value)}
                 >

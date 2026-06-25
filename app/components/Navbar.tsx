@@ -164,6 +164,8 @@ export default function Navbar() {
                   <Image
                     src={navUser?.profile_image || session?.user?.image || ""}
                     alt="Profile"
+                    width={40}
+                    height={40}
                     className="nav-profile-img"
                   />
                 ) : (

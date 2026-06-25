@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 
 const services = [
@@ -42,6 +42,48 @@ function ConnectStreamingContent() {
 
   const isSocialNewUser = searchParams.get("socialNewUser") === "true";
   const email = searchParams.get("email");
+  const userId = searchParams.get("userId");
+
+  useEffect(() => {
+  async function loadConnectedServices() {
+    const storageKey = `connectedServices-${userId || email || "guest"}`;
+
+    if (!userId) {
+      const saved = localStorage.getItem(storageKey);
+
+      if (saved) {
+        setConnectedServices(JSON.parse(saved));
+      }
+
+      return;
+    }
+
+    const res = await fetch(
+      `/api/connect-service/list?userId=${userId}`
+    );
+
+    const data = await res.json();
+
+    if (data.services?.length) {
+      setConnectedServices(data.services);
+
+      localStorage.setItem(
+        storageKey,
+        JSON.stringify(data.services)
+      );
+
+      return;
+    }
+
+    const saved = localStorage.getItem(storageKey);
+
+    if (saved) {
+      setConnectedServices(JSON.parse(saved));
+    }
+  }
+
+  loadConnectedServices();
+}, [userId, email]);
 
   function toggleService(service: string) {
     setConnectedServices((current) =>
@@ -52,26 +94,44 @@ function ConnectStreamingContent() {
   }
 
   function buildNextUrl() {
-    const query = new URLSearchParams();
+  const query = new URLSearchParams();
 
-    if (email) query.set("email", email);
-    if (isSocialNewUser) query.set("socialNewUser", "true");
+  if (email) query.set("email", email);
+  if (isSocialNewUser) query.set("socialNewUser", "true");
+  if (userId) query.set("userId", userId);
 
-    const queryString = query.toString();
+  const queryString = query.toString();
 
-    return queryString
-      ? `/onboarding-complete?${queryString}`
-      : "/onboarding-complete";
+  return queryString
+    ? `/onboarding-complete?${queryString}`
+    : "/onboarding-complete";
+}
+
+async function continueNext() {
+  console.log("USER ID:", userId);
+  console.log("CONNECTED SERVICES:", connectedServices);
+
+  if (userId) {
+    for (const service of connectedServices) {
+      console.log("Saving service:", service);
+
+      const res = await fetch("/api/connect-service", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: Number(userId),
+          service,
+        }),
+      });
+
+      console.log("Save result:", res.status);
+    }
   }
 
-  function continueNext() {
-    localStorage.setItem(
-      "connectedServices",
-      JSON.stringify(connectedServices)
-    );
-
-    router.push(buildNextUrl());
-  }
+  router.push(buildNextUrl());
+}
 
   function skipConnect() {
     router.push(buildNextUrl());

@@ -59,7 +59,7 @@ WHERE email = ?
 );
 
 const [serviceRows] = await pool.execute<RowDataPacket[]>(
-  `SELECT service_name FROM user_streaming_services WHERE user_id = ?`,
+  `SELECT service_name FROM user_connected_services WHERE user_id = ?`,
   [user.user_id]
 );
 
