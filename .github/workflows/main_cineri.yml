@@ -31,12 +31,18 @@ jobs:
         with:
           node-version: "22.x"
 
-      - name: npm install and build
+            - name: npm install and build
         run: |
           rm -rf .next
           rm -rf node_modules
           npm install
           npm run build
+
+      - name: Prepare standalone output
+        run: |
+          mkdir -p .next/standalone/.next
+          cp -r .next/static .next/standalone/.next/static
+          cp -r public .next/standalone/public
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
