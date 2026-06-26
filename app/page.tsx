@@ -1,32 +1,19 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSession } from "next-auth/react";
-
-type Film = {
-  title: string;
-  year: string;
-  genre: string;
-  rating: string;
-  image: string;
-  // colors: [string, string, string];
-  progress: number;
-  isNew: boolean;
-  channels: {
-  name: string;
-  logo: string;
-}[];
-};
+import { useEffect, useMemo, useState } from 'react';
+import { useSession } from 'next-auth/react';
+import Link from 'next/link';
 
 type DbMovie = {
   movie_id: number;
   title: string;
+  description?: string | null;
   release_year: number;
   poster_url: string | null;
   genre: string | null;
-  rating?: string;
-  recommendation_score?: string;
-  trend_score?: string;
+  mood?: string | null;
+  content_type?: string | null;
+  duration?: string | null;
   platforms: string | null;
 };
 
@@ -37,523 +24,352 @@ type SessionUser = {
   image?: string | null;
 };
 
-// hero slides
-const heroSlides = [
+type CardMovie = {
+  movie_id: number;
+  title: string;
+  description: string;
+  year: number;
+  poster: string;
+  genre: string;
+  mood: string;
+  contentType: string;
+  duration: string;
+  platforms: string[];
+  saved?: boolean;
+};
+
+const moodChoices = [
+  { label: 'Relaxing', text: 'Feel Good', icon: '☼', tone: 'blue' },
+  { label: 'Romantic', text: '', icon: '♡', tone: 'red' },
+  { label: 'Mind-Bending', text: '', icon: '⌁', tone: 'purple' },
+  { label: 'Adventurous', text: 'Thrilling', icon: '♨', tone: 'yellow' },
+  { label: 'Spooky', text: '', icon: '☠', tone: 'green' },
+  { label: 'Surprise me', text: '', icon: '✧', tone: 'gray' },
+];
+
+const fallbackMovies: CardMovie[] = [
   {
-    title: <>Minions &<br /> <em>Monsters</em></>,
-    desc: "The Minions become Hollywood stars, accidentally unleash monsters on the world, and must team up to save the planet from the chaos they created.",
+    movie_id: 1,
+    title: 'Oppenheimer',
+    description:
+      'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.',
+    year: 2023,
+    poster: '/recommended/r1.webp',
+    genre: 'Thrilling',
+    mood: 'Thrilling',
+    contentType: 'Movie',
+    duration: '3h',
+    platforms: ['Prime'],
   },
   {
-    title: <>The<br /><em>Backrooms</em></>,
-    desc: "A strange doorway appears in the basement of a furniture showroom.",
+    movie_id: 2,
+    title: 'Severance',
+    description:
+      'A thriller series where employees undergo a procedure to separate their work and personal memories.',
+    year: 2022,
+    poster: '/recommended/r2.webp',
+    genre: 'Sci-Fi',
+    mood: 'Mind-bending',
+    contentType: 'TV Series',
+    duration: '2 seasons',
+    platforms: ['Apple TV+'],
+    saved: true,
   },
   {
-    title: <>Star Wars<br /><em>The Mandalorian and Grogu</em></>,
-    desc: "The evil Empire has fallen, and Imperial warlords remain scattered throughout the galaxy. As the fledgling New Republic works to protect everything the Rebellion fought for, they have enlisted the help of legendary Mandalorian bounty hunter Din Djarin (Pedro Pascal) and his young apprentice Grogu. Directed by Jon Favreau, “The Mandalorian and Grogu” also stars Sigourney Weaver and is produced by Jon Favreau, Kathleen Kennedy, Dave Filoni, and Ian Bryce, with music composed by Ludwig Göransson.",
+    movie_id: 3,
+    title: 'Dune',
+    description:
+      "A noble family becomes embroiled in a war for control over the galaxy's most valuable asset.",
+    year: 2021,
+    poster: '/recommended/r3.webp',
+    genre: 'Thrilling',
+    mood: 'Thrilling',
+    contentType: 'Movie',
+    duration: '3h',
+    platforms: ['Disney+'],
+  },
+  {
+    movie_id: 4,
+    title: 'The Power of the Dog',
+    description:
+      "A domineering rancher torments his brother's new wife until unexpected connections shift everything.",
+    year: 2021,
+    poster: '/recommended/r4.webp',
+    genre: 'Drama',
+    mood: 'Feel Good',
+    contentType: 'Movie',
+    duration: '2h 12m',
+    platforms: ['Netflix'],
+  },
+  {
+    movie_id: 5,
+    title: 'The Bear',
+    description:
+      'A young chef from fine dining returns home to run his family sandwich shop.',
+    year: 2022,
+    poster: '/recommended/r5.webp',
+    genre: 'Drama',
+    mood: 'Feel Good',
+    contentType: 'TV Series',
+    duration: '3 seasons',
+    platforms: ['Crave'],
+  },
+  {
+    movie_id: 6,
+    title: 'Everything Everywhere All At Once',
+    description:
+      'An aging immigrant is swept into an adventure where she alone can save existence.',
+    year: 2022,
+    poster: '/recommended/r6.webp',
+    genre: 'Adventure',
+    mood: 'Mind-bending',
+    contentType: 'Movie',
+    duration: '2h 25m',
+    platforms: ['Prime'],
+    saved: true,
   },
 ];
 
-//options for the mood and genre filters, as well as the modal choices
-// const moods = ['All', '🔥 Intense', '🌙 Melancholic', '✨ Euphoric', '💫 Romantic', '🌿 Tranquil', '👁 Unsettling', '🏆 Nostalgic'];
-// const genres = ['All', 'Drama', 'Sci-Fi', 'Thriller', 'Horror', 'Romance', 'Noir', 'Fantasy', '1970s', '1980s', '1990s', '2000s'];
-const modalMoods = ['🌙 Melancholic', '🔥 Intense', '✨ Euphoric', '🌿 Tranquil', '👁 Unsettling', '💫 Romantic'];
-const modalGenres = ['Drama', 'Sci-Fi', 'Noir', 'Horror', 'Romance', 'Thriller', 'Fantasy', 'Action', 'Comedy'];
+function mapDbMovie(movie: DbMovie, fallbackPoster: string, index: number): CardMovie {
+  const platforms = movie.platforms
+    ? movie.platforms
+        .split(',')
+        .map((item) => item.split('|')[0].trim())
+        .filter(Boolean)
+    : ['Prime'];
 
-
-function Art({ colors }: { colors: [string, string, string] }) {
-  return <div className="art" style={{ background: `linear-gradient(135deg, ${colors[0]}, ${colors[1]}, ${colors[2]})` }} />;
-}
-
-//style for each movie card, with the poster art, title, genre/year meta, and rating/new badge for the poster cards, and progress/play overlay for the wide cards
-function PosterCard({ film }: { film: Film }) {
-  return (
-    <article className="pcard">
-      <div className="pcard-thumb">
-        <img src={film.image} alt={film.title} className="poster-image"/>        
-        <div className="pcard-shine" />
-        <div className="pcard-bottom">
-          <span className="pcard-stars">★ {film.rating}</span>
-          {film.isNew && <span className="pcard-new">NEW</span>}
-        </div>
-      </div>
-      <p className="pcard-title">{film.title}</p>
-      <p className="pcard-meta">{film.genre} · {film.year}</p>
-      {/* <p className="available-on">Available on: {film.channels.join(', ')}</p> */}
-      <div className="platform-list">
-        <p className="available-on">Available on:</p>
-      {film.channels.map((channel) => (
-        <img
-          key={channel.name}
-          src={channel.logo}
-          alt={channel.name}
-          title={channel.name}
-          className="platform-logo"
-        />
-      ))}
-    </div>
-    </article>
-  );
-}
-
-//helper
-function mapMovie(movie: DbMovie, fallbackImage: string): Film {
   return {
+    movie_id: movie.movie_id,
     title: movie.title,
-    genre: movie.genre || "Unknown",
-    year: String(movie.release_year),
-    channels: movie.platforms
-      ? movie.platforms.split(",").map((item: string) => {
-          const [name, logo] = item.split("|");
-          return {
-            name,
-            logo: logo || "/platforms/netflix.webp",
-          };
-        })
-      : [],
-    rating: movie.recommendation_score
-  ? Number(movie.recommendation_score).toFixed(1)
-  : "8.5",
-    image: movie.poster_url || fallbackImage,
-    progress: 0.4,
-    isNew: Number(movie.release_year) >= 2025,
+    description:
+      movie.description ||
+      'A personalized pick selected from your preferences, watch history, and streaming subscriptions.',
+    year: movie.release_year,
+    poster: movie.poster_url || fallbackPoster,
+    genre: movie.genre || 'Thrilling',
+    mood: movie.mood || movie.genre || ['Thrilling', 'Mind-bending', 'Feel Good'][index % 3],
+    contentType: movie.content_type || 'Movie',
+    duration: movie.duration || (movie.content_type === 'TV Series' ? '2 seasons' : '2h 15m'),
+    platforms,
+    saved: index === 1 || index === 5,
   };
 }
 
-//this is for the watch list cards
-function WideCard({ film }: { film: Film }) {
-  const pct = Math.round(film.progress * 100);
+function MovieCard({ movie }: { movie: CardMovie }) {
+  const platform = movie.platforms[0] || 'Prime';
+
   return (
-    <article className="wcard">
-      <div className="wcard-thumb">
-        <img src={film.image} alt={film.title} className="poster-image"/> 
-        <div className="wcard-overlay" />
-        <div className="wcard-play">▶</div>
-        <div className="wcard-progress"><div className="wcard-progress-fill" style={{ width: `${pct}%` }} /></div>
+    <article className="home-movie-card">
+      <div className="home-movie-poster">
+        <img src={movie.poster} alt={movie.title} />
+        <span className="home-movie-badge">{movie.mood}</span>
       </div>
-      <p className="wcard-title">{film.title}</p>
-      <p className="wcard-meta">{film.genre} · {pct}% watched</p>
-      {/* <p className="available-on">Available on: {film.channels.join(', ')}</p> */}
-      <div className="platform-list">
-        <p className="available-on">Available on:</p>
-      {film.channels.map((channel) => (
-        <img
-          key={channel.name}
-          src={channel.logo}
-          alt={channel.name}
-          title={channel.name}
-          className="platform-logo"
-        />
-      ))}
-    </div>
+
+      <div className="home-movie-body">
+        <p className="home-movie-meta">
+          <span className="home-dot" /> {platform} · {movie.contentType} · {movie.duration}
+        </p>
+
+        <h3>{movie.title}</h3>
+        <p className="home-movie-desc">{movie.description}</p>
+
+        <div className="home-movie-actions">
+          <Link href={`/movie/${movie.movie_id}`} className="home-show-btn">
+            ⊕ Show details
+          </Link>
+
+          <button className={movie.saved ? 'home-save-btn saved' : 'home-save-btn'}>
+            {movie.saved ? '▣ Saved' : '▢ Watchlist'}
+          </button>
+        </div>
+      </div>
     </article>
   );
 }
 
-
-function Row({
+function WatchlistBox({
   title,
-  children,
+  count,
+  progressClass,
 }: {
   title: string;
-  children: React.ReactNode;
+  count: string;
+  progressClass: string;
 }) {
-
-  const scrollLeft = (id: string) => {
-    const row = document.getElementById(id);
-    row?.scrollBy({ left: -600, behavior: "smooth" });
-  };
-
-  const scrollRight = (id: string) => {
-    const row = document.getElementById(id);
-    row?.scrollBy({ left: 600, behavior: "smooth" });
-  };
-
-  const rowId = title.replace(/\s+/g, "-");
-
   return (
-    <section className="content-section" style={{marginTop:'40px'}}>
-      <div className="row-header">
-        <h2 className="row-title">{title}</h2>
-        <span className="row-see-all">See all</span>
+    <div className="home-watch-box">
+      <h4>{title}</h4>
+      <p>{count}</p>
+
+      <div className="home-progress-line">
+        <span className={progressClass} />
       </div>
 
-      <div className="row-wrapper">
-
-        <button
-          className="row-arrow row-arrow-left"
-          onClick={() => scrollLeft(rowId)}
-        >
-          ‹
-        </button>
-
-        <div
-          id={rowId}
-          className="cards-scroll"
-        >
-          {children}
-        </div>
-
-        <button
-          className="row-arrow row-arrow-right"
-          onClick={() => scrollRight(rowId)}
-        >
-          ›
-        </button>
-
+      <div className="home-watch-row">
+        <span>7 watched</span>
+        <span>{progressClass.replace('progress-', '')}%</span>
       </div>
-    </section>
+
+      <button>Show watchlist</button>
+    </div>
   );
 }
 
 export default function Home() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
-  console.log("SESSION USER:", user);
-  const [activeHero, setActiveHero] = useState(0);
-  const slide = heroSlides[activeHero];
-  const [activeMood, setActiveMood] = useState('All');
-  const [activeGenre, setActiveGenre] = useState('All');
-  const [modalOpen, setModalOpen] = useState(false);
-  const [step, setStep] = useState(1);
-  const [selectedMood, setSelectedMood] = useState('🌙 Melancholic');
-  const [era, setEra] = useState('1970s');
-  const [duration, setDuration] = useState('Feature film');
-  const [selectedGenres, setSelectedGenres] = useState(['Drama', 'Noir']);
-  const [generated, setGenerated] = useState(false);
-  const [generating, setGenerating] = useState(false);
-  //popup asking mood question
-const [feelingPopupOpen, setFeelingPopupOpen] = useState(true);
-const [todayFeeling, setTodayFeeling] = useState('');
 
-const [recommendedMovies, setRecommendedMovies] = useState<DbMovie[]>([]);
-const [trendingMovies, setTrendingMovies] = useState<DbMovie[]>([]);
-const [watchlistMovies, setWatchlistMovies] = useState<DbMovie[]>([]);
+  const [recommendedMovies, setRecommendedMovies] = useState<CardMovie[]>(fallbackMovies);
+  const [moreLikeThis, setMoreLikeThis] = useState<CardMovie[]>(fallbackMovies.slice(0, 3));
+  const [selectedMood, setSelectedMood] = useState('');
 
+  useEffect(() => {
+    async function loadHomeMovies() {
+      try {
+        const params = new URLSearchParams();
 
+        if (user?.user_id) params.set('userId', String(user.user_id));
+        if (selectedMood) params.set('mood', selectedMood);
 
-const [moods, setMoods] = useState<string[]>(["All"]);
-const [genres, setGenres] = useState<string[]>(["All"]);
+        const res = await fetch(`/api/home?${params.toString()}`);
+        if (!res.ok) return;
 
-const yearFilters = [
-  "All",
-  "1970s",
-  "1980s",
-  "1990s",
-  "2000s",
-  "2010s",
-  "2020s",
-];
+        const data = await res.json();
 
-const [activeYear, setActiveYear] = useState("All");
-const [modalMoods, setModalMoods] = useState<string[]>([]);
-useEffect(() => {
-  async function loadHomeMovies() {
-    const params = new URLSearchParams({
-      mood: activeMood,
-      genre: activeGenre,
-      year: activeYear,
-    });
+        const recommended = (data.recommended || []).map((movie: DbMovie, index: number) =>
+          mapDbMovie(movie, `/recommended/r${(index % 8) + 1}.webp`, index)
+        );
 
-    if (user?.user_id) {
-      params.set("userId", String(user.user_id));
+        const trending = (data.trending || []).map((movie: DbMovie, index: number) =>
+          mapDbMovie(movie, `/trending/t${(index % 8) + 1}.webp`, index)
+        );
+
+        if (recommended.length) setRecommendedMovies(recommended.slice(0, 6));
+        if (trending.length) setMoreLikeThis(trending.slice(0, 3));
+      } catch {
+        // Keep fallback content when the API is not ready.
+      }
     }
 
-    const res = await fetch(`/api/home?${params.toString()}`);
-    const data = await res.json();
+    loadHomeMovies();
+  }, [user?.user_id, selectedMood]);
 
-    setRecommendedMovies(data.recommended || []);
-    setTrendingMovies(data.trending || []);
-    setWatchlistMovies(data.watchlist || []);
+  const filteredMovies = useMemo(() => {
+    if (!selectedMood || selectedMood === 'Surprise me') return recommendedMovies;
+
+    return recommendedMovies.filter(
+      (movie) =>
+        movie.mood.toLowerCase().includes(selectedMood.toLowerCase()) ||
+        movie.genre.toLowerCase().includes(selectedMood.toLowerCase())
+    );
+  }, [recommendedMovies, selectedMood]);
+
+  function handleRecommendationsClick() {
+    document
+      .getElementById('recommended-section')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }
-
-  loadHomeMovies();
-}, [activeMood, activeGenre, activeYear, user?.user_id]);
-
-useEffect(() => {
-  async function loadMoods() {
-  const moodRes = await fetch("/api/moods");
-  const moodData = await moodRes.json();
-
-  const moodNames = moodData.map((m: { mood_name: string }) => m.mood_name);
-
-  setMoods(["All", ...moodNames]);
-  setModalMoods(moodNames);
-}
-
-  async function loadGenres() {
-    const genreRes = await fetch("/api/genres");
-    const genreData = await genreRes.json();
-
-    setGenres([
-      "All",
-      ...genreData.map((g: { genre_name: string }) => g.genre_name),
-    ]);
-  }
-
-  loadMoods();
-  loadGenres();
-}, []);
-
-
-  function openModal() {
-    setModalOpen(true);
-    setStep(1);
-    setGenerated(false);
-    setGenerating(false);
-  }
-
-  function toggleGenre(genre: string) {
-    setSelectedGenres((current) => {
-      if (current.includes(genre)) return current.filter((item) => item !== genre);
-      if (current.length >= 3) return current;
-      return [...current, genre];
-    });
-  }
-
-  function generateFilm() {
-    setGenerating(true);
-    setGenerated(false);
-    setTimeout(() => {
-      setGenerating(false);
-      setGenerated(true);
-    }, 1800);
-  }
-
-  function matchesYear(movieYear: number, selectedYear: string) {
-  if (selectedYear === "All") return true;
-
-  const startYear = Number(selectedYear.replace("s", ""));
-  return movieYear >= startYear && movieYear <= startYear + 9;
-}
-
-const filteredRecommendedMovies = recommendedMovies.filter((movie) => {
-  const genreMatch =
-    activeGenre === "All" || movie.genre === activeGenre;
-
-  const yearMatch = matchesYear(movie.release_year, activeYear);
-
-  return genreMatch && yearMatch;
-});
-
-const filteredTrendingMovies = trendingMovies.filter((movie) => {
-  const genreMatch =
-    activeGenre === "All" || movie.genre === activeGenre;
-
-  const yearMatch = matchesYear(movie.release_year, activeYear);
-
-  return genreMatch && yearMatch;
-});
 
   return (
-    <>
+    <main className="home-page">
+      <section className="home-mood-hero">
+        <div className="home-hero-content">
+          <p className="home-eyebrow">Mood-based discovery</p>
 
-      <header className="hero">
-  <div className="hero-bg" />
+          <h1>
+            Find what you Love.
+            <br />
+            <span>Choose how you Feel</span>
+          </h1>
 
-  <div className="hero-poster-area">
-    <div className={`hero-slide hero-slide-${activeHero}`}>
-      <div className="hero-poster-circle" />
-    </div>
-    <div className="hero-poster-gradient" />
-  </div>
+          <h2>What kind of mood are you into tonight?</h2>
 
-  <div className="hero-content">
-    <div className="hero-badge">★ Made for you</div>
+          <div className="home-mood-grid">
+            {moodChoices.map((mood) => (
+              <button
+                key={mood.label}
+                className={
+                  selectedMood === mood.label
+                    ? `home-mood-pill ${mood.tone} active`
+                    : `home-mood-pill ${mood.tone}`
+                }
+                onClick={() => setSelectedMood(mood.label)}
+              >
+                <span>{mood.icon}</span>
+                {mood.label} {mood.text && <b>{mood.text}</b>}
+              </button>
+            ))}
+          </div>
 
-    <h1 className="hero-title">{slide.title}</h1>
+          <p className="home-tiny-note">Select at least one mood to get personalized picks</p>
 
-    <div className="hero-meta">
-      <span className="hero-match">97% Match</span>
-      <span>2024</span>
-      <span className="hero-cert">R</span>
-      <span>2h 18m</span>
-      <span>Noir · Drama</span>
-    </div>
-
-    <p className="hero-desc">{slide.desc}</p>
-
-    <div className="hero-actions">
-      <button className="btn-play">▶ Play</button>
-      <button className="btn-info">ⓘ More Info</button>
-    </div>
-  </div>
-
-  <button
-    className="hero-arrow hero-arrow-left"
-    onClick={() => setActiveHero(activeHero === 0 ? heroSlides.length - 1 : activeHero - 1)}
-  >
-    ‹
-  </button>
-
-  <button
-    className="hero-arrow hero-arrow-right"
-    onClick={() => setActiveHero(activeHero === heroSlides.length - 1 ? 0 : activeHero + 1)}
-  >
-    ›
-  </button>
-
-  <div className="hero-dots">
-    {heroSlides.map((_, index) => (
-      <button
-        key={index}
-        className={`hero-dot-btn ${activeHero === index ? "active" : ""}`}
-        onClick={() => setActiveHero(index)}
-      />
-    ))}
-  </div>
-</header>
-
-<section className="hero-feature-strip">
-  <div className="hero-feature">
-    <span className="hero-feature-icon">👤</span>
-    <div>
-      <h4>Personalized</h4>
-      <p>Just for you.</p>
-    </div>
-  </div>
-
-  <div className="hero-feature">
-    <span className="hero-feature-icon">✨</span>
-    <div>
-      <h4>Smart Discovery</h4>
-      <p>Find what fits your mood.</p>
-    </div>
-  </div>
-
-  <div className="hero-feature">
-    <span className="hero-feature-icon">▶</span>
-    <div>
-      <h4>Cinematic Experience</h4>
-      <p>Immersive and beautiful.</p>
-    </div>
-  </div>
-
-  <div className="hero-feature">
-    <span className="hero-feature-icon">♡</span>
-    <div>
-      <h4>Your World of Stories</h4>
-      <p>One app. Infinite stories.</p>
-    </div>
-  </div>
-
-  <div className="hero-feature">
-    <span className="hero-feature-icon">🛡</span>
-    <div>
-      <h4>Trusted & Secure</h4>
-      <p>Safe. Reliable. Yours.</p>
-    </div>
-  </div>
-</section>
-
-      <main>
-        {/* <button className="personalize-strip" onClick={openModal}>
-          <div className="ps-left"><div className="ps-icon">🎬</div><div><p className="ps-title">Create your personalized film</p><p className="ps-sub">Choose your mood, era, genre & duration.</p></div></div>
-          <span className="btn-create">Start Creating →</span>
-        </button> */}
-
-        <section className="mood-section" style={{marginTop: '50px'}}><p className="mood-label">Filter by mood</p><div className="mood-chips">{moods.map((mood) => <button key={mood} className={`mood-chip ${activeMood === mood ? 'active' : ''}`} onClick={() => setActiveMood(mood)}>{mood}</button>)}</div></section>
-        <section className="mood-section"><p className="mood-label">Filter by Genre</p><div className="mood-chips">{genres.map((genre) => (<button key={genre} className={`gtab ${activeGenre === genre ? 'active' : ''}`} onClick={() => setActiveGenre(genre)}>{genre}</button>))}</div></section>
-        <section className="mood-section"><p className="mood-label">Filter by Year</p><div className="mood-chips">{yearFilters.map((year) => (<button key={year} className={`gtab ${activeYear === year ? "active" : ""}`} onClick={() => setActiveYear(year)}>{year}</button>))}</div></section>
-       
-       
-
-       <Row title="Wish List" >
-  {watchlistMovies.map((movie, index) => (
-    <WideCard
-      key={movie.movie_id}
-      film={mapMovie(movie, `/watchlist/w${(index % 5) + 1}.webp`)}
-    />
-  ))}
-</Row>
-        {/* <Row title="Recommended for you">{recommendedFilms.map((film) => <PosterCard key={film.title} film={film} />)}</Row> */}
-       <Row title="Recommended for you">
-  {filteredRecommendedMovies.map((movie, index) => (
-    <PosterCard
-      key={movie.movie_id}
-      film={mapMovie(movie, `/recommended/r${(index % 8) + 1}.webp`)}
-    />
-  ))}
-</Row>
-       <Row title="Trending this week">
-  {filteredTrendingMovies.map((movie, index) => (
-    <PosterCard
-      key={movie.movie_id}
-      film={mapMovie(movie, `/trending/t${(index % 8) + 1}.webp`)}
-    />
-  ))}
-</Row>
-      </main>
-
-     
-
-      {feelingPopupOpen && (
-  <div className="modal-backdrop open">
-    <div className="modal feeling-modal">
-      <div className="modal-header">
-        <div>
-          <h2 className="modal-title">How are you feeling today?</h2>
-          <p className="modal-subtitle">
-            We’ll personalize your recommendations based on your mood.
-          </p>
+          <button className="home-recommend-btn" onClick={handleRecommendationsClick}>
+            Show my recommendations
+          </button>
+        
+         
         </div>
-        <button
-          className="modal-close"
-          onClick={() => setFeelingPopupOpen(false)}
-        >
-          ✕
-        </button>
-      </div>
+         <button className="home-explore-btn" onClick={handleRecommendationsClick}>
+            Explore all ˅
+          </button>
+      </section>
 
-     <div className="modal-grid" style={{margin: '20px'}}>
-  {modalMoods.map((mood) => (
-    <button
-      key={mood}
-      className={`choice ${todayFeeling === mood ? 'active' : ''}`}
-      onClick={() => setTodayFeeling(mood)}
-    >
-      {mood}
-    </button>
-  ))}
-</div>
+      <section className="home-content-wrap" id="recommended-section">
+        <div className="home-section-head">
+          <div>
+            <p className="home-eyebrow">Personalized recommendations</p>
+            <h2>Recommended for you</h2>
+            <p>Based on your preferences, watch history and streaming subscriptions</p>
+          </div>
 
-<div className="modal-footer" style={{marginTop: '20px'}}>
-  <button
-    className="btn-back"
-    onClick={() => setFeelingPopupOpen(false)}
-  >
-    Maybe Later
-  </button>
-
-  <button
-    className="btn-next"
-    disabled={!todayFeeling}
-    onClick={() => {
-      setActiveMood(todayFeeling);
-      setFeelingPopupOpen(false);
-    }}
-  >
-    Continue →
-  </button>
-</div>
-    </div>
-  </div>
-)}
-
-      {modalOpen && (
-        <div className="modal-backdrop open" onClick={() => setModalOpen(false)}>
-          <div className="modal" onClick={(event) => event.stopPropagation()}>
-            <div className="modal-header"><div><h2 className="modal-title">Create your <span>film</span></h2><p className="modal-subtitle">4 steps to your personalized cinematic experience</p></div><button className="modal-close" onClick={() => setModalOpen(false)}>✕</button></div>
-            <div className="step-labels"><span className={step === 1 ? 'active' : ''}>Mood</span><span className={step === 2 ? 'active' : ''}>Era & Length</span><span className={step === 3 ? 'active' : ''}>Genre</span><span className={step === 4 ? 'active' : ''}>Generate</span></div>
-            <div className="modal-body">
-              {step === 1 && <div className="modal-grid">{modalMoods.map((mood) => <button key={mood} className={`choice ${selectedMood === mood ? 'active' : ''}`} onClick={() => setSelectedMood(mood)}>{mood}</button>)}</div>}
-              {step === 2 && <div className="modal-grid"><button className="choice active" onClick={() => setEra('1970s')}>1970s</button><button className="choice" onClick={() => setEra('1980s')}>1980s</button><button className="choice" onClick={() => setEra('1990s')}>1990s</button><button className="choice" onClick={() => setDuration('Short film')}>Short film</button><button className="choice active" onClick={() => setDuration('Feature film')}>Feature film</button><button className="choice" onClick={() => setDuration('Mini-series')}>Mini-series</button></div>}
-              {step === 3 && <div className="pill-group">{modalGenres.map((genre) => <button key={genre} className={`mpill ${selectedGenres.includes(genre) ? 'active' : ''}`} onClick={() => toggleGenre(genre)}>{genre}</button>)}</div>}
-              {step === 4 && <><div className="summary-bar">{[selectedMood, era, duration, ...selectedGenres].map((item) => <span className="summary-tag" key={item}>{item}</span>)}</div>{generating && <div className="generating active"><div className="gen-spinner" /><p>Crafting your film...</p></div>}{generated && <div className="result-card"><div className="result-art"><div className="result-orb" /></div><div className="result-info"><h3>The Hollow Between Hours</h3><p>A rain-slicked noir mystery made from your selections.</p><button className="btn-watch">▶ Watch Now</button></div></div>}</>}
-            </div>
-            <div className="modal-footer"><button className="btn-back" disabled={step === 1} onClick={() => setStep(step - 1)}>← Back</button><button className="btn-next" onClick={() => step < 4 ? setStep(step + 1) : generateFilm()}>{step < 4 ? 'Continue →' : '✨ Generate Film'}</button></div>
+          <div className="home-filters">
+            <button>Streaming Service ˅</button>
+            <button>Duration ˅</button>
+            <button>Mood ˅</button>
+            <button>Genre ˅</button>
           </div>
         </div>
-      )}
-    </>
+
+        <div className="home-movie-grid">
+          {filteredMovies.slice(0, 6).map((movie) => (
+            <MovieCard key={movie.movie_id} movie={movie} />
+          ))}
+        </div>
+
+        <div className="home-library-head">
+          <div>
+            <p className="home-eyebrow">Your library</p>
+            <h2>My watchlists</h2>
+          </div>
+
+          <button>Manage ›</button>
+        </div>
+
+        <div className="home-watch-grid">
+          <WatchlistBox title="Date Night" count="16 titles" progressClass="progress-42" />
+          <WatchlistBox title="My Faves" count="16 titles" progressClass="progress-42" />
+          <WatchlistBox title="Weekend Binge" count="24 titles" progressClass="progress-20" />
+
+          <div className="home-create-list">
+            <span>＋</span>
+            <p>Create new list</p>
+          </div>
+        </div>
+
+        <section className="home-more-section">
+          <p className="home-eyebrow">More like this</p>
+
+          <h2>
+            Because you liked <span>Oppenheimer</span>
+          </h2>
+
+          <div className="home-movie-grid three">
+            {moreLikeThis.map((movie) => (
+              <MovieCard key={movie.movie_id} movie={movie} />
+            ))}
+          </div>
+        </section>
+      </section>
+    </main>
   );
 }
