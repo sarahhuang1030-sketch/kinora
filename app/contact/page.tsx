@@ -81,18 +81,21 @@ export default function ContactPage() {
 
             <form className="contact-form" onSubmit={handleSubmit}>
               <input
+                    className="form-input"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
                     placeholder="Your Name"
                     />
 
                     <input
+                    className="form-input"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Your Email"
                     />
 
                     <textarea
+                    className="form-input"
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     placeholder="How can we help?"
