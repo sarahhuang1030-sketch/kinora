@@ -31,7 +31,7 @@ jobs:
         with:
           node-version: "22.x"
 
-            - name: npm install and build
+      - name: npm install and build
         run: |
           rm -rf .next
           rm -rf node_modules
