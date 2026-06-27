@@ -17,6 +17,12 @@ type DbMovie = {
   platforms: string | null;
 };
 
+type DbMood = {
+  mood_id: number;
+  mood_name: string;
+  icon_url: string | null;
+};
+
 type SessionUser = {
   user_id?: number;
   email?: string | null;
@@ -38,14 +44,17 @@ type CardMovie = {
   saved?: boolean;
 };
 
-const moodChoices = [
-  { label: 'Relaxing', text: 'Feel Good', icon: '☼', tone: 'blue' },
-  { label: 'Romantic', text: '', icon: '♡', tone: 'red' },
-  { label: 'Mind-Bending', text: '', icon: '⌁', tone: 'purple' },
-  { label: 'Adventurous', text: 'Thrilling', icon: '♨', tone: 'yellow' },
-  { label: 'Spooky', text: '', icon: '☠', tone: 'green' },
-  { label: 'Surprise me', text: '', icon: '✧', tone: 'gray' },
-];
+const moodIcons: Record<string, string> = {
+  Relaxed: '🌙',
+  Adventurous: '🧭',
+  Suspenseful: '🔥',
+  'Feel Good': '😊',
+  Dark: '🖤',
+  Heartwarming: '❤️',
+  'Thought Provoking': '💡',
+  Intense: '⚡',
+  Emotional: '🥹',
+};
 
 const fallbackMovies: CardMovie[] = [
   {
@@ -222,6 +231,23 @@ export default function Home() {
   const [recommendedMovies, setRecommendedMovies] = useState<CardMovie[]>(fallbackMovies);
   const [moreLikeThis, setMoreLikeThis] = useState<CardMovie[]>(fallbackMovies.slice(0, 3));
   const [selectedMood, setSelectedMood] = useState('');
+  const [moods, setMoods] = useState<DbMood[]>([]);
+
+  useEffect(() => {
+    async function loadMoods() {
+      try {
+        const res = await fetch('/api/moods');
+        if (!res.ok) return;
+
+        const data = await res.json();
+        setMoods(data);
+      } catch {
+        setMoods([]);
+      }
+    }
+
+    loadMoods();
+  }, []);
 
   useEffect(() => {
     async function loadHomeMovies() {
@@ -255,7 +281,7 @@ export default function Home() {
   }, [user?.user_id, selectedMood]);
 
   const filteredMovies = useMemo(() => {
-    if (!selectedMood || selectedMood === 'Surprise me') return recommendedMovies;
+    if (!selectedMood) return recommendedMovies;
 
     return recommendedMovies.filter(
       (movie) =>
@@ -265,6 +291,17 @@ export default function Home() {
   }, [recommendedMovies, selectedMood]);
 
   function handleRecommendationsClick() {
+    document
+      .getElementById('recommended-section')
+      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+
+  function handleSurpriseMe() {
+    if (!moods.length) return;
+
+    const randomMood = moods[Math.floor(Math.random() * moods.length)];
+    setSelectedMood(randomMood.mood_name);
+
     document
       .getElementById('recommended-section')
       ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -285,33 +322,51 @@ export default function Home() {
           <h2>What kind of mood are you into tonight?</h2>
 
           <div className="home-mood-grid">
-            {moodChoices.map((mood) => (
+            {moods.map((mood) => (
               <button
-                key={mood.label}
-                className={
-                  selectedMood === mood.label
-                    ? `home-mood-pill ${mood.tone} active`
-                    : `home-mood-pill ${mood.tone}`
-                }
-                onClick={() => setSelectedMood(mood.label)}
-              >
-                <span>{mood.icon}</span>
-                {mood.label} {mood.text && <b>{mood.text}</b>}
-              </button>
+                  key={mood.mood_id}
+                  className={
+                    selectedMood === mood.mood_name
+                      ? 'home-mood-pill active'
+                      : 'home-mood-pill'
+                  }
+                  onClick={() => setSelectedMood(mood.mood_name)}
+                >
+                  <span className="home-mood-icon"> {mood.icon_url && (
+                    <img src={mood.icon_url} alt="" />
+                  )}</span>
+
+                  <span className="home-mood-name">
+                    {mood.mood_name}
+                  </span>
+                </button>
             ))}
+
+            <button className="home-mood-pill surprise" onClick={handleSurpriseMe}>
+              <span>✨</span>
+              Surprise Me
+            </button>
           </div>
+
+          {selectedMood && (
+            <p className="home-selected-mood">
+              Tonight&apos;s mood:{' '}
+              <strong>
+                {moodIcons[selectedMood] || '🎬'} {selectedMood}
+              </strong>
+            </p>
+          )}
 
           <p className="home-tiny-note">Select at least one mood to get personalized picks</p>
 
           <button className="home-recommend-btn" onClick={handleRecommendationsClick}>
             Show my recommendations
           </button>
-        
-         
         </div>
-         <button className="home-explore-btn" onClick={handleRecommendationsClick}>
-            Explore all ˅
-          </button>
+
+        <button className="home-explore-btn" onClick={handleRecommendationsClick}>
+          Explore all ˅
+        </button>
       </section>
 
       <section className="home-content-wrap" id="recommended-section">
