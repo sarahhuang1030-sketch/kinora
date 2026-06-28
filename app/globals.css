@@ -3126,3 +3126,45 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   flex: 1;
   text-align: left;
 }
+
+/* watchlist */
+.home-watch-empty {
+  grid-column: 1 / -1;
+  min-height: 190px;
+  padding: 32px 38px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 24px;
+  border: 1px dashed rgba(255,255,255,0.16);
+  border-radius: 22px;
+  background: rgba(255,255,255,0.03);
+}
+
+.home-watch-empty h3 {
+  margin: 0 0 10px;
+  font-size: 24px;
+  color: #fff;
+}
+
+.home-watch-empty p {
+  margin: 0;
+  max-width: 480px;
+  color: #9fb0c4;
+  line-height: 1.5;
+}
+
+.home-watch-login-btn {
+  min-width: 150px;
+  height: 46px;
+  border-radius: 999px;
+  background: #ff5b52;
+  color: white;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+  text-decoration: none;
+}

@@ -14,6 +14,10 @@ type UserRow = RowDataPacket & {
   password: string;
 };
 
+type AuthUser = {
+  user_id?: number;
+};
+
 const handler = NextAuth({
   providers: [
 
@@ -51,6 +55,7 @@ const handler = NextAuth({
 
     return {
       id: String(user.user_id),
+      user_id: user.user_id,
       name: `${user.first_name} ${user.last_name}`,
       email: user.email,
     };
@@ -73,67 +78,22 @@ const handler = NextAuth({
   },
 
   callbacks: {
-    async signIn({ user, account }) {
-      if (!user.email) return false;
+  async jwt({ token, user }) {
+    if (user) {
+      token.user_id = (user as AuthUser).user_id;
+    }
 
-      const email = user.email;
-      const fullName = user.name || "";
-      const firstName = fullName.split(" ")[0] || "";
-      const lastName = fullName.split(" ").slice(1).join(" ") || "";
-      const baseUsername = email.split("@")[0];
-
-      try {
-        const [existingUsers] = await pool.query<UserRow[]>(
-          "SELECT user_id FROM users WHERE email = ?",
-          [email]
-        );
-
-        if (existingUsers.length > 0 && user.image) {
-          await pool.query(
-            "UPDATE users SET profile_image = ? WHERE email = ? AND (profile_image IS NULL OR profile_image = '')",
-            [user.image, email]
-          );
-        }
-
-        if (existingUsers.length === 0) {
-          let username = baseUsername;
-
-          const [sameUsername] = await pool.query<UserRow[]>(
-            "SELECT user_id FROM users WHERE username = ?",
-            [username]
-          );
-
-          if (sameUsername.length > 0) {
-            username = `${baseUsername}_${Date.now()}`;
-          }
-
-          await pool.query(
-                `INSERT INTO users
-                (first_name, last_name, username, email, phone, password, profile_image)
-                VALUES (?, ?, ?, ?, ?, ?, ?)`,
-                [
-                  firstName,
-                  lastName,
-                  username,
-                  email,
-                  "",
-                  `${account?.provider}-login`,
-                  user.image || "",
-                ]
-              );
-        }
-
-        return true;
-      } catch (error) {
-        console.error("Social login DB error:", error);
-        return false;
-      }
-    },
-
-    async session({ session }) {
-      return session;
-    },
+    return token;
   },
+
+  async session({ session, token }) {
+    if (session.user) {
+      (session.user as AuthUser).user_id = token.user_id as number;
+    }
+
+    return session;
+  },
+},
 });
 
 export { handler as GET, handler as POST };

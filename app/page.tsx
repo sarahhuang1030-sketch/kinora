@@ -44,6 +44,13 @@ type CardMovie = {
   saved?: boolean;
 };
 
+type Watchlist = {
+  watchlist_id: number;
+  name: string;
+  total_titles: number;
+  watched_count: number;
+};
+
 // const moodIcons: Record<string, string> = {
 //   Relaxed: '🌙',
 //   Adventurous: '🧭',
@@ -117,28 +124,38 @@ function MovieCard({ movie }: { movie: CardMovie }) {
 
 function WatchlistBox({
   title,
-  count,
-  progressClass,
+  totalTitles,
+  watchedCount,
 }: {
   title: string;
-  count: string;
-  progressClass: string;
+  totalTitles: number;
+  watchedCount: number;
 }) {
+  const progress =
+    totalTitles > 0
+      ? Math.round((watchedCount / totalTitles) * 100)
+      : 0;
+
   return (
     <div className="home-watch-box">
       <h4>{title}</h4>
-      <p>{count}</p>
+
+      <p>{totalTitles} titles</p>
 
       <div className="home-progress-line">
-        <span className={progressClass} />
+        <span
+          style={{
+            width: `${progress}%`,
+          }}
+        />
       </div>
 
       <div className="home-watch-row">
-        <span>7 watched</span>
-        <span>{progressClass.replace('progress-', '')}%</span>
+        <span>{watchedCount} watched</span>
+        <span>{progress}%</span>
       </div>
 
-      <button>Show watchlist</button>
+      <button>View list</button>
     </div>
   );
 }
@@ -151,6 +168,9 @@ export default function Home() {
   const [moreLikeThis, setMoreLikeThis] = useState<CardMovie[]>([]);
   const [selectedMood, setSelectedMood] = useState('');
   const [appliedMood, setAppliedMood] = useState('');
+  const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
+
+console.log('WATCHLISTS STATE', watchlists);
 
    function handleMoodClick(moodName: string) {
   setSelectedMood((current) => {
@@ -212,6 +232,30 @@ export default function Home() {
 
     loadHomeMovies();
   }, [user?.user_id, appliedMood]);
+
+  useEffect(() => {
+  async function loadWatchlists() {
+    if (!user?.user_id) return;
+// const userId = user?.user_id || 29;
+    try {
+      const res = await fetch(
+        `/api/watchlists?userId=${user.user_id}`
+      );
+
+      // const res = await fetch(`/api/watchlists?userId=${userId}`);
+
+      if (!res.ok) return;
+
+      const data = await res.json();
+
+      setWatchlists(data);
+    } catch (error) {
+      console.error(error);
+    }
+  }
+
+  loadWatchlists();
+}, [user?.user_id]);
 
   function handleRecommendationsClick() {
   setAppliedMood(selectedMood);
@@ -323,14 +367,34 @@ export default function Home() {
         </div>
 
         <div className="home-watch-grid">
-          <WatchlistBox title="Date Night" count="16 titles" progressClass="progress-42" />
-          <WatchlistBox title="My Faves" count="16 titles" progressClass="progress-42" />
-          <WatchlistBox title="Weekend Binge" count="24 titles" progressClass="progress-20" />
+          {!user?.user_id ? (
+            <div className="home-watch-empty">
+            <div>
+              <h3>Sign in to create your watchlists</h3>
+              <p>Save movies into lists like Date Night, My Faves, and Weekend Binge.</p>
+            </div>
 
-          <div className="home-create-list">
-            <span>＋</span>
-            <p>Create new list</p>
+            <Link href="/login" className="home-watch-login-btn">
+              Login
+            </Link>
           </div>
+          ) : (
+            <>
+              {watchlists.map((list) => (
+                <WatchlistBox
+                  key={list.watchlist_id}
+                  title={list.name}
+                  totalTitles={Number(list.total_titles)}
+                  watchedCount={Number(list.watched_count)}
+                />
+              ))}
+
+              <div className="home-create-list">
+                <span>＋</span>
+                <p>Create new list</p>
+              </div>
+            </>
+          )}
         </div>
 
         <section className="home-more-section">
