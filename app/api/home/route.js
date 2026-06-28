@@ -24,6 +24,7 @@ async function getMoviesBasedOnWatchHistory(userId, mood, genre, year) {
       m.release_year,
       m.poster_url,
       GROUP_CONCAT(DISTINCT g.genre_name) AS genre,
+      GROUP_CONCAT(DISTINCT mo.mood_name) AS mood,
       GROUP_CONCAT(DISTINCT CONCAT(sp.platform_name, '|', sp.logo_url)) AS platforms
     FROM movies m
 
@@ -49,7 +50,7 @@ async function getMoviesBasedOnWatchHistory(userId, mood, genre, year) {
   }
 
   if (mood !== "All") {
-    query += " AND mo.mood_name = ?";
+    query += " AND LOWER(TRIM(mo.mood_name)) = LOWER(TRIM(?))";
     params.push(mood);
   }
 
@@ -97,6 +98,7 @@ async function getMoviesByCategory(categoryColumn, mood, genre, year) {
       rm.recommendation_score,
       rm.recommendation_reason,
       GROUP_CONCAT(DISTINCT g.genre_name) AS genre,
+      GROUP_CONCAT(DISTINCT mo.mood_name) AS mood,
       GROUP_CONCAT(DISTINCT CONCAT(sp.platform_name, '|', sp.logo_url)) AS platforms
     FROM movies m
     LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
@@ -106,18 +108,22 @@ async function getMoviesByCategory(categoryColumn, mood, genre, year) {
     LEFT JOIN movie_platforms mp ON m.movie_id = mp.movie_id
     LEFT JOIN streaming_platforms sp ON mp.platform_id = sp.platform_id
     LEFT JOIN recommended_movies rm ON m.movie_id = rm.movie_id
-    WHERE m.${categoryColumn} = TRUE
+    WHERE 1 = 1
   `;
+
+  if (mood === "All") {
+  query += ` AND m.${categoryColumn} = TRUE`;
+}
+
+  if (mood !== "All") {
+    query += " AND LOWER(TRIM(mo.mood_name)) = LOWER(TRIM(?))";
+    params.push(mood);
+  }
 
   if (genre !== "All") {
     query += " AND g.genre_name = ?";
     params.push(genre);
-  }
-
-  if (mood !== "All") {
-    query += " AND mo.mood_name = ?";
-    params.push(mood);
-  }
+  }  
 
   if (yearRange) {
     query += " AND m.release_year BETWEEN ? AND ?";
@@ -135,7 +141,13 @@ async function getMoviesByCategory(categoryColumn, mood, genre, year) {
       rm.recommendation_reason
   `;
 
+  console.log("MOOD:", mood);
+  console.log("QUERY:", query);
+  console.log("PARAMS:", params);
+
   const [movies] = await pool.query(query, params);
+
+  console.log("MOVIES FOUND:", movies.length);
   return movies;
 }
 
@@ -149,17 +161,12 @@ export async function GET(req) {
 
   const watchlist = await getMoviesByCategory("is_wishlist", "All", "All", "All");
 
-  let recommended;
-
-  if (userId) {
-    recommended = await getMoviesBasedOnWatchHistory(userId, mood, genre, year);
-
-    if (recommended.length === 0) {
-      recommended = await getMoviesByCategory("is_recommended", mood, genre, year);
-    }
-  } else {
-    recommended = await getMoviesByCategory("is_recommended", mood, genre, year);
-  }
+  const recommended = await getMoviesByCategory(
+  "is_recommended",
+  mood,
+  genre,
+  year
+);
 
   const trending = await getMoviesByCategory("is_trending", mood, genre, year);
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
 
@@ -44,100 +44,19 @@ type CardMovie = {
   saved?: boolean;
 };
 
-const moodIcons: Record<string, string> = {
-  Relaxed: '🌙',
-  Adventurous: '🧭',
-  Suspenseful: '🔥',
-  'Feel Good': '😊',
-  Dark: '🖤',
-  Heartwarming: '❤️',
-  'Thought Provoking': '💡',
-  Intense: '⚡',
-  Emotional: '🥹',
-};
+// const moodIcons: Record<string, string> = {
+//   Relaxed: '🌙',
+//   Adventurous: '🧭',
+//   Suspenseful: '🔥',
+//   'Feel Good': '😊',
+//   Dark: '🖤',
+//   Heartwarming: '❤️',
+//   'Thought Provoking': '💡',
+//   Intense: '⚡',
+//   Emotional: '🥹',
+// };
 
-const fallbackMovies: CardMovie[] = [
-  {
-    movie_id: 1,
-    title: 'Oppenheimer',
-    description:
-      'The story of American scientist J. Robert Oppenheimer and his role in the development of the atomic bomb.',
-    year: 2023,
-    poster: '/recommended/r1.webp',
-    genre: 'Thrilling',
-    mood: 'Thrilling',
-    contentType: 'Movie',
-    duration: '3h',
-    platforms: ['Prime'],
-  },
-  {
-    movie_id: 2,
-    title: 'Severance',
-    description:
-      'A thriller series where employees undergo a procedure to separate their work and personal memories.',
-    year: 2022,
-    poster: '/recommended/r2.webp',
-    genre: 'Sci-Fi',
-    mood: 'Mind-bending',
-    contentType: 'TV Series',
-    duration: '2 seasons',
-    platforms: ['Apple TV+'],
-    saved: true,
-  },
-  {
-    movie_id: 3,
-    title: 'Dune',
-    description:
-      "A noble family becomes embroiled in a war for control over the galaxy's most valuable asset.",
-    year: 2021,
-    poster: '/recommended/r3.webp',
-    genre: 'Thrilling',
-    mood: 'Thrilling',
-    contentType: 'Movie',
-    duration: '3h',
-    platforms: ['Disney+'],
-  },
-  {
-    movie_id: 4,
-    title: 'The Power of the Dog',
-    description:
-      "A domineering rancher torments his brother's new wife until unexpected connections shift everything.",
-    year: 2021,
-    poster: '/recommended/r4.webp',
-    genre: 'Drama',
-    mood: 'Feel Good',
-    contentType: 'Movie',
-    duration: '2h 12m',
-    platforms: ['Netflix'],
-  },
-  {
-    movie_id: 5,
-    title: 'The Bear',
-    description:
-      'A young chef from fine dining returns home to run his family sandwich shop.',
-    year: 2022,
-    poster: '/recommended/r5.webp',
-    genre: 'Drama',
-    mood: 'Feel Good',
-    contentType: 'TV Series',
-    duration: '3 seasons',
-    platforms: ['Crave'],
-  },
-  {
-    movie_id: 6,
-    title: 'Everything Everywhere All At Once',
-    description:
-      'An aging immigrant is swept into an adventure where she alone can save existence.',
-    year: 2022,
-    poster: '/recommended/r6.webp',
-    genre: 'Adventure',
-    mood: 'Mind-bending',
-    contentType: 'Movie',
-    duration: '2h 25m',
-    platforms: ['Prime'],
-    saved: true,
-  },
-];
+
 
 function mapDbMovie(movie: DbMovie, fallbackPoster: string, index: number): CardMovie {
   const platforms = movie.platforms
@@ -228,9 +147,10 @@ export default function Home() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
 
-  const [recommendedMovies, setRecommendedMovies] = useState<CardMovie[]>(fallbackMovies);
-  const [moreLikeThis, setMoreLikeThis] = useState<CardMovie[]>(fallbackMovies.slice(0, 3));
+  const [recommendedMovies, setRecommendedMovies] = useState<CardMovie[]>([]);
+  const [moreLikeThis, setMoreLikeThis] = useState<CardMovie[]>([]);
   const [selectedMood, setSelectedMood] = useState('');
+  const [appliedMood, setAppliedMood] = useState('');
   const [moods, setMoods] = useState<DbMood[]>([]);
 
   useEffect(() => {
@@ -255,7 +175,7 @@ export default function Home() {
         const params = new URLSearchParams();
 
         if (user?.user_id) params.set('userId', String(user.user_id));
-        if (selectedMood) params.set('mood', selectedMood);
+        if (appliedMood) params.set('mood', appliedMood);
 
         const res = await fetch(`/api/home?${params.toString()}`);
         if (!res.ok) return;
@@ -270,31 +190,23 @@ export default function Home() {
           mapDbMovie(movie, `/trending/t${(index % 8) + 1}.webp`, index)
         );
 
-        if (recommended.length) setRecommendedMovies(recommended.slice(0, 6));
-        if (trending.length) setMoreLikeThis(trending.slice(0, 3));
+        setRecommendedMovies(recommended.slice(0, 6));
+        setMoreLikeThis(trending.slice(0, 3));
       } catch {
         // Keep fallback content when the API is not ready.
       }
     }
 
     loadHomeMovies();
-  }, [user?.user_id, selectedMood]);
-
-  const filteredMovies = useMemo(() => {
-    if (!selectedMood) return recommendedMovies;
-
-    return recommendedMovies.filter(
-      (movie) =>
-        movie.mood.toLowerCase().includes(selectedMood.toLowerCase()) ||
-        movie.genre.toLowerCase().includes(selectedMood.toLowerCase())
-    );
-  }, [recommendedMovies, selectedMood]);
+  }, [user?.user_id, appliedMood]);
 
   function handleRecommendationsClick() {
-    document
-      .getElementById('recommended-section')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  setAppliedMood(selectedMood);
+
+  document
+    .getElementById('recommended-section')
+    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
 
   function handleSurpriseMe() {
     if (!moods.length) return;
@@ -330,7 +242,11 @@ export default function Home() {
                       ? 'home-mood-pill active'
                       : 'home-mood-pill'
                   }
-                  onClick={() => setSelectedMood(mood.mood_name)}
+                  onClick={() =>
+                    setSelectedMood((current) =>
+                      current === mood.mood_name ? '' : mood.mood_name
+                    )
+                  }
                 >
                   <span className="home-mood-icon"> {mood.icon_url && (
                     <img src={mood.icon_url} alt="" />
@@ -347,15 +263,6 @@ export default function Home() {
               Surprise Me
             </button>
           </div>
-
-          {selectedMood && (
-            <p className="home-selected-mood">
-              Tonight&apos;s mood:{' '}
-              <strong>
-                {moodIcons[selectedMood] || '🎬'} {selectedMood}
-              </strong>
-            </p>
-          )}
 
           <p className="home-tiny-note">Select at least one mood to get personalized picks</p>
 
@@ -386,10 +293,16 @@ export default function Home() {
         </div>
 
         <div className="home-movie-grid">
-          {filteredMovies.slice(0, 6).map((movie) => (
-            <MovieCard key={movie.movie_id} movie={movie} />
-          ))}
-        </div>
+            {recommendedMovies.length === 0 ? (
+              <div className="home-empty-state">
+                No recommendations found for this mood.
+              </div>
+            ) : (
+              recommendedMovies.slice(0, 6).map((movie) => (
+                <MovieCard key={movie.movie_id} movie={movie} />
+              ))
+            )}
+          </div>
 
         <div className="home-library-head">
           <div>
