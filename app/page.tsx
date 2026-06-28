@@ -86,11 +86,20 @@ function mapDbMovie(movie: DbMovie, fallbackPoster: string, index: number): Card
     contentType: movie.content_type || 'Movie',
     duration: movie.duration || (movie.content_type === 'TV Series' ? '2 seasons' : '2h 15m'),
     platforms,
-    saved: index === 1 || index === 5,
   };
 }
 
-function MovieCard({ movie }: { movie: CardMovie }) {
+function MovieCard({
+  movie,
+  isLoggedIn,
+  onWatchlistClick,
+  isSaved,
+}: {
+  movie: CardMovie;
+  isLoggedIn: boolean;
+  onWatchlistClick: (movie: CardMovie) => void;
+  isSaved:boolean;
+}) {
   const platform = movie.platforms[0] || 'Prime';
 
   return (
@@ -113,9 +122,14 @@ function MovieCard({ movie }: { movie: CardMovie }) {
             ⊕ Show details
           </Link>
 
-          <button className={movie.saved ? 'home-save-btn saved' : 'home-save-btn'}>
-            {movie.saved ? '▣ Saved' : '▢ Watchlist'}
-          </button>
+          {isLoggedIn && (
+              <button
+                className={isSaved ? 'home-save-btn saved' : 'home-save-btn'}
+                onClick={() => onWatchlistClick(movie)}
+              >
+                {isSaved ? '▣ Saved' : '▢ Watchlist'}
+              </button>
+          )}
         </div>
       </div>
     </article>
@@ -169,8 +183,33 @@ export default function Home() {
   const [selectedMood, setSelectedMood] = useState('');
   const [appliedMood, setAppliedMood] = useState('');
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
+  const [selectedMovie, setSelectedMovie] = useState<CardMovie | null>(null);
+  const [savedMovieIds, setSavedMovieIds] = useState<number[]>([]);
+// console.log('WATCHLISTS STATE', watchlists);
 
-console.log('WATCHLISTS STATE', watchlists);
+  async function handleSaveToWatchlist(watchlistId: number) {
+    
+  if (!selectedMovie) return;
+  setSavedMovieIds((current) => [...current, selectedMovie.movie_id]);
+  const res = await fetch('/api/watchlist-movies', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({
+      watchlistId,
+      movieId: selectedMovie.movie_id,
+    }),
+  });
+
+  if (!res.ok) return;
+
+  setSelectedMovie(null);
+
+  const updated = await fetch(`/api/watchlists?userId=${user?.user_id}`);
+  const data = await updated.json();
+  setWatchlists(data);
+}
 
    function handleMoodClick(moodName: string) {
   setSelectedMood((current) => {
@@ -256,6 +295,36 @@ console.log('WATCHLISTS STATE', watchlists);
 
   loadWatchlists();
 }, [user?.user_id]);
+
+async function handleToggleSaved(movie: CardMovie) {
+  const isSaved = savedMovieIds.includes(movie.movie_id);
+
+  if (isSaved) {
+    const res = await fetch('/api/watchlist-movies/remove', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        movieId: movie.movie_id,
+      }),
+    });
+
+    if (!res.ok) return;
+
+    setSavedMovieIds((current) =>
+      current.filter((id) => id !== movie.movie_id)
+    );
+
+    const updated = await fetch(`/api/watchlists?userId=${user?.user_id}`);
+    const data = await updated.json();
+    setWatchlists(data);
+
+    return;
+  }
+
+  setSelectedMovie(movie);
+}
 
   function handleRecommendationsClick() {
   setAppliedMood(selectedMood);
@@ -352,7 +421,13 @@ console.log('WATCHLISTS STATE', watchlists);
               </div>
             ) : (
               recommendedMovies.slice(0, 6).map((movie) => (
-                <MovieCard key={movie.movie_id} movie={movie} />
+                <MovieCard
+                  key={movie.movie_id}
+                  movie={movie}
+                  isLoggedIn={!!user?.user_id}
+                  isSaved={savedMovieIds.includes(movie.movie_id)}
+                  onWatchlistClick={handleToggleSaved}
+                />
               ))
             )}
           </div>
@@ -363,7 +438,7 @@ console.log('WATCHLISTS STATE', watchlists);
             <h2>My watchlists</h2>
           </div>
 
-          <button>Manage ›</button>
+          {/* <button>Manage ›</button> */}
         </div>
 
         <div className="home-watch-grid">
@@ -406,11 +481,41 @@ console.log('WATCHLISTS STATE', watchlists);
 
           <div className="home-movie-grid three">
             {moreLikeThis.map((movie) => (
-              <MovieCard key={movie.movie_id} movie={movie} />
+              <MovieCard
+                key={movie.movie_id}
+                movie={movie}
+                isLoggedIn={!!user?.user_id}
+                isSaved={savedMovieIds.includes(movie.movie_id)}
+                onWatchlistClick={handleToggleSaved}
+              />
             ))}
           </div>
         </section>
       </section>
+{selectedMovie && (
+  <div className="watchlist-modal-backdrop">
+    <div className="watchlist-modal">
+      <button className="watchlist-modal-close" onClick={() => setSelectedMovie(null)}>
+        ×
+      </button>
+
+      <h3>Add to watchlist</h3>
+      <p>{selectedMovie.title}</p>
+
+      {watchlists.map((list) => (
+        <button
+          key={list.watchlist_id}
+          className="watchlist-choice-btn"
+          onClick={() => handleSaveToWatchlist(list.watchlist_id)}
+        >
+          {list.name}
+        </button>
+      ))}
+    </div>
+  </div>
+)}
+
+
     </main>
   );
 }

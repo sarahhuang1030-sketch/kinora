@@ -3168,3 +3168,56 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   text-transform: uppercase;
   text-decoration: none;
 }
+
+.watchlist-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 9999;
+  background: rgba(0, 0, 0, 0.65);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.watchlist-modal {
+  width: 360px;
+  background: #0d1b2a;
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 22px;
+  padding: 28px;
+  position: relative;
+  box-shadow: 0 24px 80px rgba(0,0,0,0.45);
+}
+
+.watchlist-modal h3 {
+  margin: 0 0 8px;
+  color: white;
+}
+
+.watchlist-modal p {
+  margin: 0 0 20px;
+  color: #9fb0c4;
+}
+
+.watchlist-modal-close {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  background: transparent;
+  border: 0;
+  color: white;
+  font-size: 28px;
+  cursor: pointer;
+}
+
+.watchlist-choice-btn {
+  width: 100%;
+  height: 44px;
+  margin-bottom: 10px;
+  border-radius: 999px;
+  border: 1px solid rgba(255,255,255,0.12);
+  background: #1d2b3d;
+  color: white;
+  font-weight: 800;
+  cursor: pointer;
+}
