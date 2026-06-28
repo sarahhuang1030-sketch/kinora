@@ -151,6 +151,19 @@ export default function Home() {
   const [moreLikeThis, setMoreLikeThis] = useState<CardMovie[]>([]);
   const [selectedMood, setSelectedMood] = useState('');
   const [appliedMood, setAppliedMood] = useState('');
+
+   function handleMoodClick(moodName: string) {
+  setSelectedMood((current) => {
+    const nextMood = current === moodName ? '' : moodName;
+
+    if (nextMood === '') {
+      setAppliedMood('');
+    }
+
+    return nextMood;
+  });
+}
+
   const [moods, setMoods] = useState<DbMood[]>([]);
 
   useEffect(() => {
@@ -242,11 +255,7 @@ export default function Home() {
                       ? 'home-mood-pill active'
                       : 'home-mood-pill'
                   }
-                  onClick={() =>
-                    setSelectedMood((current) =>
-                      current === mood.mood_name ? '' : mood.mood_name
-                    )
-                  }
+                  onClick={() => handleMoodClick(mood.mood_name)}
                 >
                   <span className="home-mood-icon"> {mood.icon_url && (
                     <img src={mood.icon_url} alt="" />
