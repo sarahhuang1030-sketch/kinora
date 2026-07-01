@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 
 type Movie = {
   movie_id: number;
@@ -29,6 +29,27 @@ export default function Navbar() {
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<Movie[]>([]);
   const [navUser, setNavUser] = useState<NavUser | null>(null);
+
+  const searchRef = useRef<HTMLDivElement | null>(null);
+
+    useEffect(() => {
+      function handleClickOutside(e: MouseEvent) {
+        if (
+          searchRef.current &&
+          !searchRef.current.contains(e.target as Node)
+        ) {
+          setShowSearch(false);
+          setSearchText("");
+          setResults([]);
+        }
+      }
+
+      document.addEventListener("mousedown", handleClickOutside);
+
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }, []);
 
   useEffect(() => {
     const query = searchText.trim();
@@ -113,7 +134,7 @@ export default function Navbar() {
       </div>
 
       <div className="nav-links">
-        <div className="search-wrapper">
+        <div className="search-wrapper" ref={searchRef}>
           {showSearch && (
             <form onSubmit={handleSearch} className="nav-search-form">
               <input
@@ -129,12 +150,20 @@ export default function Navbar() {
           <button
             type="button"
             className="nav-icon-btn"
-            onClick={() => setShowSearch(!showSearch)}
+            onClick={() => {
+              if (showSearch) {
+                setShowSearch(false);
+                setSearchText("");
+                setResults([]);
+              } else {
+                setShowSearch(true);
+              }
+            }}
           >
             ⌕
           </button>
 
-          {results.length > 0 && (
+          {showSearch && results.length > 0 && (
             <div className="search-dropdown">
               {results.map((movie) => (
                 <Link
