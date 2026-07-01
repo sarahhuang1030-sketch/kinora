@@ -472,7 +472,7 @@ async function handleToggleSaved(movie: CardMovie) {
           )}
         </div>
 
-        <section className="home-more-section">
+        {/* <section className="home-more-section">
           <p className="home-eyebrow">More like this</p>
 
           <h2>
@@ -490,7 +490,28 @@ async function handleToggleSaved(movie: CardMovie) {
               />
             ))}
           </div>
-        </section>
+        </section> */}
+
+        <section className="home-more-section">
+  <p className="home-eyebrow">More to explore</p>
+
+  <h2>
+    Trending movies you may like
+  </h2>
+
+  <div className="home-movie-grid three">
+    {moreLikeThis.map((movie) => (
+      <MovieCard
+        key={movie.movie_id}
+        movie={movie}
+        isLoggedIn={!!user?.user_id}
+        isSaved={savedMovieIds.includes(movie.movie_id)}
+        onWatchlistClick={handleToggleSaved}
+      />
+    ))}
+  </div>
+</section>
+
       </section>
 {selectedMovie && (
   <div className="watchlist-modal-backdrop">

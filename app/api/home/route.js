@@ -132,9 +132,9 @@ LEFT JOIN recommended_movies rm ON m.movie_id = rm.movie_id
 WHERE 1 = 1
   `;
 
-  if (mood === "All") {
+  
   query += ` AND m.${categoryColumn} = TRUE`;
-}
+
 
   if (mood !== "All") {
     query += " AND LOWER(TRIM(mo.mood_name)) = LOWER(TRIM(?))";
