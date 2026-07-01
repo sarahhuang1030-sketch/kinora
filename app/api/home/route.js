@@ -23,6 +23,14 @@ async function getMoviesBasedOnWatchHistory(userId, mood, genre, year) {
       m.description,
       m.release_year,
       m.poster_url,
+      m.duration_minutes,
+      ct.type_name AS content_type,
+      CONCAT(
+        FLOOR(m.duration_minutes / 60),
+        'h ',
+        MOD(m.duration_minutes, 60),
+        'm'
+      ) AS duration,
       GROUP_CONCAT(DISTINCT g.genre_name) AS genre,
       GROUP_CONCAT(DISTINCT mo.mood_name) AS mood,
       GROUP_CONCAT(DISTINCT CONCAT(sp.platform_name, '|', sp.logo_url)) AS platforms
@@ -36,6 +44,8 @@ async function getMoviesBasedOnWatchHistory(userId, mood, genre, year) {
 
     LEFT JOIN movie_platforms mp ON m.movie_id = mp.movie_id
     LEFT JOIN streaming_platforms sp ON mp.platform_id = sp.platform_id
+
+    LEFT JOIN content_types ct ON m.content_type_id = ct.content_type_id
 
     WHERE m.movie_id NOT IN (
       SELECT movie_id
@@ -71,12 +81,14 @@ async function getMoviesBasedOnWatchHistory(userId, mood, genre, year) {
   params.push(userId);
 
   query += `
-    GROUP BY 
+    GROUP BY
       m.movie_id,
       m.title,
       m.description,
       m.release_year,
-      m.poster_url
+      m.poster_url,
+      m.duration_minutes,
+      ct.type_name
     LIMIT 12
   `;
 
@@ -90,25 +102,34 @@ async function getMoviesByCategory(categoryColumn, mood, genre, year) {
 
   let query = `
     SELECT 
-      m.movie_id,
-      m.title,
-      m.description,
-      m.release_year,
-      m.poster_url,
-      rm.recommendation_score,
-      rm.recommendation_reason,
-      GROUP_CONCAT(DISTINCT g.genre_name) AS genre,
-      GROUP_CONCAT(DISTINCT mo.mood_name) AS mood,
-      GROUP_CONCAT(DISTINCT CONCAT(sp.platform_name, '|', sp.logo_url)) AS platforms
-    FROM movies m
-    LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
-    LEFT JOIN genres g ON mg.genre_id = g.genre_id
-    LEFT JOIN movie_moods mm ON m.movie_id = mm.movie_id
-    LEFT JOIN moods mo ON mm.mood_id = mo.mood_id
-    LEFT JOIN movie_platforms mp ON m.movie_id = mp.movie_id
-    LEFT JOIN streaming_platforms sp ON mp.platform_id = sp.platform_id
-    LEFT JOIN recommended_movies rm ON m.movie_id = rm.movie_id
-    WHERE 1 = 1
+  m.movie_id,
+  m.title,
+  m.description,
+  m.release_year,
+  m.poster_url,
+  m.duration_minutes,
+  ct.type_name AS content_type,
+  rm.recommendation_score,
+  rm.recommendation_reason,
+  GROUP_CONCAT(DISTINCT g.genre_name) AS genre,
+  GROUP_CONCAT(DISTINCT mo.mood_name) AS mood,
+  GROUP_CONCAT(DISTINCT CONCAT(sp.platform_name, '|', sp.logo_url)) AS platforms,
+  CONCAT(
+    FLOOR(m.duration_minutes / 60),
+    'h ',
+    MOD(m.duration_minutes, 60),
+    'm'
+  ) AS duration
+FROM movies m
+LEFT JOIN content_types ct ON m.content_type_id = ct.content_type_id
+LEFT JOIN movie_genres mg ON m.movie_id = mg.movie_id
+LEFT JOIN genres g ON mg.genre_id = g.genre_id
+LEFT JOIN movie_moods mm ON m.movie_id = mm.movie_id
+LEFT JOIN moods mo ON mm.mood_id = mo.mood_id
+LEFT JOIN movie_platforms mp ON m.movie_id = mp.movie_id
+LEFT JOIN streaming_platforms sp ON mp.platform_id = sp.platform_id
+LEFT JOIN recommended_movies rm ON m.movie_id = rm.movie_id
+WHERE 1 = 1
   `;
 
   if (mood === "All") {
@@ -132,13 +153,15 @@ async function getMoviesByCategory(categoryColumn, mood, genre, year) {
 
   query += `
     GROUP BY 
-      m.movie_id,
-      m.title,
-      m.description,
-      m.release_year,
-      m.poster_url,
-      rm.recommendation_score,
-      rm.recommendation_reason
+  m.movie_id,
+  m.title,
+  m.description,
+  m.release_year,
+  m.poster_url,
+  m.duration_minutes,
+  ct.type_name,
+  rm.recommendation_score,
+  rm.recommendation_reason
   `;
 
   console.log("MOOD:", mood);
