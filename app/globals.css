@@ -3237,3 +3237,599 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 .home-filters select:hover {
   border-color: rgba(255, 255, 255, 0.3);
 }
+
+/* movie detail page */
+.movie-detail-page {
+  
+  color: white;
+  min-height: 100vh;
+}
+
+.movie-hero {
+  min-height: 620px;
+  background-size: cover;
+  background-position: center right;
+  display: flex;
+  align-items: center;
+  padding: 80px 7%;
+}
+
+.movie-hero-content {
+  max-width: 620px;
+}
+
+.movie-platform,
+.section-label {
+  color: #9aa8b8;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.movie-hero h1 {
+  font-size: clamp(48px, 7vw, 92px);
+  line-height: 0.95;
+  margin: 16px 0;
+}
+
+.movie-meta,
+.movie-genres {
+  color: #d5dce5;
+  margin-bottom: 12px;
+}
+
+.movie-description {
+  color: #d9dee7;
+  font-size: 18px;
+  line-height: 1.6;
+  max-width: 560px;
+}
+
+.movie-actions {
+  display: flex;
+  gap: 14px;
+  margin-top: 28px;
+  flex-wrap: wrap;
+}
+
+.primary-action,
+.secondary-action {
+  border-radius: 999px;
+  padding: 14px 24px;
+  font-weight: 700;
+  text-decoration: none;
+  border: 0;
+  cursor: pointer;
+}
+
+.primary-action {
+  background: white;
+  color: #05070d;
+}
+
+.secondary-action {
+  background: rgba(255, 255, 255, 0.14);
+  color: white;
+}
+
+.trailer-section,
+.movie-info-section,
+.more-like-section {
+  padding: 56px 7%;
+}
+
+.trailer-frame {
+  margin-top: 20px;
+  aspect-ratio: 16 / 9;
+  max-width: 920px;
+  border-radius: 22px;
+  overflow: hidden;
+  background: #111827;
+}
+
+.trailer-frame iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.movie-info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 24px;
+  margin-top: 24px;
+}
+
+.movie-info-grid span {
+  color: #8390a2;
+  font-size: 13px;
+}
+
+.movie-info-grid p {
+  margin-top: 6px;
+  color: #f3f4f6;
+}
+
+.more-like-section h2 span {
+  color: #9db7ff;
+}
+
+.similar-grid-disney {
+  margin-top: 28px;
+
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px;
+}
+
+.similar-card-disney {
+  position: relative;
+  display: block;
+  aspect-ratio: 16 / 9;
+
+  border-radius: 12px;
+  overflow: hidden;
+
+  background: #151515;
+
+  transition: 0.25s ease;
+}
+
+.similar-card-disney:hover {
+  transform: scale(1.04);
+  box-shadow: 0 18px 35px rgba(0,0,0,.45);
+}
+
+.similar-card-disney img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.similar-card-overlay {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+
+  padding: 18px;
+
+  background: linear-gradient(
+      transparent,
+      rgba(0,0,0,.85)
+  );
+
+  opacity: 0;
+  transition: .25s;
+}
+
+.similar-card-disney:hover .similar-card-overlay {
+  opacity: 1;
+}
+
+.similar-card-overlay h3 {
+  margin: 0;
+  color: white;
+  font-size: 18px;
+  font-weight: 700;
+}
+
+.similar-card-overlay p {
+  margin-top: 6px;
+  color: rgba(255,255,255,.75);
+  font-size: 14px;
+}
+
+.trailer-showcase-section {
+  padding: 48px 7%;
+  width: 100%;
+ 
+}
+
+.trailer-showcase {
+  display: grid;
+  grid-template-columns: 280px 1fr;
+  gap: 16px;
+  max-width: 1180px;
+}
+
+.trailer-poster {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #111827;
+}
+
+.trailer-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trailer-video {
+  aspect-ratio: 16 / 9;
+  border-radius: 14px;
+  overflow: hidden;
+  background: black;
+}
+
+.trailer-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+@media (max-width: 800px) {
+  .trailer-showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .trailer-poster {
+    display: none;
+  }
+}
+
+.movie-detail-banner {
+  min-height: 430px;
+  padding: 70px 7% 50px;
+  background-size: cover;
+  background-position: center;
+  display: grid;
+  grid-template-columns: 1.4fr 0.7fr 0.8fr;
+  gap: 56px;
+  align-items: start;
+  color: white;
+}
+
+.movie-detail-left h1 {
+  font-size: 34px;
+  margin-bottom: 24px;
+}
+
+.movie-detail-left p {
+  font-size: 20px;
+  line-height: 1.65;
+  font-weight: 600;
+  max-width: 760px;
+}
+
+.movie-detail-middle,
+.movie-detail-right {
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+}
+
+.movie-detail-middle span,
+.movie-detail-right span {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 700;
+}
+
+.movie-detail-middle p,
+.movie-detail-right p {
+  margin-top: 6px;
+  color: white;
+  font-weight: 700;
+}
+
+.movie-detail-right .secondary-action {
+  margin-top: 12px;
+  width: fit-content;
+}
+
+@media (max-width: 950px) {
+  .movie-detail-banner {
+    grid-template-columns: 1fr;
+  }
+}
+
+.movie-detail-page {
+  padding: 0 0 70px;
+  margin-top: 64px;
+  color: white;
+}
+
+.movie-detail-layout {
+  display: grid;
+  grid-template-columns: 1.2fr 1fr;
+  gap: 60px;
+  padding: 40px 0 30px;
+}
+
+.movie-detail-text h1 {
+  font-size: clamp(42px, 6vw, 78px);
+  margin: 12px 0 20px;
+}
+
+.movie-detail-description {
+  max-width: 720px;
+  color: #d9e2ef;
+  font-size: 18px;
+  line-height: 1.7;
+  margin-bottom: 26px;
+}
+
+.movie-detail-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 26px 36px;
+  align-content: start;
+}
+
+.movie-detail-grid span {
+  display: block;
+  color: #8ea0b8;
+  font-size: 13px;
+  margin-bottom: 7px;
+}
+
+.movie-detail-grid p {
+  color: white;
+  font-weight: 700;
+  line-height: 1.5;
+}
+
+
+.trailer-showcase {
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 16px;
+}
+
+.trailer-poster,
+.trailer-video {
+  border-radius: 14px;
+  overflow: hidden;
+  background: #05070d;
+}
+
+.trailer-poster img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.trailer-video {
+  aspect-ratio: 16 / 9;
+}
+
+.trailer-video iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+}
+
+.similar-grid-disney {
+  margin-top: 28px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  gap: 22px;
+}
+
+.similar-card-disney {
+  position: relative;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #111827;
+  transition: 0.25s ease;
+}
+
+.similar-card-disney:hover {
+  transform: scale(1.04);
+}
+
+.similar-card-disney img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.similar-card-overlay {
+  position: absolute;
+  inset: auto 0 0;
+  padding: 18px;
+  background: linear-gradient(transparent, rgba(0, 0, 0, 0.88));
+  opacity: 0;
+  transition: 0.25s ease;
+}
+
+.similar-card-disney:hover .similar-card-overlay {
+  opacity: 1;
+}
+
+@media (max-width: 900px) {
+  .movie-detail-page {
+    padding: 90px 22px 50px;
+  }
+
+  .movie-detail-layout,
+  .trailer-showcase {
+    grid-template-columns: 1fr;
+  }
+
+  .trailer-poster {
+    display: none;
+  }
+
+  .movie-detail-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.movie-detail-page {
+  padding: 0 0 70px;
+  margin-top: 64px;
+  color: white;
+}
+
+.streaming-hero-detail {
+  position: relative;
+  width: 100vw;
+  height: calc(100vh - 64px);
+
+  margin-left: calc(50% - 50vw);
+  margin-right: calc(50% - 50vw);
+
+  overflow: hidden;
+}
+
+.streaming-hero-content {
+  width: 100%;
+}
+
+.streaming-hero-content h1 {
+  position: absolute;
+  top: 70px;
+  left: 70px;
+  font-size: clamp(44px, 5vw, 74px);
+  font-weight: 800;
+}
+
+.streaming-hero-bottom {
+    position: absolute;
+
+    left: 55px;
+    right: 55px;
+    bottom: 45px;
+
+    display: grid;
+    grid-template-columns: auto 1fr 340px;
+    align-items: end;
+    gap: 42px;
+}
+
+.streaming-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.circle-action {
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 3px solid rgba(255,255,255,.55);
+  background: rgba(0,0,0,.25);
+  color: white;
+  font-size: 24px;
+  display: grid;
+  place-items: center;
+}
+
+.unavailable-btn {
+  width: 100%;
+  margin-top: 6px;
+  padding: 14px 18px;
+  border-radius: 8px;
+  border: 2px solid rgba(255,255,255,.25);
+  background: rgba(0,0,0,.35);
+  color: rgba(255,255,255,.55);
+  font-weight: 800;
+  text-align: left;
+}
+
+.movie-detail-description {
+  font-size: 20px;
+  line-height: 1.45;
+  font-weight: 700;
+  max-width: 880px;
+}
+
+.streaming-meta {
+  margin-top: 14px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: rgba(255,255,255,.72);
+  font-weight: 800;
+}
+
+.streaming-meta span:first-child {
+  color: white;
+  text-decoration: underline;
+}
+
+.streaming-side-info {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.35;
+}
+
+.streaming-side-info p {
+  margin-top: 12px;
+}
+
+.streaming-side-info span {
+  color: rgba(255,255,255,.65);
+}
+
+.more-like-section {
+  padding: 50px 70px 70px;
+}
+
+@media (max-width: 1000px) {
+  .streaming-hero-detail {
+    padding: 100px 24px 36px;
+  }
+
+  .streaming-hero-content h1 {
+    position: static;
+    margin-bottom: 260px;
+  }
+
+  .streaming-hero-bottom {
+    grid-template-columns: 1fr;
+  }
+
+  .more-like-section {
+    padding: 40px 24px 60px;
+  }
+}
+
+.hero-trailer-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.hero-trailer-bg iframe{
+    position:absolute;
+
+    top:50%;
+    left:50%;
+
+    width:120vw;
+    height:67.5vw;
+
+    min-width:177.78vh;
+    min-height:100vh;
+
+    transform:translate(-50%,-50%);
+
+    border:none;
+    pointer-events:none;
+}
+
+.hero-poster-bg {
+  background-size: cover;
+  background-position: center right;
+}
+
+.hero-detail-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  /* background:
+    linear-gradient(90deg, rgba(2,7,16,.98) 0%, rgba(2,7,16,.72) 38%, rgba(2,7,16,.18) 100%),
+    linear-gradient(0deg, rgba(2,7,16,.98) 0%, rgba(2,7,16,.30) 48%, rgba(2,7,16,.10) 100%); */
+}
+
+.streaming-hero-content {
+    position: relative;
+    z-index: 5;
+    height: 100%;
+    width: 100%;
+}
