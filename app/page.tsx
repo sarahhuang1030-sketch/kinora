@@ -51,6 +51,16 @@ type Watchlist = {
   watched_count: number;
 };
 
+type DbGenre = {
+  genre_id: number;
+  genre_name: string;
+};
+
+type DbPlatform = {
+  platform_id: number;
+  platform_name: string;
+};
+
 // const moodIcons: Record<string, string> = {
 //   Relaxed: '🌙',
 //   Adventurous: '🧭',
@@ -187,6 +197,12 @@ export default function Home() {
   const [savedMovieIds, setSavedMovieIds] = useState<number[]>([]);
 // console.log('WATCHLISTS STATE', watchlists);
 
+const [selectedPlatform, setSelectedPlatform] = useState('');
+const [selectedDuration, setSelectedDuration] = useState('');
+const [selectedGenre, setSelectedGenre] = useState('');
+const [genres, setGenres] = useState<DbGenre[]>([]);
+const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
+
   async function handleSaveToWatchlist(watchlistId: number) {
     
   if (!selectedMovie) return;
@@ -225,21 +241,33 @@ export default function Home() {
 
   const [moods, setMoods] = useState<DbMood[]>([]);
 
-  useEffect(() => {
-    async function loadMoods() {
-      try {
-        const res = await fetch('/api/moods');
-        if (!res.ok) return;
+ useEffect(() => {
+  async function loadFilters() {
+    try {
+      const [moodsRes, genresRes, platformsRes] = await Promise.all([
+        fetch("/api/moods"),
+        fetch("/api/genres"),
+        fetch("/api/streaming-services"),
+      ]);
 
-        const data = await res.json();
-        setMoods(data);
-      } catch {
-        setMoods([]);
+      if (moodsRes.ok) {
+        setMoods(await moodsRes.json());
       }
-    }
 
-    loadMoods();
-  }, []);
+      if (genresRes.ok) {
+        setGenres(await genresRes.json());
+      }
+
+      if (platformsRes.ok) {
+        setPlatforms(await platformsRes.json());
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }
+
+  loadFilters();
+}, []);
 
   useEffect(() => {
     async function loadHomeMovies() {
@@ -248,6 +276,11 @@ export default function Home() {
 
         if (user?.user_id) params.set('userId', String(user.user_id));
         if (appliedMood) params.set('mood', appliedMood);
+        if (selectedPlatform) params.set('platform', selectedPlatform);
+        if (selectedDuration) params.set('duration', selectedDuration);
+        if (selectedGenre) params.set('genre', selectedGenre);
+
+
 
         const res = await fetch(`/api/home?${params.toString()}`);
         if (!res.ok) return;
@@ -270,7 +303,7 @@ export default function Home() {
     }
 
     loadHomeMovies();
-  }, [user?.user_id, appliedMood]);
+  }, [user?.user_id, appliedMood, selectedPlatform, selectedDuration, selectedGenre]);
 
   useEffect(() => {
   async function loadWatchlists() {
@@ -407,11 +440,54 @@ async function handleToggleSaved(movie: CardMovie) {
           </div>
 
           <div className="home-filters">
-            <button>Streaming Service ˅</button>
-            <button>Duration ˅</button>
-            <button>Mood ˅</button>
-            <button>Genre ˅</button>
-          </div>
+  <select
+  value={selectedPlatform}
+  onChange={(e) => setSelectedPlatform(e.target.value)}
+>
+  <option value="">Streaming Service</option>
+
+  {platforms.map((platform) => (
+    <option
+      key={platform.platform_id}
+      value={platform.platform_name}
+    >
+      {platform.platform_name}
+    </option>
+  ))}
+</select>
+
+  <select value={selectedDuration} onChange={(e) => setSelectedDuration(e.target.value)}>
+    <option value="">Duration</option>
+    <option value="short">Under 90 min</option>
+    <option value="medium">90–120 min</option>
+    <option value="long">Over 120 min</option>
+  </select>
+
+  {/* <select value={appliedMood} onChange={(e) => setAppliedMood(e.target.value)}>
+    <option value="">Mood</option>
+    {moods.map((mood) => (
+      <option key={mood.mood_id} value={mood.mood_name}>
+        {mood.mood_name}
+      </option>
+    ))}
+  </select> */}
+
+          <select
+  value={selectedGenre}
+  onChange={(e) => setSelectedGenre(e.target.value)}
+>
+  <option value="">Genre</option>
+
+  {genres.map((genre) => (
+    <option
+      key={genre.genre_id}
+      value={genre.genre_name}
+    >
+      {genre.genre_name}
+    </option>
+  ))}
+</select>
+        </div>
         </div>
 
         <div className="home-movie-grid">
