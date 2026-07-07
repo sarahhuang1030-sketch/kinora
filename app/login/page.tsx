@@ -88,7 +88,12 @@ export default function LoginPage() {
           Don&apos;t have an account?
           <a href="/register"> Register</a>
         </p>
+
+        <p className="auth-link">
+By signing in, you agree to our <a href="/terms"> Terms of Service</a> and
+<a href="/privacy"> Privacy Policy</a>. </p>
       </div>
+      
     </div>
   );
 }

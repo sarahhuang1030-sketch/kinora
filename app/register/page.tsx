@@ -486,7 +486,7 @@ if (
                   }}
                 >
                   <FcGoogle />
-                  <span>Log in with Gmail</span>
+                  <span>Sign in with Google</span>
                 </button>
 
                 <button
