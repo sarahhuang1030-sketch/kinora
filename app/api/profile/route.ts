@@ -25,7 +25,7 @@ export async function GET(req: Request) {
 
     const [rows] = await pool.execute<UserRow[]>(
       `
-      SELECT 
+     SELECT
   user_id,
   first_name,
   last_name,
@@ -33,7 +33,7 @@ export async function GET(req: Request) {
   email,
   phone,
   country,
-  date_of_birth,
+  DATE_FORMAT(date_of_birth, '%Y-%m-%d') AS date_of_birth,
   profile_image
 FROM users
 WHERE email = ?
@@ -108,14 +108,27 @@ export async function PUT(req: Request) {
       return NextResponse.json({ message: "User ID is required" }, { status: 400 });
     }
 
-    await pool.execute(
-      `
-      UPDATE users
-      SET first_name = ?, last_name = ?, username = ?, phone = ?, country = ?, date_of_birth = ?
-      WHERE user_id = ?
-      `,
-      [first_name, last_name, username, phone, country, date_of_birth, user_id]
-    );
+    const formattedDate =
+  date_of_birth && date_of_birth !== ""
+    ? date_of_birth.split("T")[0]
+    : null;
+
+   await pool.execute(
+  `
+  UPDATE users
+  SET first_name = ?, last_name = ?, username = ?, phone = ?, country = ?, date_of_birth = ?
+  WHERE user_id = ?
+  `,
+  [
+    first_name,
+    last_name,
+    username,
+    phone || null,
+    country || null,
+    formattedDate,
+    user_id,
+  ]
+);
 
     console.log("PROFILE UPDATED", {
     userId: user_id,
@@ -125,7 +138,11 @@ export async function PUT(req: Request) {
 
     return NextResponse.json({ message: "Profile updated successfully" });
   } catch (error) {
-    console.error("UPDATE PROFILE ERROR:", error);
-    return NextResponse.json({ message: "Server error" }, { status: 500 });
-  }
+  console.error("UPDATE PROFILE ERROR:", error);
+
+  return NextResponse.json(
+    { message: "Server error", error: String(error) },
+    { status: 500 }
+  );
+}
 }
