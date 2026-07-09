@@ -129,7 +129,7 @@ function MovieCard({
 
         <div className="home-movie-actions">
           <Link href={`/movie/${movie.movie_id}`} className="home-show-btn">
-            ⊕ Show details
+            Show details
           </Link>
 
           {isLoggedIn && (
@@ -228,11 +228,16 @@ const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
 }
 
    function handleMoodClick(moodName: string) {
-  setSelectedMood((current) => {
-    const nextMood = current === moodName ? '' : moodName;
+  if (moodName === "Surprise Me") {
+    handleSurpriseMe();
+    return;
+  }
 
-    if (nextMood === '') {
-      setAppliedMood('');
+  setSelectedMood((current) => {
+    const nextMood = current === moodName ? "" : moodName;
+
+    if (nextMood === "") {
+      setAppliedMood("");
     }
 
     return nextMood;
@@ -368,15 +373,24 @@ async function handleToggleSaved(movie: CardMovie) {
 }
 
   function handleSurpriseMe() {
-    if (!moods.length) return;
+  const availableMoods = moods.filter(
+    (mood) => mood.mood_name !== "Surprise Me"
+  );
 
-    const randomMood = moods[Math.floor(Math.random() * moods.length)];
-    setSelectedMood(randomMood.mood_name);
+  if (!availableMoods.length) return;
 
-    document
-      .getElementById('recommended-section')
-      ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }
+  const randomIndex =
+  crypto.getRandomValues(new Uint32Array(1))[0] % availableMoods.length;
+
+  const randomMood = availableMoods[randomIndex];
+
+  setSelectedMood(randomMood.mood_name);
+  setAppliedMood(randomMood.mood_name);
+
+  document
+    .getElementById("recommended-section")
+    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+}
 
   return (
     <main className="home-page">
@@ -416,10 +430,10 @@ async function handleToggleSaved(movie: CardMovie) {
                 </button>
             ))}
 
-            <button className="home-mood-pill surprise" onClick={handleSurpriseMe}>
+            {/* <button className="home-mood-pill surprise" onClick={handleSurpriseMe}>
               <span>✨</span>
               Surprise Me
-            </button>
+            </button> */}
           </div>
 
           
