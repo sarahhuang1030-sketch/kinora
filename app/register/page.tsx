@@ -12,6 +12,11 @@ type GenreOption = {
   genre_name: string;
   genre_icon: string;
 };
+type ContentTypeOption = {
+  type_name: string;
+  content_icon: string;
+  description: string;
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -35,7 +40,7 @@ export default function RegisterPage() {
   });
 
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
-  const [contentTypeOptions, setContentTypeOptions] = useState<string[]>([]);
+  const [contentTypeOptions, setContentTypeOptions] = useState<ContentTypeOption[]>([]);
   const [preferenceOptions, setPreferenceOptions] = useState<string[]>([]);
 
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -56,7 +61,11 @@ export default function RegisterPage() {
       const contentRes = await fetch("/api/content-types");
       const contentData = await contentRes.json();
       setContentTypeOptions(
-        contentData.map((item: { type_name: string }) => item.type_name)
+        contentData.map((item: { type_name: string; content_icon: string; description: string }) => ({
+          type_name: item.type_name,
+          content_icon: item.content_icon,
+          description: item.description,
+        }))
       );
 
       const preferenceRes = await fetch("/api/recommendation-factors");
@@ -274,6 +283,7 @@ if (
               onNext={() => setStep(2)}
               onSkip={() => setStep(2)}
               nextDisabled={answers.genres.length === 0}
+              gridClassName="genre-choice-grid"
             />
           )}
 
@@ -281,8 +291,8 @@ if (
             <QuestionStep
               stepNumber="2"
               eyebrow="QUESTION 2 of 5"
-              title="What do you mostly watch?"
-              subtitle="You can choose more than one, unless you select no preference."
+              title="What do you prefer to watch?"
+              subtitle="Pick your preferred content type(s)"
               label="Content Type"
               options={contentTypeOptions}
               selected={answers.contentTypes}
@@ -291,6 +301,7 @@ if (
               onNext={() => setStep(3)}
               onSkip={() => setStep(3)}
               nextDisabled={answers.contentTypes.length === 0}
+              gridClassName="content-choice-grid"
             />
           )}
 
@@ -595,13 +606,14 @@ function QuestionStep({
   onSkip,
   nextDisabled,
   nextText = "Continue",
+  gridClassName = "",
 }: {
   stepNumber: string;
   eyebrow: string;
   title: string;
   subtitle: string;
   label: string;
-  options: (string | GenreOption)[];
+  options: (string | GenreOption | ContentTypeOption)[];
   selected: string[];
   onToggle: (item: string) => void;
   onBack: () => void;
@@ -609,6 +621,7 @@ function QuestionStep({
   onSkip: () => void;
   nextDisabled: boolean;
   nextText?: string;
+  gridClassName?: string;
 }) {
   return (
     <>
@@ -624,13 +637,28 @@ function QuestionStep({
 
       {/* <p className="question-label">{label}</p> */}
 
-      <div className="choice-grid genre-choice-grid">
+      <div className={`choice-grid ${gridClassName}`}>
   {options.map((option) => {
-    const item =
-      typeof option === "string" ? option : option.genre_name;
+   const item =
+  typeof option === "string"
+    ? option
+    : "genre_name" in option
+    ? option.genre_name
+    : option.type_name;
 
     const icon =
-      typeof option === "string" ? "" : option.genre_icon;
+      typeof option === "string"
+        ? ""
+        : "genre_icon" in option
+        ? option.genre_icon
+        : option.content_icon;
+
+    const description =
+      typeof option === "string"
+        ? ""
+        : "description" in option
+        ? option.description
+        : "";
 
     return (
       <button
@@ -645,7 +673,16 @@ function QuestionStep({
           ) : null}
         </span>
 
-        <span>{item}</span>
+        {/* <span>{item}</span> */}
+        <div className="choice-content">
+  <span className="choice-title">{item}</span>
+
+  {description && (
+    <span className="choice-description">
+      {description}
+    </span>
+  )}
+</div>
       </button>
     );
   })}
