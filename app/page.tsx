@@ -391,6 +391,9 @@ async function handleToggleSaved(movie: CardMovie) {
           </h1>
 
           <h2>What kind of mood are you into tonight?</h2>
+            <p className="home-tiny-note">
+              Select at least one mood to get personalized picks
+            </p>
 
           <div className="home-mood-grid">
             {moods.map((mood) => (
@@ -419,7 +422,7 @@ async function handleToggleSaved(movie: CardMovie) {
             </button>
           </div>
 
-          <p className="home-tiny-note">Select at least one mood to get personalized picks</p>
+          
 
           <button className="home-recommend-btn" onClick={handleRecommendationsClick}>
             Show my recommendations

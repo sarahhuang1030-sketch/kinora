@@ -5,6 +5,7 @@ import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
+import { FiSearch } from "react-icons/fi";
 
 type Movie = {
   movie_id: number;
@@ -99,18 +100,17 @@ export default function Navbar() {
 
   return (
     <nav>
-      <div className="logo">
-        <Link href="/" className="logo">
-          <Image
-            src="/CINERI-favicon.png"
-            alt="CINEforge"
-            width={40}
-            height={40}
-            priority
-          />
-          <span>CINERI</span>
-        </Link>
-      </div>
+      <Link href="/" className="logo">
+  <Image
+  src="/CINERI-favicon.png"
+  alt="CINERI"
+  width={44}
+  height={44}
+  priority
+  className="logo-icon"
+/>
+<span className="logo-wordmark">CINERI</span>
+</Link>
 
       <div className="nav-links">
         <Link href="/">Home</Link>
@@ -136,15 +136,17 @@ export default function Navbar() {
       <div className="nav-links">
         <div className="search-wrapper" ref={searchRef}>
           {showSearch && (
-            <form onSubmit={handleSearch} className="nav-search-form">
-              <input
-                type="text"
-                placeholder="Search movies..."
-                value={searchText}
-                onChange={(e) => setSearchText(e.target.value)}
-                autoFocus
-              />
-            </form>
+           <form onSubmit={handleSearch} className="nav-search-form">
+            <FiSearch className="search-input-icon" />
+
+            <input
+              type="text"
+              placeholder="Search any title, genre, or mood..."
+              value={searchText}
+              onChange={(e) => setSearchText(e.target.value)}
+              autoFocus
+            />
+          </form>
           )}
 
           <button
@@ -160,7 +162,7 @@ export default function Navbar() {
               }
             }}
           >
-            ⌕
+            <FiSearch />
           </button>
 
           {showSearch && results.length > 0 && (
