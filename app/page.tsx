@@ -61,18 +61,6 @@ type DbPlatform = {
   platform_name: string;
 };
 
-// const moodIcons: Record<string, string> = {
-//   Relaxed: '🌙',
-//   Adventurous: '🧭',
-//   Suspenseful: '🔥',
-//   'Feel Good': '😊',
-//   Dark: '🖤',
-//   Heartwarming: '❤️',
-//   'Thought Provoking': '💡',
-//   Intense: '⚡',
-//   Emotional: '🥹',
-// };
-
 
 
 function mapDbMovie(movie: DbMovie, fallbackPoster: string, index: number): CardMovie {
@@ -203,6 +191,9 @@ const [selectedGenre, setSelectedGenre] = useState('');
 const [genres, setGenres] = useState<DbGenre[]>([]);
 const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
 
+const [moodCarouselMovies, setMoodCarouselMovies] = useState<CardMovie[]>([]);
+const [moodSlideIndex, setMoodSlideIndex] = useState(0);
+
   async function handleSaveToWatchlist(watchlistId: number) {
     
   if (!selectedMovie) return;
@@ -227,7 +218,7 @@ const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
   setWatchlists(data);
 }
 
-   function handleMoodClick(moodName: string) {
+  function handleMoodClick(moodName: string) {
   if (moodName === "Surprise Me") {
     handleSurpriseMe();
     return;
@@ -236,9 +227,7 @@ const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
   setSelectedMood((current) => {
     const nextMood = current === moodName ? "" : moodName;
 
-    if (nextMood === "") {
-      setAppliedMood("");
-    }
+    setAppliedMood(nextMood);
 
     return nextMood;
   });
@@ -302,6 +291,8 @@ const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
 
         setRecommendedMovies(recommended.slice(0, 6));
         setMoreLikeThis(trending.slice(0, 3));
+        setMoodCarouselMovies(recommended.slice(0, 3));
+        setMoodSlideIndex(0);
       } catch {
         // Keep fallback content when the API is not ready.
       }
@@ -392,9 +383,134 @@ async function handleToggleSaved(movie: CardMovie) {
     ?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
+const currentMood = moods.find(
+  (mood) => mood.mood_name === appliedMood
+);
+
+
   return (
     <main className="home-page">
       <section className="home-mood-hero">
+     {/* carousel for mood-based recommendations */}
+    {appliedMood && moodCarouselMovies.length > 0 && (
+  <div className="home-mood-overlay">
+    <button
+      className="home-mood-overlay-close"
+      onClick={() => {
+        setAppliedMood("");
+        setSelectedMood("");
+        setMoodCarouselMovies([]);
+      }}
+    >
+      ×
+    </button>
+
+    <p className="home-overlay-title">
+      Based on your <span>Mood</span>
+    </p>
+
+    <div className="home-overlay-carousel">
+      <button
+        className="home-carousel-arrow left"
+        onClick={() =>
+          setMoodSlideIndex((current) =>
+            current === 0 ? moodCarouselMovies.length - 1 : current - 1
+          )
+        }
+      >
+        ‹
+      </button>
+
+      <div className="home-overlay-card">
+        <div className="home-overlay-poster">
+          <img
+            src={moodCarouselMovies[moodSlideIndex].poster}
+            alt={moodCarouselMovies[moodSlideIndex].title}
+          />
+        </div>
+
+        <div className="home-overlay-info">
+          <span className="home-overlay-mood-pill">
+              {currentMood?.icon_url && (
+                <img
+                  src={currentMood.icon_url}
+                  alt={currentMood.mood_name}
+                  className="home-overlay-pill-icon"
+                />
+              )}
+
+              <span>{currentMood?.mood_name}</span>
+            </span>
+
+          <h2>{moodCarouselMovies[moodSlideIndex].title}</h2>
+
+          <p className="home-overlay-meta">
+            {moodCarouselMovies[moodSlideIndex].genre} ·{" "}
+            {moodCarouselMovies[moodSlideIndex].duration} ·{" "}
+            {moodCarouselMovies[moodSlideIndex].year}
+          </p>
+
+          <p className="home-overlay-label">About</p>
+
+          <p className="home-overlay-desc">
+            {moodCarouselMovies[moodSlideIndex].description}
+          </p>
+
+          <p className="home-overlay-label">Available on</p>
+
+          <div className="home-overlay-platforms">
+            {moodCarouselMovies[moodSlideIndex].platforms.map((platform) => (
+              <span key={platform}>{platform}</span>
+            ))}
+          </div>
+
+          <div className="home-overlay-actions">
+            {user?.user_id && (
+              <button
+                className="home-save-btn"
+                onClick={() =>
+                  handleToggleSaved(moodCarouselMovies[moodSlideIndex])
+                }
+              >
+                Add to watchlist
+              </button>
+            )}
+
+            <Link
+              href={`/movie/${moodCarouselMovies[moodSlideIndex].movie_id}`}
+              className="home-show-btn"
+            >
+              Show details
+            </Link>
+          </div>
+        </div>
+      </div>
+
+      <button
+        className="home-carousel-arrow right"
+        onClick={() =>
+          setMoodSlideIndex((current) =>
+            current === moodCarouselMovies.length - 1 ? 0 : current + 1
+          )
+        }
+      >
+        ›
+      </button>
+    </div>
+
+    <div className="home-carousel-dots">
+      {moodCarouselMovies.map((movie, index) => (
+        <button
+          key={movie.movie_id}
+          className={index === moodSlideIndex ? "active" : ""}
+          onClick={() => setMoodSlideIndex(index)}
+        />
+      ))}
+    </div>
+  </div>
+)}
+
+     {/* background */}
         <div className="home-hero-content">
           <p className="home-eyebrow">Mood-based discovery</p>
 
@@ -447,6 +563,8 @@ async function handleToggleSaved(movie: CardMovie) {
           Explore all ˅
         </button>
       </section>
+
+
 
       <section className="home-content-wrap" id="recommended-section">
         <div className="home-section-head">

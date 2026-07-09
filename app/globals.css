@@ -2783,6 +2783,7 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 
 .home-mood-pill span {
   margin-right: 9px;
+  font-size: 14px;
 }
 
 .home-mood-pill b {
@@ -3989,4 +3990,232 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   font-size: 12px;
   color: #8f9eb1;
   font-weight: 500;
+}
+
+/* home-mood-carousel section */
+.home-mood-overlay {
+  position: absolute;
+  inset: 24px 0 0;
+  z-index: 20;
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+
+  padding: 40px 60px;
+
+  background:
+    linear-gradient(
+      180deg,
+      rgba(5, 11, 22, 0.45) 0%,
+      rgba(5, 11, 22, 0.86) 55%,
+      rgba(5, 11, 22, 0.98) 100%
+    );
+  backdrop-filter: blur(2px);
+}
+
+.home-mood-overlay-close {
+  position: absolute;
+  top: 28px;
+  right: 42px;
+
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+
+  border: 1px solid rgba(255,255,255,0.18);
+  background: rgba(255,255,255,0.1);
+  color: white;
+
+  font-size: 30px;
+  line-height: 1;
+}
+
+.home-overlay-title {
+  width: min(1120px, 100%);
+  margin-bottom: 18px;
+
+  font-size: 32px;
+  font-weight: 800;
+  color: white;
+}
+
+.home-overlay-title span {
+  color: #ff6b3d;
+}
+
+.home-overlay-carousel {
+  position: relative;
+  width: min(1120px, 100%);
+}
+
+.home-overlay-card {
+  min-height: 470px;
+
+  display: grid;
+  grid-template-columns: 260px 1fr;
+  gap: 56px;
+  align-items: center;
+
+  padding: 34px 42px;
+
+  border-radius: 20px;
+  border: 1px solid rgba(130, 180, 220, 0.25);
+
+  background:
+    linear-gradient(
+      90deg,
+      rgba(13, 27, 44, 0.98) 0%,
+      rgba(15, 29, 47, 0.96) 55%,
+      rgba(15, 29, 47, 0.82) 100%
+    );
+
+  box-shadow:
+    0 30px 90px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.05);
+}
+
+.home-overlay-poster img {
+  width: 260px;
+  height: 390px;
+  object-fit: cover;
+  border-radius: 16px;
+}
+
+.home-overlay-info {
+  max-width: 680px;
+}
+
+.home-overlay-mood-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  min-width: 190px;
+  height: 38px;
+  padding: 0 18px;
+
+  border-radius: 10px;
+  border: 1px solid rgba(29, 180, 255, 0.6);
+
+  color: #28c8ff;
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.home-overlay-info h2 {
+  margin: 24px 0 12px;
+  color: white;
+  font-size: clamp(38px, 4vw, 56px);
+  line-height: 1.05;
+}
+
+.home-overlay-meta {
+  color: rgba(255,255,255,0.45);
+  font-size: 15px;
+  margin-bottom: 26px;
+}
+
+.home-overlay-label {
+  margin: 18px 0 8px;
+  color: white;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+.home-overlay-desc {
+  color: rgba(255,255,255,0.68);
+  line-height: 1.7;
+  max-width: 620px;
+}
+
+.home-overlay-platforms {
+  display: flex;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.home-overlay-platforms span {
+  min-width: 130px;
+  height: 46px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 12px;
+  border: 1px solid rgba(255,255,255,0.18);
+
+  background: rgba(255,255,255,0.06);
+  color: white;
+  font-weight: 700;
+}
+
+.home-overlay-actions {
+  display: flex;
+  gap: 18px;
+  margin-top: 38px;
+}
+
+.home-overlay-actions .home-show-btn,
+.home-overlay-actions .home-save-btn {
+  width: 230px;
+  height: 52px;
+  border-radius: 999px;
+}
+
+.home-carousel-arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 25;
+
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+
+  border: none;
+  background: rgba(255,255,255,0.14);
+  color: white;
+
+  font-size: 34px;
+}
+
+.home-carousel-arrow.left {
+  left: -64px;
+}
+
+.home-carousel-arrow.right {
+  right: -64px;
+}
+
+.home-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 28px;
+}
+
+.home-carousel-dots button {
+  width: 22px;
+  height: 6px;
+  border: none;
+  border-radius: 999px;
+  background: rgba(255,255,255,0.28);
+}
+
+.home-carousel-dots button.active {
+  background: #ff6b3d;
+}
+
+.home-overlay-pill-icon{
+    width:18px;
+    height:18px;
+    object-fit:contain;
+    display:block;
+    flex-shrink:0;
+    margin-right:5px;
 }
