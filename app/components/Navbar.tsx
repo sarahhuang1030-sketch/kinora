@@ -232,8 +232,8 @@ export default function Navbar() {
           </>
         ) : (
           <>
-            <Link href="/register" className="login-btn">
-              Register
+            <Link href="/register" className="register-btn">
+              Join
             </Link>
             <Link href="/login" className="login-btn">
               Login

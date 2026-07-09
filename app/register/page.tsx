@@ -256,8 +256,8 @@ if (
           {step === 1 && (
             <QuestionStep
               stepNumber="1"
-              eyebrow="Step 1 of 5"
-              title="Pick your genres"
+              eyebrow="QUESTION 1 of 5"
+              title="Pick your favourite genres"
               subtitle="Choose as many as you like."
               label="Genres"
               options={genreOptions}
@@ -273,7 +273,7 @@ if (
           {step === 2 && (
             <QuestionStep
               stepNumber="2"
-              eyebrow="Step 2 of 5"
+              eyebrow="QUESTION 2 of 5"
               title="What do you mostly watch?"
               subtitle="You can choose more than one, unless you select no preference."
               label="Content Type"
@@ -290,7 +290,7 @@ if (
           {step === 3 && (
             <QuestionStep
               stepNumber="3"
-              eyebrow="Step 3 of 3"
+              eyebrow="QUESTION 3 of 5"
               title="What matters most to you?"
               subtitle="Choose what influences your recommendations."
               label="Preferences"
@@ -606,7 +606,7 @@ function QuestionStep({
   return (
     <>
       <div className="question-header">
-        <div className="question-number">{stepNumber}</div>
+        {/* <div className="question-number">{stepNumber}</div> */}
 
         <div>
           <p className="step-eyebrow2">{eyebrow}</p>
@@ -615,7 +615,7 @@ function QuestionStep({
         </div>
       </div>
 
-      <p className="question-label">{label}</p>
+      {/* <p className="question-label">{label}</p> */}
 
       <div className="choice-grid">
         {options.map((item) => (

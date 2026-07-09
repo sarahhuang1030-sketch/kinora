@@ -234,6 +234,36 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
   color: #ff7a00;
 }
 
+.register-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  height: 40px;
+  padding: 0 20px;
+
+  border-radius: 999px;
+
+  background: linear-gradient(
+    180deg,
+    #FC7A3B 0%,
+    #FC8739 50%,
+    #FC9944 100%
+  );
+
+  color: white;
+  font-size: 13px;
+  font-weight: 700;
+
+  transition: all 0.25s ease;
+}
+
+.register-btn:hover {
+  transform: translateY(-2px);
+  box-shadow:
+    0 10px 25px rgba(252, 122, 59, 0.35);
+}
+
 /* hero slide style */
 .hero-slide {
   width: 100%;
@@ -1126,12 +1156,11 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 }
 
 .register-subtitle {
-  margin: 12px auto 24px;
   max-width: 420px;
   color: #aeb9c8;
   font-size: 15px;
-  line-height: 1.6;
   font-family: var(--font-moderustic);
+  margin-top:-12px;
 }
 
 .register-icon {
@@ -1600,13 +1629,12 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 .question-header h1 {
   text-align: left;
   font-size: 40px;
-  line-height: 1.1;
+  
   margin: 0;
   font-family: var(--font-dongle);
 }
 
 .question-header .register-subtitle {
-  margin: 8px 0 0;
   text-align: left;
   font-size: 13px;
 }
