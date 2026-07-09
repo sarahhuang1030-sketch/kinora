@@ -3,7 +3,7 @@ import pool from "@/app/src/lib/db";
 
 export async function GET() {
   const [rows] = await pool.query(`
-    SELECT genre_id, genre_name
+    SELECT genre_id, genre_name, genre_icon
     FROM genres
     ORDER BY genre_name
   `);

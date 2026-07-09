@@ -8,6 +8,10 @@ import { FcGoogle } from "react-icons/fc";
 import { FaApple } from "react-icons/fa";
 
 type AnswerCategory = "genres" | "contentTypes" | "preferences";
+type GenreOption = {
+  genre_name: string;
+  genre_icon: string;
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -30,7 +34,7 @@ export default function RegisterPage() {
     preferences: [] as string[],
   });
 
-  const [genreOptions, setGenreOptions] = useState<string[]>([]);
+  const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
   const [contentTypeOptions, setContentTypeOptions] = useState<string[]>([]);
   const [preferenceOptions, setPreferenceOptions] = useState<string[]>([]);
 
@@ -43,7 +47,10 @@ export default function RegisterPage() {
       const genreRes = await fetch("/api/genres");
       const genreData = await genreRes.json();
       setGenreOptions(
-        genreData.map((item: { genre_name: string }) => item.genre_name)
+        genreData.map((item: { genre_name: string; genre_icon: string }) => ({
+          genre_name: item.genre_name,
+          genre_icon: item.genre_icon,
+        }))
       );
 
       const contentRes = await fetch("/api/content-types");
@@ -594,7 +601,7 @@ function QuestionStep({
   title: string;
   subtitle: string;
   label: string;
-  options: string[];
+  options: (string | GenreOption)[];
   selected: string[];
   onToggle: (item: string) => void;
   onBack: () => void;
@@ -617,22 +624,32 @@ function QuestionStep({
 
       {/* <p className="question-label">{label}</p> */}
 
-      <div className="choice-grid">
-        {options.map((item) => (
-          <button
-            key={item}
-            type="button"
-            className={`choice-pill ${selected.includes(item) ? "active" : ""}`}
-            onClick={() => onToggle(item)}
-          >
-            <span className="choice-icon">
-              {selected.includes(item) ? "✓" : ""}
-            </span>
+      <div className="choice-grid genre-choice-grid">
+  {options.map((option) => {
+    const item =
+      typeof option === "string" ? option : option.genre_name;
 
-            <span>{item}</span>
-          </button>
-        ))}
-      </div>
+    const icon =
+      typeof option === "string" ? "" : option.genre_icon;
+
+    return (
+      <button
+        key={item}
+        type="button"
+        className={`choice-pill ${selected.includes(item) ? "active" : ""}`}
+        onClick={() => onToggle(item)}
+      >
+        <span className="choice-icon">
+          {icon ? (
+            <img src={icon} alt="" className="genre-icon-img" />
+          ) : null}
+        </span>
+
+        <span>{item}</span>
+      </button>
+    );
+  })}
+</div>
 
       {nextDisabled && (
         <p className="step-warning">Select at least one option to continue</p>
@@ -653,9 +670,9 @@ function QuestionStep({
         </button>
       </div>
 
-      <button type="button" className="skip-btn" onClick={onSkip}>
+      {/* <button type="button" className="skip-btn" onClick={onSkip}>
         Skip for now
-      </button>
+      </button> */}
     </>
   );
 }
