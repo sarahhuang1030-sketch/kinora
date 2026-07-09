@@ -6,23 +6,15 @@ export default function Footer() {
     <footer className="footer">
       <div className="footer-container">
 
-        <div className="footer-brand">
-          <div className="logo footer-logo">
-            <Link href="/" className="logo">
-        <Image
-          src="/CINERI-favicon.png"
-          alt="CINERI"
-          width={40}
-          height={40}
-          priority
-        />
-        <span>CINERI</span>
-      </Link>
-          </div>
-          <p className="footer-tagline">
-            Discover movies and TV shows tailored to your taste.
-          </p>
-        </div>
+        <Link href="/" className="logo footer-logo">
+          <Image
+            src="/CINERI-favicon.png"
+            alt="CINERI"
+            width={40}
+            height={40}
+          />
+          <span className="logo-wordmark">CINERI</span>
+        </Link>
 
         <div className="footer-links">
           <Link href="/privacy">Privacy</Link>
@@ -32,7 +24,7 @@ export default function Footer() {
         </div>
 
         <div className="footer-copy">
-          © 2026 CINERI. All rights reserved.
+          © 2026 Cineri. All rights reserved.
         </div>
 
       </div>
