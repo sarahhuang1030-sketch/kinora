@@ -11,6 +11,7 @@ type AnswerCategory = "genres" | "contentTypes" | "preferences";
 type GenreOption = {
   genre_name: string;
   genre_icon: string;
+  genre_color: string;
 };
 type ContentTypeOption = {
   type_name: string;
@@ -76,10 +77,17 @@ const personalDetailsProgress =
       const genreRes = await fetch("/api/genres");
       const genreData = await genreRes.json();
       setGenreOptions(
-        genreData.map((item: { genre_name: string; genre_icon: string }) => ({
-          genre_name: item.genre_name,
-          genre_icon: item.genre_icon,
-        }))
+        genreData.map(
+          (item: {
+            genre_name: string;
+            genre_icon: string;
+            genre_color: string;
+          }) => ({
+            genre_name: item.genre_name,
+            genre_icon: item.genre_icon,
+            genre_color: item.genre_color,
+          })
+        )
       );
 
       const contentRes = await fetch("/api/content-types");
@@ -315,6 +323,7 @@ if (
               onSkip={() => setStep(2)}
               nextDisabled={answers.genres.length === 0}
               gridClassName="genre-choice-grid"
+              
             />
           )}
 
@@ -745,11 +754,26 @@ const icon =
         ? option.description
         : "";
 
+        const genreColor =
+  typeof option !== "string" && "genre_name" in option
+    ? option.genre_color
+    : "";
+
     return (
-      <button
+     <button
         key={item}
         type="button"
-        className={`choice-pill ${selected.includes(item) ? "active" : ""}`}
+        className={`choice-pill
+          ${genreColor ? "genre-pill" : ""}
+          ${selected.includes(item) ? "active" : ""}
+        `}
+        style={
+          genreColor
+            ? ({
+                "--genre-color": genreColor,
+              } as React.CSSProperties)
+            : undefined
+        }
         onClick={() => onToggle(item)}
       >
         <span className="choice-icon">

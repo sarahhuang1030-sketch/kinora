@@ -4265,3 +4265,24 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
     flex-shrink:0;
     margin-right:5px;
 }
+
+/* genre page pill colors */
+.genre-pill {
+  border: 1px solid var(--genre-color);
+  color: var(--genre-color);
+  background: rgba(255,255,255,.03);
+}
+
+.genre-pill .choice-title {
+  color: var(--genre-color);
+}
+
+.genre-pill .choice-icon {
+  color: var(--genre-color);
+}
+
+.genre-pill:hover,
+.genre-pill.active {
+  background: color-mix(in srgb, var(--genre-color) 15%, transparent);
+  border-color: var(--genre-color);
+}
