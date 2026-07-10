@@ -237,24 +237,20 @@ if (
               <div className="onboarding-list">
                 <InfoRow
                   number="1"
-                  title="Pick your favorite genres"
-                  subtitle="Choose one or more genres"
+                  title="Tell us your watch preferences"
+                  subtitle="3 questions"
                 />
                 <InfoRow
                   number="2"
-                  title="Select your content type"
-                  subtitle="Movies, TV shows, or both"
+                  title="Add your personal details"
+                  subtitle="Name, date of birth, country, email and password"
                 />
                 <InfoRow
                   number="3"
-                  title="Tell us what matters most"
-                  subtitle="Help us improve your recommendations"
+                  title="Add your streaming services"
+                  subtitle="Link streaming services"
                 />
-                <InfoRow
-                  number="4"
-                  title="Create your account"
-                  subtitle="Save your personalized profile"
-                />
+               
               </div>
 
               <button className="primary-btn" onClick={() => setStep(1)}>
@@ -351,13 +347,13 @@ if (
                 <NextRow
                   number="2"
                   title="Add your personal details"
-                  subtitle="1 question"
+                  subtitle="Name, date of birth, country, email and password"
                 />
 
                 <NextRow
                   number="3"
-                  title="Create your account"
-                  subtitle="Save your profile"
+                  title="Add your streaming services"
+                  subtitle="Link streaming services"
                 />
               </div>
 
@@ -580,7 +576,7 @@ function NextRow({
 }) {
   return (
     <div className="thank-next-row">
-      <div className={`thank-next-number ${complete ? "complete" : ""}`}>
+      <div className={`info-number  ${complete ? "complete" : ""}`}>
         {number}
       </div>
 

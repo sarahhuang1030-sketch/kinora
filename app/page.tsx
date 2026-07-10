@@ -125,7 +125,7 @@ function MovieCard({
                 className={isSaved ? 'home-save-btn saved' : 'home-save-btn'}
                 onClick={() => onWatchlistClick(movie)}
               >
-                {isSaved ? '▣ Saved' : '▢ Watchlist'}
+                {isSaved ? 'Saved' : 'Watchlist'}
               </button>
           )}
         </div>
@@ -195,27 +195,61 @@ const [moodCarouselMovies, setMoodCarouselMovies] = useState<CardMovie[]>([]);
 const [moodSlideIndex, setMoodSlideIndex] = useState(0);
 
   async function handleSaveToWatchlist(watchlistId: number) {
-    
-  if (!selectedMovie) return;
-  setSavedMovieIds((current) => [...current, selectedMovie.movie_id]);
-  const res = await fetch('/api/watchlist-movies', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      watchlistId,
-      movieId: selectedMovie.movie_id,
-    }),
-  });
+  if (!selectedMovie || !user?.user_id) return;
 
-  if (!res.ok) return;
+  try {
+    const movieId = selectedMovie.movie_id;
 
-  setSelectedMovie(null);
+    const res = await fetch("/api/watchlist-movies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        watchlistId,
+        movieId,
+      }),
+    });
 
-  const updated = await fetch(`/api/watchlists?userId=${user?.user_id}`);
-  const data = await updated.json();
-  setWatchlists(data);
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
+
+      console.error(
+        "Failed to save movie:",
+        errorData?.error || res.statusText
+      );
+
+      return;
+    }
+
+    // Only change the button after the database insert succeeds
+    setSavedMovieIds((current) =>
+      current.includes(movieId)
+        ? current
+        : [...current, movieId]
+    );
+
+    setSelectedMovie(null);
+
+    // Reload the updated watchlist totals
+   const updatedRes = await fetch(
+      `/api/watchlists?userId=${user.user_id}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!updatedRes.ok) {
+      console.error("Failed to refresh watchlists");
+      return;
+    }
+
+    const updatedWatchlists = await updatedRes.json();
+
+    setWatchlists(updatedWatchlists);
+  } catch (error) {
+    console.error("Error saving movie to watchlist:", error);
+  }
 }
 
   function handleMoodClick(moodName: string) {
@@ -465,24 +499,34 @@ const currentMood = moods.find(
           </div>
 
           <div className="home-overlay-actions">
-            {user?.user_id && (
-              <button
-                className="home-save-btn"
-                onClick={() =>
-                  handleToggleSaved(moodCarouselMovies[moodSlideIndex])
-                }
-              >
-                Add to watchlist
-              </button>
-            )}
+  {user?.user_id && (
+    <button
+      className={
+        savedMovieIds.includes(
+          moodCarouselMovies[moodSlideIndex].movie_id
+        )
+          ? "home-save-btn saved"
+          : "home-save-btn"
+      }
+      onClick={() =>
+        handleToggleSaved(moodCarouselMovies[moodSlideIndex])
+      }
+    >
+      {savedMovieIds.includes(
+        moodCarouselMovies[moodSlideIndex].movie_id
+      )
+        ? "Saved"
+        : "Add to wishlist"}
+    </button>
+  )}
 
-            <Link
-              href={`/movie/${moodCarouselMovies[moodSlideIndex].movie_id}`}
-              className="home-show-btn"
-            >
-              Show details
-            </Link>
-          </div>
+  <Link
+    href={`/movie/${moodCarouselMovies[moodSlideIndex].movie_id}`}
+    className="home-show-btn"
+  >
+    Show details
+  </Link>
+</div>
         </div>
       </div>
 

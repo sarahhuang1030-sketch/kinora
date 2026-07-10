@@ -3014,7 +3014,7 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 }
 
 .home-movie-desc {
-  min-height: 42px;
+  min-height: 45px;
   margin: 0 0 14px;
   color: #6f7d8b;
   font-size: 11px;
