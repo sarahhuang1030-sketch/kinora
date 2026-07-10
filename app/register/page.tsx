@@ -17,6 +17,10 @@ type ContentTypeOption = {
   content_icon: string;
   description: string;
 };
+type PreferenceOption = {
+  factor_name: string;
+  factor_icon: string;
+};
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -41,7 +45,8 @@ export default function RegisterPage() {
 
   const [genreOptions, setGenreOptions] = useState<GenreOption[]>([]);
   const [contentTypeOptions, setContentTypeOptions] = useState<ContentTypeOption[]>([]);
-  const [preferenceOptions, setPreferenceOptions] = useState<string[]>([]);
+ const [preferenceOptions, setPreferenceOptions] =
+  useState<PreferenceOption[]>([]);
 
   const [confirmPassword, setConfirmPassword] = useState("");
   const [dateOfBirth, setDateOfBirth] = useState("");
@@ -89,8 +94,14 @@ const personalDetailsProgress =
 
       const preferenceRes = await fetch("/api/recommendation-factors");
       const preferenceData = await preferenceRes.json();
+
       setPreferenceOptions(
-        preferenceData.map((item: { factor_name: string }) => item.factor_name)
+        preferenceData.map(
+          (item: { factor_name: string; factor_icon: string }) => ({
+            factor_name: item.factor_name,
+            factor_icon: item.factor_icon,
+          })
+        )
       );
     }
 
@@ -663,17 +674,17 @@ function NextRow({
 }
 
 function QuestionStep({
-  stepNumber,
+ 
   eyebrow,
   title,
   subtitle,
-  label,
+  
   options,
   selected,
   onToggle,
   onBack,
   onNext,
-  onSkip,
+ 
   nextDisabled,
   nextText = "Continue",
   gridClassName = "",
@@ -683,7 +694,7 @@ function QuestionStep({
   title: string;
   subtitle: string;
   label: string;
-  options: (string | GenreOption | ContentTypeOption)[];
+  options: (string | GenreOption | ContentTypeOption | PreferenceOption)[];
   selected: string[];
   onToggle: (item: string) => void;
   onBack: () => void;
@@ -714,14 +725,18 @@ function QuestionStep({
     ? option
     : "genre_name" in option
     ? option.genre_name
-    : option.type_name;
+    : "type_name" in option
+    ? option.type_name
+    : option.factor_name;
 
-    const icon =
-      typeof option === "string"
-        ? ""
-        : "genre_icon" in option
-        ? option.genre_icon
-        : option.content_icon;
+const icon =
+  typeof option === "string"
+    ? ""
+    : "genre_icon" in option
+    ? option.genre_icon
+    : "content_icon" in option
+    ? option.content_icon
+    : option.factor_icon;
 
     const description =
       typeof option === "string"
