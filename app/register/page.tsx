@@ -47,6 +47,25 @@ export default function RegisterPage() {
   const [dateOfBirth, setDateOfBirth] = useState("");
   const [country, setCountry] = useState("");
 
+  const personalDetailFields = [
+  firstName,
+  lastName,
+  email,
+  username,
+  phone,
+  dateOfBirth,
+  country,
+  password,
+  confirmPassword,
+];
+
+const completedPersonalDetailFields = personalDetailFields.filter(
+  (field) => field.trim() !== ""
+).length;
+
+const personalDetailsProgress =
+  (completedPersonalDetailFields / personalDetailFields.length) * 100;
+
   useEffect(() => {
     async function loadOptions() {
       const genreRes = await fetch("/api/genres");
@@ -224,7 +243,12 @@ if (
   return (
     <main className="register-page">
       <div className="register-shell">
-        {step > 0 && <ProgressBar step={step} />}
+        {step > 0 && (
+        <ProgressBar
+          step={step}
+          personalDetailsProgress={personalDetailsProgress}
+        />
+      )}
 
         <section className="register-card">
           {step === 0 && (
@@ -529,15 +553,65 @@ if (
   );
 }
 
-function ProgressBar({ step }: { step: number }) {
+function ProgressBar({
+  step,
+  personalDetailsProgress,
+}: {
+  step: number;
+  personalDetailsProgress: number;
+}) {
+  let preferenceProgress = 0;
+  let detailsProgress = 0;
+  let streamingProgress = 0;
+
+  // Stage 1: the three preference questions
+  if (step === 1) {
+    preferenceProgress = 33.33;
+  } else if (step === 2) {
+    preferenceProgress = 66.66;
+  } else if (step >= 3) {
+    preferenceProgress = 100;
+  }
+
+  // Stage 2: personal information
+  if (step === 5) {
+    detailsProgress = personalDetailsProgress;
+  }
+
   return (
-    <div className="register-progress-lines">
-      {[1, 2, 3, 4, 5].map((item) => (
-        <div
-          key={item}
-          className={`progress-line-block ${step >= item ? "active" : ""}`}
-        />
-      ))}
+    <div className="register-progress-wrapper">
+      <div className="register-progress-lines">
+        <ProgressSection progress={preferenceProgress} />
+        <ProgressSection progress={detailsProgress} />
+        <ProgressSection progress={streamingProgress} />
+      </div>
+
+      <div className="register-progress-labels">
+        <span className={preferenceProgress > 0 ? "active" : ""}>
+         
+        </span>
+
+        <span className={detailsProgress > 0 ? "active" : ""}>
+          
+        </span>
+
+        <span className={streamingProgress > 0 ? "active" : ""}>
+          
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ProgressSection({ progress }: { progress: number }) {
+  return (
+    <div className="progress-line-block">
+      <div
+        className="progress-line-fill"
+        style={{
+          width: `${Math.min(Math.max(progress, 0), 100)}%`,
+        }}
+      />
     </div>
   );
 }

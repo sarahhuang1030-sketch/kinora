@@ -123,8 +123,15 @@ function OnboardingCompleteContent() {
     router.push("/profile");
   }
 
-  return (
-    <main className="complete-page">
+ return (
+  <main className="complete-page">
+    <div className="complete-page-shell">
+      <OnboardingProgress
+        preferenceProgress={100}
+        detailsProgress={100}
+        streamingProgress={100}
+      />
+
       <section className="complete-card">
         <div className="complete-badge">✓ Setup Complete</div>
 
@@ -208,6 +215,7 @@ function OnboardingCompleteContent() {
           <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a>
         </p>
       </section>
+      </div>
     </main>
   );
 }
@@ -314,6 +322,53 @@ function CompleteRow({
           <span>{text}</span>
         </div>
       )}
+    </div>
+  );
+}
+
+function OnboardingProgress({
+  preferenceProgress,
+  detailsProgress,
+  streamingProgress,
+}: {
+  preferenceProgress: number;
+  detailsProgress: number;
+  streamingProgress: number;
+}) {
+  return (
+    <div className="register-progress-wrapper">
+      <div className="register-progress-lines">
+        <ProgressSection progress={preferenceProgress} />
+        <ProgressSection progress={detailsProgress} />
+        <ProgressSection progress={streamingProgress} />
+      </div>
+
+      <div className="register-progress-labels">
+        <span className={preferenceProgress > 0 ? "active" : ""}>
+          
+        </span>
+
+        <span className={detailsProgress > 0 ? "active" : ""}>
+       
+        </span>
+
+        <span className={streamingProgress > 0 ? "active" : ""}>
+          
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ProgressSection({ progress }: { progress: number }) {
+  return (
+    <div className="progress-line-block">
+      <div
+        className="progress-line-fill"
+        style={{
+          width: `${Math.min(Math.max(progress, 0), 100)}%`,
+        }}
+      />
     </div>
   );
 }

@@ -140,6 +140,11 @@ async function continueNext() {
   return (
     <main className="register-page">
       <div className="register-shell">
+        <OnboardingProgress
+      preferenceProgress={100}
+      detailsProgress={100}
+      streamingProgress={100}
+    />
         <section className="register-card">
           <div className="step-eyebrow">Streaming Services</div>
 
@@ -209,5 +214,52 @@ async function continueNext() {
         </section>
       </div>
     </main>
+  );
+}
+
+function OnboardingProgress({
+  preferenceProgress,
+  detailsProgress,
+  streamingProgress,
+}: {
+  preferenceProgress: number;
+  detailsProgress: number;
+  streamingProgress: number;
+}) {
+  return (
+    <div className="register-progress-wrapper">
+      <div className="register-progress-lines">
+        <ProgressSection progress={preferenceProgress} />
+        <ProgressSection progress={detailsProgress} />
+        <ProgressSection progress={streamingProgress} />
+      </div>
+
+      <div className="register-progress-labels">
+        <span className={preferenceProgress > 0 ? "active" : ""}>
+  
+        </span>
+
+        <span className={detailsProgress > 0 ? "active" : ""}>
+      
+        </span>
+
+        <span className={streamingProgress > 0 ? "active" : ""}>
+      
+        </span>
+      </div>
+    </div>
+  );
+}
+
+function ProgressSection({ progress }: { progress: number }) {
+  return (
+    <div className="progress-line-block">
+      <div
+        className="progress-line-fill"
+        style={{
+          width: `${Math.min(Math.max(progress, 0), 100)}%`,
+        }}
+      />
+    </div>
   );
 }
