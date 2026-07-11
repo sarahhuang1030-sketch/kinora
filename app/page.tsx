@@ -312,14 +312,11 @@ const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
 
   const nextMood = selectedMood === moodName ? "" : moodName;
 
+  // Only update the selected button and hero background
   setSelectedMood(nextMood);
-  setAppliedMood(nextMood);
 
-  if (nextMood) {
-    setIsMoodPopupOpen(true);
-  } else {
-    setIsMoodPopupOpen(false);
-  }
+  // Do not apply the mood or change recommendations yet
+  setIsMoodPopupOpen(false);
 }
 
   const [moods, setMoods] = useState<DbMood[]>([]);
@@ -464,9 +461,9 @@ async function handleToggleSaved(movie: CardMovie) {
 
   const randomMood = availableMoods[randomIndex];
 
+  // Select the random mood, but do not apply it yet
   setSelectedMood(randomMood.mood_name);
-  setAppliedMood(randomMood.mood_name);
-  setIsMoodPopupOpen(true);
+  setIsMoodPopupOpen(false);
 }
 
 const currentMood = moods.find(
