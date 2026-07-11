@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState } from "react";
 import { FiSearch } from "react-icons/fi";
 
 type Movie = {
@@ -25,32 +25,9 @@ type NavUser = {
 export default function Navbar() {
   const { data: session, status } = useSession();
   const router = useRouter();
-
-  const [showSearch, setShowSearch] = useState(false);
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<Movie[]>([]);
-  const [navUser, setNavUser] = useState<NavUser | null>(null);
-
-  const searchRef = useRef<HTMLDivElement | null>(null);
-
-    useEffect(() => {
-      function handleClickOutside(e: MouseEvent) {
-        if (
-          searchRef.current &&
-          !searchRef.current.contains(e.target as Node)
-        ) {
-          setShowSearch(false);
-          setSearchText("");
-          setResults([]);
-        }
-      }
-
-      document.addEventListener("mousedown", handleClickOutside);
-
-      return () => {
-        document.removeEventListener("mousedown", handleClickOutside);
-      };
-    }, []);
+  const [navUser, setNavUser] = useState<NavUser | null>(null); 
 
   useEffect(() => {
     const query = searchText.trim();
@@ -93,7 +70,6 @@ export default function Navbar() {
     if (!searchText.trim()) return;
 
     router.push(`/search?query=${encodeURIComponent(searchText.trim())}`);
-    setShowSearch(false);
     setSearchText("");
     setResults([]);
   };
@@ -134,57 +110,37 @@ export default function Navbar() {
       </div>
 
       <div className="nav-links">
-        <div className="search-wrapper" ref={searchRef}>
-          {showSearch && (
-           <form onSubmit={handleSearch} className="nav-search-form">
-            <FiSearch className="search-input-icon" />
+        <div className="search-wrapper">
+  <form onSubmit={handleSearch} className="nav-search-form">
+    <FiSearch className="search-input-icon" />
 
-            <input
-              type="text"
-              placeholder="Search any title, genre, or mood..."
-              value={searchText}
-              onChange={(e) => setSearchText(e.target.value)}
-              autoFocus
-            />
-          </form>
-          )}
+    <input
+      type="text"
+      placeholder="Search any title, genre, or mood..."
+      value={searchText}
+      onChange={(e) => setSearchText(e.target.value)}
+    />
+  </form>
 
-          <button
-            type="button"
-            className="nav-icon-btn"
-            onClick={() => {
-              if (showSearch) {
-                setShowSearch(false);
-                setSearchText("");
-                setResults([]);
-              } else {
-                setShowSearch(true);
-              }
-            }}
-          >
-            <FiSearch />
-          </button>
-
-          {showSearch && results.length > 0 && (
-            <div className="search-dropdown">
-              {results.map((movie) => (
-                <Link
-                  key={movie.movie_id}
-                  href={`/movie/${movie.movie_id}`}
-                  className="search-result-item"
-                  onClick={() => {
-                    setShowSearch(false);
-                    setSearchText("");
-                    setResults([]);
-                  }}
-                >
-                  <strong>{movie.title}</strong>
-                  <span>{movie.release_year}</span>
-                </Link>
-              ))}
-            </div>
-          )}
-        </div>
+  {results.length > 0 && (
+    <div className="search-dropdown">
+      {results.map((movie) => (
+        <Link
+          key={movie.movie_id}
+          href={`/movie/${movie.movie_id}`}
+          className="search-result-item"
+          onClick={() => {
+            setSearchText("");
+            setResults([]);
+          }}
+        >
+          <strong>{movie.title}</strong>
+          <span>{movie.release_year}</span>
+        </Link>
+      ))}
+    </div>
+  )}
+</div>
 
         {/* <button className="nav-icon-btn">🔔</button> */}
 
