@@ -116,7 +116,7 @@ export default function Navbar() {
         <Link href="/">Home</Link>
         <Link href="/discover">Discover</Link>
         <Link href="/about">About</Link>
-        <Link href="https://forms.gle/t2sZWzapbnGrMyKq7"
+        <Link href="https://docs.google.com/forms/d/e/1FAIpQLSfXTcE0RAA0-kBj5PJXY1uzrWun-QP0wIWXPsTKQH6fj6b39g/viewform"
               target="_blank"
               rel="noopener noreferrer"
               onClick={async () => {
