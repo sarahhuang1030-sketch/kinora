@@ -172,6 +172,45 @@ function WatchlistBox({
   );
 }
 
+const moodBackgrounds: Record<
+  string,
+  {
+    image: string;
+    size: string;
+    position: string;
+  }
+> = {
+  "Adventurous / Thrilling": {
+    image: "/backgrounds/Adventurous.png",
+    size: "cover",
+    position: "center right",
+  },
+
+  "Mind-Bending": {
+    image: "/backgrounds/Mind-bending.png",
+    size: "cover",
+    position: "center right",
+  },
+
+  "Relaxing / Feel Good": {
+    image: "/backgrounds/Relaxing.png",
+     size: "cover",
+    position: "center right",
+  },
+
+  Romantic: {
+    image: "/backgrounds/Romantic.png",
+     size: "cover",
+    position: "center right",
+  },
+
+  Spooky: {
+    image: "/backgrounds/Spooky.png",
+    size: "cover",
+    position: "center right",
+  },
+};
+
 export default function Home() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
@@ -193,6 +232,19 @@ const [platforms, setPlatforms] = useState<DbPlatform[]>([]);
 
 const [moodCarouselMovies, setMoodCarouselMovies] = useState<CardMovie[]>([]);
 const [moodSlideIndex, setMoodSlideIndex] = useState(0);
+
+const activeBackground = moodBackgrounds[selectedMood];
+
+const heroBackground =
+  activeBackground?.image || "/backgrounds/default.png";
+
+const heroBackgroundSize =
+  activeBackground?.size || "cover";
+
+const heroBackgroundPosition =
+  activeBackground?.position || "center right";
+
+const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
 
   async function handleSaveToWatchlist(watchlistId: number) {
   if (!selectedMovie || !user?.user_id) return;
@@ -258,13 +310,16 @@ const [moodSlideIndex, setMoodSlideIndex] = useState(0);
     return;
   }
 
-  setSelectedMood((current) => {
-    const nextMood = current === moodName ? "" : moodName;
+  const nextMood = selectedMood === moodName ? "" : moodName;
 
-    setAppliedMood(nextMood);
+  setSelectedMood(nextMood);
+  setAppliedMood(nextMood);
 
-    return nextMood;
-  });
+  if (nextMood) {
+    setIsMoodPopupOpen(true);
+  } else {
+    setIsMoodPopupOpen(false);
+  }
 }
 
   const [moods, setMoods] = useState<DbMood[]>([]);
@@ -390,11 +445,10 @@ async function handleToggleSaved(movie: CardMovie) {
 }
 
   function handleRecommendationsClick() {
-  setAppliedMood(selectedMood);
+  if (!selectedMood) return;
 
-  document
-    .getElementById('recommended-section')
-    ?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  setAppliedMood(selectedMood);
+  setIsMoodPopupOpen(true);
 }
 
   function handleSurpriseMe() {
@@ -405,16 +459,14 @@ async function handleToggleSaved(movie: CardMovie) {
   if (!availableMoods.length) return;
 
   const randomIndex =
-  crypto.getRandomValues(new Uint32Array(1))[0] % availableMoods.length;
+    crypto.getRandomValues(new Uint32Array(1))[0] %
+    availableMoods.length;
 
   const randomMood = availableMoods[randomIndex];
 
   setSelectedMood(randomMood.mood_name);
   setAppliedMood(randomMood.mood_name);
-
-  document
-    .getElementById("recommended-section")
-    ?.scrollIntoView({ behavior: "smooth", block: "start" });
+  setIsMoodPopupOpen(true);
 }
 
 const currentMood = moods.find(
@@ -424,20 +476,33 @@ const currentMood = moods.find(
 
   return (
     <main className="home-page">
-      <section className="home-mood-hero">
+     <section
+  className="home-mood-hero"
+  style={{
+    backgroundImage: `
+      linear-gradient(
+        90deg,
+        rgba(4, 15, 30, 0.98) 0%,
+        rgba(4, 15, 30, 0.9) 34%,
+        rgba(4, 15, 30, 0.42) 62%,
+        rgba(4, 15, 30, 0.08) 100%
+      ),
+      url("${heroBackground}")
+    `,
+    backgroundSize: heroBackgroundSize,
+    backgroundPosition: heroBackgroundPosition,
+    backgroundRepeat: "no-repeat",
+  }}
+>
      {/* carousel for mood-based recommendations */}
-    {appliedMood && moodCarouselMovies.length > 0 && (
+    {isMoodPopupOpen && appliedMood && moodCarouselMovies.length > 0 && (
   <div className="home-mood-overlay">
     <button
-      className="home-mood-overlay-close"
-      onClick={() => {
-        setAppliedMood("");
-        setSelectedMood("");
-        setMoodCarouselMovies([]);
-      }}
-    >
-      ×
-    </button>
+  className="home-mood-overlay-close"
+  onClick={() => setIsMoodPopupOpen(false)}
+>
+  ×
+</button>
 
     <p className="home-overlay-title">
       Based on your <span>Mood</span>
