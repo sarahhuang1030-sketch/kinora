@@ -78,83 +78,61 @@ function getMovieImage(
   return movie.portrait_url || movie.poster_url || '/placeholder.jpg';
 }
 
-function DiscoverPosterCard({
+function BrowseMovieCard({
   movie,
-  isLoggedIn,
-  isSaved,
-  onWatchlistClick,
 }: {
   movie: DiscoverMovie;
-  isLoggedIn: boolean;
-  isSaved: boolean;
-  onWatchlistClick: (movie: DiscoverMovie) => void;
 }) {
   const genres = splitValues(movie.genres);
   const platforms = splitValues(movie.platforms);
+  const moods = splitValues(movie.moods);
 
   return (
-    <article className="discover-poster-card">
+    <article className="discover-browse-card">
       <Link
         href={`/movie/${movie.movie_id}`}
-        className="discover-poster-link"
+        className="discover-browse-card-image-link"
         aria-label={`View details for ${movie.title}`}
       >
-        <div className="discover-poster-image-wrap">
+        <div className="discover-browse-card-image-wrap">
           <img
-            src={getMovieImage(movie, 'portrait')}
+            src={movie.poster_url || movie.portrait_url || "/placeholder.jpg"}
             alt={movie.title}
-            className="discover-poster-image"
-          />
-
-          <div className="discover-poster-overlay">
-            <span className="discover-poster-view">View details</span>
-          </div>
-
-          {genres[0] && (
-            <span className="discover-card-badge">{genres[0]}</span>
-          )}
+            className="discover-browse-card-image"
+            />
         </div>
       </Link>
 
-      <div className="discover-poster-copy">
-        <h3 title={movie.title}>{movie.title}</h3>
+      <div className="discover-browse-card-body">
+        <div className="discover-browse-card-top">
+          <div className="discover-browse-card-copy">
+            <h3>{movie.title}</h3>
 
-        <p>
-          {movie.release_year || 'Year unavailable'}
-          <span>•</span>
-          {movie.content_type || 'Movie'}
-          <span>•</span>
-          {formatDuration(movie.duration_minutes)}
+            <p className="discover-browse-card-meta">
+              <span>{platforms[0] || 'Platform unavailable'}</span>
+              <span>•</span>
+              <span>{movie.content_type || 'Movie'}</span>
+              <span>•</span>
+              <span>{formatDuration(movie.duration_minutes)}</span>
+            </p>
+          </div>
+
+          <span className="discover-browse-card-mood">
+            {moods[0] || genres[0] || 'Featured'}
+          </span>
+        </div>
+
+        <p className="discover-browse-card-description">
+          {movie.description ||
+            'Open this title to learn more about the story and where it is available.'}
         </p>
 
-        {platforms.length > 0 && (
-          <p className="discover-platform-line">
-            Available on {platforms.slice(0, 2).join(', ')}
-          </p>
-        )}
-
-        <div className="discover-card-actions">
-          <Link
-            href={`/movie/${movie.movie_id}`}
-            className="discover-details-button"
-          >
-            Show details
-          </Link>
-
-          {isLoggedIn && (
-            <button
-              type="button"
-              className={
-                isSaved
-                  ? 'discover-watchlist-button saved'
-                  : 'discover-watchlist-button'
-              }
-              onClick={() => onWatchlistClick(movie)}
-            >
-              {isSaved ? 'Saved' : '+ Watchlist'}
-            </button>
-          )}
-        </div>
+        <Link
+          href={`/movie/${movie.movie_id}`}
+          className="discover-browse-card-details"
+        >
+          Show more details
+        </Link>
       </div>
     </article>
   );
@@ -241,8 +219,10 @@ export default function DiscoverPage() {
 
   const [selectedGenre, setSelectedGenre] = useState('');
   const [selectedPlatform, setSelectedPlatform] = useState('');
+  const [selectedMood, setSelectedMood] = useState('');
+  const [selectedDuration, setSelectedDuration] = useState('');
+  const [selectedYear, setSelectedYear] = useState('');
   const [selectedContentType, setSelectedContentType] = useState('');
-  const [sortBy, setSortBy] = useState('title');
 
   const [watchlists, setWatchlists] = useState<Watchlist[]>([]);
   const [selectedMovie, setSelectedMovie] = useState<DiscoverMovie | null>(null);
@@ -341,45 +321,62 @@ export default function DiscoverPage() {
     ).sort((a, b) => a.localeCompare(b));
   }, [data.movies]);
 
-  const contentTypes = useMemo(() => {
+  const moods = useMemo(() => {
     return Array.from(
-      new Set(
-        data.movies
-          .map((movie) => movie.content_type)
-          .filter((value): value is string => Boolean(value))
-      )
+      new Set(data.movies.flatMap((movie) => splitValues(movie.moods)))
     ).sort((a, b) => a.localeCompare(b));
   }, [data.movies]);
 
+  const releaseYears = useMemo(() => {
+    return Array.from(
+      new Set(
+        data.movies
+          .map((movie) => movie.release_year)
+          .filter((year): year is number => year !== null)
+      )
+    ).sort((a, b) => b - a);
+  }, [data.movies]);
+
   const filteredMovies = useMemo(() => {
-    const result = data.movies.filter((movie) => {
+    return data.movies.filter((movie) => {
       const movieGenres = splitValues(movie.genres);
       const moviePlatforms = splitValues(movie.platforms);
+      const movieMoods = splitValues(movie.moods);
+      const duration = movie.duration_minutes || 0;
+      const contentType = (movie.content_type || '').toLowerCase();
+
+      const matchesDuration =
+        !selectedDuration ||
+        (selectedDuration === 'short' && duration > 0 && duration < 90) ||
+        (selectedDuration === 'medium' && duration >= 90 && duration <= 120) ||
+        (selectedDuration === 'long' && duration > 120);
+
+      const matchesContentType =
+        !selectedContentType ||
+        (selectedContentType === 'movie' && contentType.includes('movie')) ||
+        (selectedContentType === 'series' &&
+          (contentType.includes('series') ||
+            contentType.includes('show') ||
+            contentType.includes('tv')));
 
       return (
         (!selectedGenre || movieGenres.includes(selectedGenre)) &&
         (!selectedPlatform || moviePlatforms.includes(selectedPlatform)) &&
-        (!selectedContentType || movie.content_type === selectedContentType)
+        (!selectedMood || movieMoods.includes(selectedMood)) &&
+        (!selectedYear ||
+          movie.release_year === Number(selectedYear)) &&
+        matchesDuration &&
+        matchesContentType
       );
-    });
-
-    return [...result].sort((a, b) => {
-      if (sortBy === 'newest') {
-        return (b.release_year || 0) - (a.release_year || 0);
-      }
-
-      if (sortBy === 'oldest') {
-        return (a.release_year || 0) - (b.release_year || 0);
-      }
-
-      return a.title.localeCompare(b.title);
     });
   }, [
     data.movies,
     selectedGenre,
     selectedPlatform,
+    selectedMood,
+    selectedDuration,
+    selectedYear,
     selectedContentType,
-    sortBy,
   ]);
 
   const displayedCollections = useMemo(() => {
@@ -393,8 +390,10 @@ export default function DiscoverPage() {
   function clearFilters() {
     setSelectedGenre('');
     setSelectedPlatform('');
+    setSelectedMood('');
+    setSelectedDuration('');
+    setSelectedYear('');
     setSelectedContentType('');
-    setSortBy('title');
   }
 
 useEffect(() => {
@@ -706,98 +705,148 @@ useEffect(() => {
             </section>
 
             <section className="discover-browse-section">
-              <div className="discover-section-heading discover-browse-heading">
+              <div className="discover-browse-header">
                 <div>
-                  <p className="discover-eyebrow">Your complete library</p>
+                  <p className="discover-eyebrow">Discovery</p>
                   <h2>Browse All Content</h2>
+                  <p className="discover-browse-subtitle">
+                    Newly released and trending titles across every platform
+                  </p>
                 </div>
-
-                <p className="discover-result-count">
-                  {filteredMovies.length}{' '}
-                  {filteredMovies.length === 1 ? 'title' : 'titles'}
-                </p>
-              </div>
-
-              <div className="discover-filter-bar">
-                <label>
-                  <span>Genre</span>
-                  <select
-                    value={selectedGenre}
-                    onChange={(event) => setSelectedGenre(event.target.value)}
-                  >
-                    <option value="">All genres</option>
-                    {genres.map((genre) => (
-                      <option key={genre} value={genre}>
-                        {genre}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Streaming service</span>
-                  <select
-                    value={selectedPlatform}
-                    onChange={(event) =>
-                      setSelectedPlatform(event.target.value)
-                    }
-                  >
-                    <option value="">All services</option>
-                    {platforms.map((platform) => (
-                      <option key={platform} value={platform}>
-                        {platform}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Content type</span>
-                  <select
-                    value={selectedContentType}
-                    onChange={(event) =>
-                      setSelectedContentType(event.target.value)
-                    }
-                  >
-                    <option value="">All content</option>
-                    {contentTypes.map((contentType) => (
-                      <option key={contentType} value={contentType}>
-                        {contentType}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label>
-                  <span>Sort by</span>
-                  <select
-                    value={sortBy}
-                    onChange={(event) => setSortBy(event.target.value)}
-                  >
-                    <option value="title">Title A–Z</option>
-                    <option value="newest">Newest first</option>
-                    <option value="oldest">Oldest first</option>
-                  </select>
-                </label>
 
                 <button
                   type="button"
-                  className="discover-clear-button"
+                  className="discover-browse-clear"
                   onClick={clearFilters}
                 >
                   Clear filters
                 </button>
               </div>
 
+              <div className="discover-browse-toolbar">
+                <div className="discover-browse-filter-group">
+                  <span className="discover-browse-filter-label">
+                    Filter by:
+                  </span>
+
+                  <label className="discover-browse-select">
+                    <span aria-hidden="true">▣</span>
+                    <select
+                      value={selectedPlatform}
+                      onChange={(event) =>
+                        setSelectedPlatform(event.target.value)
+                      }
+                    >
+                      <option value="">Streaming Service</option>
+                      {platforms.map((platform) => (
+                        <option key={platform} value={platform}>
+                          {platform}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="discover-browse-select">
+                    <span aria-hidden="true">◷</span>
+                    <select
+                      value={selectedDuration}
+                      onChange={(event) =>
+                        setSelectedDuration(event.target.value)
+                      }
+                    >
+                      <option value="">Duration</option>
+                      <option value="short">Under 90 minutes</option>
+                      <option value="medium">90–120 minutes</option>
+                      <option value="long">Over 120 minutes</option>
+                    </select>
+                  </label>
+
+                  <label className="discover-browse-select">
+                    <span aria-hidden="true">♡</span>
+                    <select
+                      value={selectedMood}
+                      onChange={(event) => setSelectedMood(event.target.value)}
+                    >
+                      <option value="">Mood</option>
+                      {moods.map((mood) => (
+                        <option key={mood} value={mood}>
+                          {mood}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="discover-browse-select">
+                    <span aria-hidden="true">▱</span>
+                    <select
+                      value={selectedGenre}
+                      onChange={(event) => setSelectedGenre(event.target.value)}
+                    >
+                      <option value="">Genre</option>
+                      {genres.map((genre) => (
+                        <option key={genre} value={genre}>
+                          {genre}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+
+                  <label className="discover-browse-select">
+                    <select
+                      value={selectedYear}
+                      onChange={(event) => setSelectedYear(event.target.value)}
+                    >
+                      <option value="">Year of Release</option>
+                      {releaseYears.map((year) => (
+                        <option key={year} value={year}>
+                          {year}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                </div>
+
+                <div
+                  className="discover-content-type-tabs"
+                  role="tablist"
+                  aria-label="Content type"
+                >
+                  <button
+                    type="button"
+                    className={selectedContentType === '' ? 'active' : ''}
+                    onClick={() => setSelectedContentType('')}
+                  >
+                    All
+                  </button>
+
+                  <button
+                    type="button"
+                    className={
+                      selectedContentType === 'movie' ? 'active' : ''
+                    }
+                    onClick={() => setSelectedContentType('movie')}
+                  >
+                    Movies
+                  </button>
+
+                  <button
+                    type="button"
+                    className={
+                      selectedContentType === 'series' ? 'active' : ''
+                    }
+                    onClick={() => setSelectedContentType('series')}
+                  >
+                    Series
+                  </button>
+                </div>
+              </div>
+
               {filteredMovies.length > 0 ? (
-                <div className="discover-movie-grid">
+                <div className="discover-browse-grid">
                   {filteredMovies.map((movie) => (
-                    <DiscoverPosterCard
+                    <BrowseMovieCard
                       key={movie.movie_id}
                       movie={movie}
-                      isLoggedIn={Boolean(user?.user_id)}
-                      isSaved={savedMovieIds.includes(movie.movie_id)}
-                      onWatchlistClick={handleWatchlistClick}
                     />
                   ))}
                 </div>
