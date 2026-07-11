@@ -582,7 +582,7 @@ function ProgressBar({
 }) {
   let preferenceProgress = 0;
   let detailsProgress = 0;
-  let streamingProgress = 0;
+  const streamingProgress = 0;
 
   // Stage 1: the three preference questions
   if (step === 1) {

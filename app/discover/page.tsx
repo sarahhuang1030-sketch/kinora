@@ -1,4 +1,3 @@
-/* app/discover/page.tsx */
 'use client';
 
 import Link from 'next/link';
@@ -161,76 +160,69 @@ function DiscoverPosterCard({
   );
 }
 
-function CollectionRow({
+function CompactCollectionRow({
   collection,
-  isLoggedIn,
-  savedMovieIds,
-  onWatchlistClick,
 }: {
   collection: DiscoverCollection;
-  isLoggedIn: boolean;
-  savedMovieIds: number[];
-  onWatchlistClick: (movie: DiscoverMovie) => void;
 }) {
-  const rowRef = useRef<HTMLDivElement>(null);
+  const visibleMovies = collection.movies.slice(0, 9);
 
-  function scroll(direction: 'left' | 'right') {
-    rowRef.current?.scrollBy({
-      left: direction === 'left' ? -650 : 650,
-      behavior: 'smooth',
-    });
-  }
+  const totalMinutes = collection.movies.reduce(
+    (total, movie) => total + (movie.duration_minutes || 0),
+    0
+  );
+
+  const totalHours =
+    totalMinutes > 0 ? Math.max(1, Math.round(totalMinutes / 60)) : null;
 
   return (
-    <section className="discover-collection-section">
-      <div className="discover-section-heading">
+    <article className="discover-compact-collection">
+      <div className="discover-compact-collection-label">
         <div>
-          <p className="discover-eyebrow">Curated collection</p>
+          <h3>{collection.mood_name}</h3>
 
-          <h2>
-            {collection.icon_url && (
-              <img
-                src={collection.icon_url}
-                alt=""
-                className="discover-heading-icon"
-              />
+          <p>
+            {collection.movies.length}{' '}
+            {collection.movies.length === 1 ? 'Movie' : 'Movies'}
+
+            {totalHours && (
+              <>
+                <span>•</span>
+                {totalHours}hrs
+              </>
             )}
-
-            {collection.mood_name}
-          </h2>
+          </p>
         </div>
 
-        <div className="discover-row-controls">
-          <button
-            type="button"
-            aria-label={`Scroll ${collection.mood_name} left`}
-            onClick={() => scroll('left')}
-          >
-            ‹
-          </button>
-
-          <button
-            type="button"
-            aria-label={`Scroll ${collection.mood_name} right`}
-            onClick={() => scroll('right')}
-          >
-            ›
-          </button>
-        </div>
+        <Link
+          href={`/discover/collections/${collection.mood_id}`}
+          className="discover-compact-view-all"
+        >
+          View all
+          <span aria-hidden="true">→</span>
+        </Link>
       </div>
 
-      <div className="discover-collection-row" ref={rowRef}>
-        {collection.movies.map((movie) => (
-          <DiscoverPosterCard
+      <div className="discover-compact-movies">
+        {visibleMovies.map((movie) => (
+          <Link
+            href={`/movie/${movie.movie_id}`}
             key={`${collection.mood_id}-${movie.movie_id}`}
-            movie={movie}
-            isLoggedIn={isLoggedIn}
-            isSaved={savedMovieIds.includes(movie.movie_id)}
-            onWatchlistClick={onWatchlistClick}
-          />
+            className="discover-compact-poster"
+            aria-label={`View details for ${movie.title}`}
+          >
+            <img
+              src={getMovieImage(movie, 'portrait')}
+              alt={movie.title}
+            />
+
+            <span className="discover-compact-poster-overlay">
+              View
+            </span>
+          </Link>
         ))}
       </div>
-    </section>
+    </article>
   );
 }
 
@@ -258,9 +250,13 @@ export default function DiscoverPage() {
   const [watchlistError, setWatchlistError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-    const [trendingMovies, setTrendingMovies] = useState<DiscoverMovie[]>([]);
-    const [currentTrending, setCurrentTrending] = useState(0);
-    const featured = trendingMovies[currentTrending] || null;
+  const [collectionTab, setCollectionTab] = useState<'cineri' | 'mood'>(
+    'cineri'
+  );
+
+  const [trendingMovies, setTrendingMovies] = useState<DiscoverMovie[]>([]);
+  const [currentTrending, setCurrentTrending] = useState(0);
+  const featured = trendingMovies[currentTrending] || null;
 
   useEffect(() => {
     async function loadDiscoverPage() {
@@ -284,12 +280,12 @@ export default function DiscoverPage() {
         const shuffledMovies = [...result.movies];
 
         for (let i = shuffledMovies.length - 1; i > 0; i--) {
-        const randomIndex = Math.floor(Math.random() * (i + 1));
+          const randomIndex = Math.floor(Math.random() * (i + 1));
 
-        [shuffledMovies[i], shuffledMovies[randomIndex]] = [
-            shuffledMovies[randomIndex],
-            shuffledMovies[i],
-        ];
+          [shuffledMovies[i], shuffledMovies[randomIndex]] = [
+              shuffledMovies[randomIndex],
+              shuffledMovies[i],
+          ];
         }
 
         setTrendingMovies(shuffledMovies.slice(0, 3));
@@ -385,6 +381,14 @@ export default function DiscoverPage() {
     selectedContentType,
     sortBy,
   ]);
+
+  const displayedCollections = useMemo(() => {
+    if (collectionTab === 'cineri') {
+      return data.collections.slice(0, 3);
+    }
+
+    return data.collections;
+  }, [collectionTab, data.collections]);
 
   function clearFilters() {
     setSelectedGenre('');
@@ -652,21 +656,48 @@ useEffect(() => {
               id="discover-collections"
               className="discover-curated-block"
             >
-              <div className="discover-curated-title">
-                <p className="discover-eyebrow">Made for every mood</p>
-                <h2>Curated Collections</h2>
+              <div className="discover-curated-header">
+                <div className="discover-curated-title">
+                  <p className="discover-eyebrow">Hand picked by Cineri</p>
+                  <h2>Curated Collections</h2>
+                </div>
+
+                <div
+                  className="discover-collection-tabs"
+                  role="tablist"
+                  aria-label="Collection categories"
+                >
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={collectionTab === 'cineri'}
+                    className={collectionTab === 'cineri' ? 'active' : ''}
+                    onClick={() => setCollectionTab('cineri')}
+                  >
+                    Cineri Collections
+                  </button>
+
+                  <button
+                    type="button"
+                    role="tab"
+                    aria-selected={collectionTab === 'mood'}
+                    className={collectionTab === 'mood' ? 'active' : ''}
+                    onClick={() => setCollectionTab('mood')}
+                  >
+                    Mood Collections
+                  </button>
+                </div>
               </div>
 
-              {data.collections.length > 0 ? (
-                data.collections.map((collection) => (
-                  <CollectionRow
-                    key={collection.mood_id}
-                    collection={collection}
-                    isLoggedIn={Boolean(user?.user_id)}
-                    savedMovieIds={savedMovieIds}
-                    onWatchlistClick={handleWatchlistClick}
-                  />
-                ))
+              {displayedCollections.length > 0 ? (
+                <div className="discover-compact-collection-list">
+                  {displayedCollections.map((collection) => (
+                    <CompactCollectionRow
+                      key={collection.mood_id}
+                      collection={collection}
+                    />
+                  ))}
+                </div>
               ) : (
                 <div className="discover-empty-card">
                   Add movie-to-mood relationships to show curated collections.
