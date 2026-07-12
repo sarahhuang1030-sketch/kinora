@@ -95,54 +95,166 @@ const [preferenceRows] = await pool.execute<RowDataPacket[]>(
 export async function PUT(req: Request) {
   try {
     const {
-  user_id,
-  first_name,
-  last_name,
-  username,
-  phone,
-  country,
-  date_of_birth,
-} = await req.json();
+      user_id,
+      first_name,
+      last_name,
+      username,
+      email,
+      phone,
+      country,
+      date_of_birth,
+      currentPassword,
+      newPassword,
+    } = await req.json();
 
     if (!user_id) {
-      return NextResponse.json({ message: "User ID is required" }, { status: 400 });
+      return NextResponse.json(
+        { error: "User ID is required" },
+        { status: 400 }
+      );
+    }
+
+    if (!first_name || !last_name || !email) {
+      return NextResponse.json(
+        {
+          error:
+            "First name, last name, and email are required.",
+        },
+        { status: 400 }
+      );
     }
 
     const formattedDate =
-  date_of_birth && date_of_birth !== ""
-    ? date_of_birth.split("T")[0]
-    : null;
+      date_of_birth && date_of_birth !== ""
+        ? date_of_birth.split("T")[0]
+        : null;
 
-   await pool.execute(
-  `
-  UPDATE users
-  SET first_name = ?, last_name = ?, username = ?, phone = ?, country = ?, date_of_birth = ?
-  WHERE user_id = ?
-  `,
-  [
-    first_name,
-    last_name,
-    username,
-    phone || null,
-    country || null,
-    formattedDate,
-    user_id,
-  ]
-);
+    const [existingRows] =
+      await pool.execute<RowDataPacket[]>(
+        `
+        SELECT password
+        FROM users
+        WHERE user_id = ?
+        LIMIT 1
+        `,
+        [user_id]
+      );
+
+    if (existingRows.length === 0) {
+      return NextResponse.json(
+        { error: "User not found." },
+        { status: 404 }
+      );
+    }
+
+    const existingPassword =
+      existingRows[0].password || "";
+
+    if (newPassword) {
+      if (!currentPassword) {
+        return NextResponse.json(
+          {
+            error:
+              "Enter your current password before choosing a new password.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (currentPassword !== existingPassword) {
+        return NextResponse.json(
+          {
+            error:
+              "Your current password is incorrect.",
+          },
+          { status: 400 }
+        );
+      }
+
+      if (newPassword.length < 8) {
+        return NextResponse.json(
+          {
+            error:
+              "New password must contain at least 8 characters.",
+          },
+          { status: 400 }
+        );
+      }
+
+      await pool.execute(
+        `
+        UPDATE users
+        SET
+          first_name = ?,
+          last_name = ?,
+          username = ?,
+          email = ?,
+          phone = ?,
+          country = ?,
+          date_of_birth = ?,
+          password = ?
+        WHERE user_id = ?
+        `,
+        [
+          first_name,
+          last_name,
+          username,
+          email,
+          phone || null,
+          country || null,
+          formattedDate,
+          newPassword,
+          user_id,
+        ]
+      );
+    } else {
+      await pool.execute(
+        `
+        UPDATE users
+        SET
+          first_name = ?,
+          last_name = ?,
+          username = ?,
+          email = ?,
+          phone = ?,
+          country = ?,
+          date_of_birth = ?
+        WHERE user_id = ?
+        `,
+        [
+          first_name,
+          last_name,
+          username,
+          email,
+          phone || null,
+          country || null,
+          formattedDate,
+          user_id,
+        ]
+      );
+    }
 
     console.log("PROFILE UPDATED", {
-    userId: user_id,
-    username,
-    updatedAt: new Date().toISOString(),
-  });
+      userId: user_id,
+      username,
+      passwordChanged: Boolean(newPassword),
+      updatedAt: new Date().toISOString(),
+    });
 
-    return NextResponse.json({ message: "Profile updated successfully" });
+    return NextResponse.json({
+      message: newPassword
+        ? "Profile and password updated successfully"
+        : "Profile updated successfully",
+    });
   } catch (error) {
-  console.error("UPDATE PROFILE ERROR:", error);
+    console.error("UPDATE PROFILE ERROR:", error);
 
-  return NextResponse.json(
-    { message: "Server error", error: String(error) },
-    { status: 500 }
-  );
-}
+    return NextResponse.json(
+      {
+        error: "Server error",
+        details: String(error),
+      },
+      { status: 500 }
+    );
+  }
 }

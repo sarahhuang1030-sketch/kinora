@@ -44,46 +44,49 @@ function ConnectStreamingContent() {
   const email = searchParams.get("email");
   const userId = searchParams.get("userId");
 
-  useEffect(() => {
+useEffect(() => {
   async function loadConnectedServices() {
-    const storageKey = `connectedServices-${userId || email || "guest"}`;
-
     if (!userId) {
-      const saved = localStorage.getItem(storageKey);
-
-      if (saved) {
-        setConnectedServices(JSON.parse(saved));
-      }
-
+      setConnectedServices([]);
       return;
     }
 
-    const res = await fetch(
-      `/api/connect-service/list?userId=${userId}`
-    );
-
-    const data = await res.json();
-
-    if (data.services?.length) {
-      setConnectedServices(data.services);
-
-      localStorage.setItem(
-        storageKey,
-        JSON.stringify(data.services)
+    try {
+      const response = await fetch(
+        `/api/connect-service?userId=${encodeURIComponent(
+          userId
+        )}`,
+        {
+          cache: "no-store",
+        }
       );
 
-      return;
-    }
+      const data = await response.json();
 
-    const saved = localStorage.getItem(storageKey);
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Unable to load connected services."
+        );
+      }
 
-    if (saved) {
-      setConnectedServices(JSON.parse(saved));
+      setConnectedServices(
+        Array.isArray(data.services)
+          ? data.services
+          : []
+      );
+    } catch (error) {
+      console.error(
+        "LOAD CONNECTED SERVICES ERROR:",
+        error
+      );
+
+      setConnectedServices([]);
     }
   }
 
-  loadConnectedServices();
-}, [userId, email]);
+  void loadConnectedServices();
+}, [userId]);
 
   function toggleService(service: string) {
     setConnectedServices((current) =>
@@ -112,22 +115,51 @@ async function continueNext() {
   console.log("CONNECTED SERVICES:", connectedServices);
 
   if (userId) {
-    for (const service of connectedServices) {
-      console.log("Saving service:", service);
+    async function continueNext() {
+  if (!userId) {
+    console.error("Missing userId");
 
-      const res = await fetch("/api/connect-service", {
-        method: "POST",
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      "/api/connect-service",
+      {
+        method: "PUT",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: Number(userId),
-          service,
+          services: connectedServices,
         }),
-      });
+      }
+    );
 
-      console.log("Save result:", res.status);
+    const data = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          "Unable to save streaming services."
+      );
     }
+
+    router.push(buildNextUrl());
+  } catch (error) {
+    console.error(
+      "SAVE STREAMING SERVICES ERROR:",
+      error
+    );
+
+    alert(
+      error instanceof Error
+        ? error.message
+        : "Unable to save streaming services."
+    );
+  }
+}
   }
 
   router.push(buildNextUrl());

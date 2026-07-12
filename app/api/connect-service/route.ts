@@ -1,70 +1,150 @@
 import { NextResponse } from "next/server";
 import pool from "@/app/src/lib/db";
-import type { RowDataPacket } from "mysql2";
+import type {
+  ResultSetHeader,
+  RowDataPacket,
+} from "mysql2";
 
-type ExistingServiceRow = RowDataPacket & {
-  id: number;
+type ConnectedServiceRow = RowDataPacket & {
+  service_name: string;
 };
 
-const sampleHistory: Record<string, number[]> = {
-  Netflix: [3, 5, 8],
-  "Disney+": [1, 4, 7],
-  Crave: [2, 6, 10],
-  "Prime Video": [9, 11, 12],
+type SaveServicesBody = {
+  userId?: number;
+  services?: string[];
 };
 
-export async function POST(req: Request) {
+export async function GET(request: Request) {
   try {
-    const { userId, service } = await req.json();
+    const { searchParams } = new URL(request.url);
+    const userId = Number(searchParams.get("userId"));
 
-    if (!userId || !service) {
+    if (!Number.isInteger(userId) || userId <= 0) {
       return NextResponse.json(
-        { error: "Missing userId or service" },
+        { error: "A valid userId is required." },
         { status: 400 }
       );
     }
 
-    const [existing] = await pool.query<ExistingServiceRow[]>(
-      `
-      SELECT id
-      FROM user_connected_services
-      WHERE user_id = ?
-      AND service_name = ?
-      `,
-      [userId, service]
+    const [rows] =
+      await pool.query<ConnectedServiceRow[]>(
+        `
+          SELECT service_name
+          FROM user_connected_services
+          WHERE user_id = ?
+          ORDER BY service_name
+        `,
+        [userId]
+      );
+
+    return NextResponse.json({
+      services: rows.map((row) => row.service_name),
+    });
+  } catch (error) {
+    console.error(
+      "LOAD CONNECTED SERVICES ERROR:",
+      error
     );
 
-    if (existing.length === 0) {
-      await pool.query(
+    return NextResponse.json(
+      {
+        error: "Failed to load connected services.",
+      },
+      { status: 500 }
+    );
+  }
+}
+
+export async function PUT(request: Request) {
+  const connection = await pool.getConnection();
+
+  try {
+    const body =
+      (await request.json()) as SaveServicesBody;
+
+    const userId = Number(body.userId);
+
+    const services = Array.isArray(body.services)
+      ? Array.from(
+          new Set(
+            body.services
+              .map((service) => service.trim())
+              .filter(Boolean)
+          )
+        )
+      : [];
+
+    if (!Number.isInteger(userId) || userId <= 0) {
+      return NextResponse.json(
+        { error: "A valid userId is required." },
+        { status: 400 }
+      );
+    }
+
+    const [userRows] =
+      await connection.query<RowDataPacket[]>(
         `
-        INSERT INTO user_connected_services
-        (user_id, service_name)
-        VALUES (?, ?)
+          SELECT user_id
+          FROM users
+          WHERE user_id = ?
+          LIMIT 1
+        `,
+        [userId]
+      );
+
+    if (userRows.length === 0) {
+      return NextResponse.json(
+        { error: "User not found." },
+        { status: 404 }
+      );
+    }
+
+    await connection.beginTransaction();
+
+    await connection.query<ResultSetHeader>(
+      `
+        DELETE FROM user_connected_services
+        WHERE user_id = ?
+      `,
+      [userId]
+    );
+
+    for (const service of services) {
+      await connection.query<ResultSetHeader>(
+        `
+          INSERT INTO user_connected_services
+            (user_id, service_name)
+          VALUES (?, ?)
         `,
         [userId, service]
       );
     }
 
-    const movieIds = sampleHistory[service] || [];
+    await connection.commit();
 
-    for (const movieId of movieIds) {
-      await pool.query(
-        `
-        INSERT IGNORE INTO user_watch_history
-        (user_id, movie_id)
-        VALUES (?, ?)
-        `,
-        [userId, movieId]
-      );
-    }
-
-    return NextResponse.json({ success: true });
+    return NextResponse.json({
+      success: true,
+      services,
+    });
   } catch (error) {
-    console.error("CONNECT SERVICE ERROR:", error);
+    await connection.rollback();
+
+    console.error(
+      "SAVE CONNECTED SERVICES ERROR:",
+      error
+    );
 
     return NextResponse.json(
-      { error: "Failed to connect service" },
+      {
+        error: "Failed to save connected services.",
+        details:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
       { status: 500 }
     );
+  } finally {
+    connection.release();
   }
 }
