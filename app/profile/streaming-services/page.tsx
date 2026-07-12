@@ -171,15 +171,7 @@ function StreamingServicesContent() {
     return platformName;
   }
 
-  function isFeaturedService(platformName: string) {
-    const key = normalizeServiceName(platformName);
 
-    return [
-      "netflix",
-      "prime-video",
-      "crave",
-    ].includes(key);
-  }
 
   const loadPageData = useCallback(async () => {
     if (!email) {
@@ -271,14 +263,29 @@ function StreamingServicesContent() {
        * from your existing list route.
        */
       const connectedResponse = await fetch(
-        `/api/connect-service/list?userId=${loadedUser.user_id}`,
+         `/api/connect-service?userId=${loadedUser.user_id}`,
         {
           cache: "no-store",
         }
       );
 
-      const connectedData =
-        await connectedResponse.json();
+      const connectedText =
+  await connectedResponse.text();
+
+let connectedData: {
+  services?: string[];
+  error?: string;
+} = {};
+
+try {
+  connectedData = connectedText
+    ? JSON.parse(connectedText)
+    : {};
+} catch {
+  throw new Error(
+    "The connected-services API returned an invalid response."
+  );
+}
 
       let connectedServices: string[] = [];
 
@@ -411,88 +418,90 @@ function StreamingServicesContent() {
     toggleService(serviceName);
   }
 
-  async function handleSave() {
-    if (!user) {
-      return;
-    }
+ async function handleSave() {
+  if (!user) {
+    return;
+  }
+
+  try {
+    setSaving(true);
+    setError("");
+    setSuccess("");
+
+    const response = await fetch(
+      "/api/connect-service",
+      {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: user.user_id,
+          services: selectedServices,
+        }),
+      }
+    );
+
+    const responseText =
+      await response.text();
+
+    let data: {
+      success?: boolean;
+      services?: string[];
+      error?: string;
+      details?: string;
+    } = {};
 
     try {
-      setSaving(true);
-      setError("");
-      setSuccess("");
-
-      const updatedAnswers: Answers = {
-        genres: answers.genres,
-        streamingServices:
-          selectedServices,
-        contentTypes:
-          answers.contentTypes,
-        preferences:
-          answers.preferences,
-      };
-
-      /*
-       * This saves the full selection through
-       * your existing onboarding route.
-       */
-      const response = await fetch(
-        "/api/onboarding",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type":
-              "application/json",
-          },
-          body: JSON.stringify({
-            userId: user.user_id,
-            genres:
-              updatedAnswers.genres,
-            streamingServices:
-              updatedAnswers.streamingServices,
-            contentTypes:
-              updatedAnswers.contentTypes,
-            preferences:
-              updatedAnswers.preferences,
-          }),
-        }
+      data = responseText
+        ? JSON.parse(responseText)
+        : {};
+    } catch {
+      throw new Error(
+        "The server returned an invalid response while saving."
       );
-
-      const data = await response
-        .json()
-        .catch(() => null);
-
-      if (!response.ok) {
-        throw new Error(
-          data?.error ||
-            "Unable to save your streaming services."
-        );
-      }
-
-      setAnswers(updatedAnswers);
-
-      setSavedServices([
-        ...selectedServices,
-      ]);
-
-      setIsEditing(false);
-
-      setSuccess(
-        "Your streaming services were updated successfully."
-      );
-
-      window.setTimeout(() => {
-        setSuccess("");
-      }, 3000);
-    } catch (saveError) {
-      setError(
-        saveError instanceof Error
-          ? saveError.message
-          : "Unable to save your streaming services."
-      );
-    } finally {
-      setSaving(false);
     }
+
+    if (!response.ok) {
+      throw new Error(
+        data.error ||
+          data.details ||
+          "Unable to save your streaming services."
+      );
+    }
+
+    const saved =
+      Array.isArray(data.services)
+        ? data.services
+        : selectedServices;
+
+    setSelectedServices(saved);
+    setSavedServices(saved);
+
+    setAnswers((current) => ({
+      ...current,
+      streamingServices: saved,
+    }));
+
+    setIsEditing(false);
+
+    setSuccess(
+      "Your streaming services were updated successfully."
+    );
+
+    window.setTimeout(() => {
+      setSuccess("");
+    }, 3000);
+  } catch (saveError) {
+    setError(
+      saveError instanceof Error
+        ? saveError.message
+        : "Unable to save your streaming services."
+    );
+  } finally {
+    setSaving(false);
   }
+}
 
   async function handleLogout() {
     try {
