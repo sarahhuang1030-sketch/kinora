@@ -7458,7 +7458,7 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 }
 
 .profile-edit-welcome {
-  margin: 0 0 30px 266px;
+  margin: 0 0 30px 0px;
   font-family: var(--font-dongle);
   font-size: clamp(42px, 4vw, 58px);
   font-weight: 700;
@@ -7965,5 +7965,872 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 @media (max-width: 640px) {
   .profile-edit-card-heading {
     align-items: flex-start;
+  }
+}
+
+
+/* preference section */
+       .preferences-page {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 112px 48px 80px;
+
+  background:
+    radial-gradient(
+      circle at 50% 28%,
+      rgba(28, 70, 104, 0.18),
+      transparent 38%
+    ),
+    linear-gradient(
+      180deg,
+      #07111d 0%,
+      #081521 54%,
+      #07131f 100%
+    );
+
+  color: #f7f8fb;
+}
+
+.preferences-shell {
+  width: min(1500px, 100%);
+  margin: 0 auto;
+}
+
+.preferences-welcome {
+  margin: 0 0 30px 0;
+  font-family: var(--font-dongle);
+  font-size: clamp(42px, 4vw, 58px);
+  font-weight: 700;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  color: #ffffff;
+}
+
+.preferences-welcome span {
+  color: #ff7837;
+}
+
+.preferences-layout {
+  display: grid;
+  grid-template-columns: 230px minmax(0, 900px);
+  gap: 36px;
+  align-items: start;
+}
+
+.preferences-sidebar {
+  position: sticky;
+  top: 88px;
+  min-height: 470px;
+
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+
+  padding: 20px 14px 14px;
+  border: 1px solid rgba(148, 163, 184, 0.12);
+  border-radius: 14px;
+  background: #0d1a28;
+  box-shadow: 0 16px 38px rgba(0, 0, 0, 0.18);
+}
+
+        .preferences-card {
+          position: relative;
+          overflow: hidden;
+          padding: 26px 28px 28px;
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          border-radius: 14px;
+          background: linear-gradient(180deg, #111e2e 0%, #0f1b2a 100%);
+          box-shadow: 0 22px 54px rgba(0, 0, 0, 0.22);
+        }
+
+        .preferences-card::before {
+          content: "";
+          position: absolute;
+          top: 0;
+          left: 0;
+          right: 0;
+          height: 2px;
+          background: linear-gradient(90deg, #ff5f3b, #ff9c35, #f0c66a);
+        }
+
+        .preferences-user-header {
+          display: grid;
+          grid-template-columns: 78px minmax(0, 1fr) auto;
+          align-items: center;
+          gap: 20px;
+        }
+
+        .preferences-avatar {
+          width: 78px;
+          height: 78px;
+          display: grid;
+          place-items: center;
+          overflow: hidden;
+          border: 2px solid #ff6d2e;
+          border-radius: 50%;
+          color: #1e1712;
+          background: linear-gradient(145deg, #ffad4e, #ff7134);
+          box-shadow: inset 0 0 0 4px #111e2e;
+        }
+
+        .preferences-avatar img {
+          width: 100%;
+          height: 100%;
+          object-fit: cover;
+        }
+
+        .preferences-user-copy h2 {
+          margin: 0 0 4px;
+          font-size: 1.1rem;
+          font-weight: 750;
+        }
+
+        .preferences-user-copy p {
+          margin: 0 0 7px;
+          color: #6f7f92;
+          font-size: 0.72rem;
+        }
+
+        .preferences-user-copy span {
+          display: inline-flex;
+          padding: 4px 9px;
+          border-radius: 999px;
+          color: #66778a;
+          background: rgba(148, 163, 184, 0.06);
+          font-size: 0.62rem;
+        }
+
+        .preferences-edit-profile {
+          min-height: 34px;
+          display: inline-flex;
+          align-items: center;
+          gap: 7px;
+          padding: 0 14px;
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          border-radius: 999px;
+          color: #e4eaf1;
+          background: #1a283a;
+          font-size: 0.7rem;
+          font-weight: 650;
+        }
+
+        .preferences-edit-profile:hover {
+          border-color: rgba(255, 122, 49, 0.55);
+          background: #213247;
+        }
+
+        .preferences-content-section {
+          margin-top: 36px;
+        }
+
+        .preferences-section-title-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          margin-bottom: 14px;
+        }
+
+        .preferences-section-title-row h2,
+        .preferences-activity-section > h2 {
+          margin: 0;
+          font-size: 1.02rem;
+          font-weight: 750;
+        }
+
+        .preferences-section-title-row a {
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          color: #b7c2ce;
+          font-size: 0.68rem;
+          font-weight: 650;
+        }
+
+        .preferences-section-title-row a:hover {
+          color: #ff873f;
+        }
+
+        .preferences-choice-card {
+          overflow: hidden;
+          border: 1px solid rgba(148, 163, 184, 0.12);
+          border-radius: 11px;
+          background: #142236;
+        }
+
+        .preferences-block {
+          display: grid;
+          grid-template-columns: 34px minmax(0, 1fr);
+          gap: 12px;
+          padding: 14px 16px;
+        }
+
+        .preferences-block-icon {
+          width: 31px;
+          height: 31px;
+          display: grid;
+          place-items: center;
+          color: #c4cfda;
+        }
+
+        .preferences-block-heading {
+          display: flex;
+          align-items: baseline;
+          gap: 8px;
+          margin-bottom: 9px;
+        }
+
+        .preferences-block-heading strong {
+          color: #edf2f7;
+          font-size: 0.72rem;
+          font-weight: 750;
+        }
+
+        .preferences-block-heading span {
+          color: #647488;
+          font-size: 0.58rem;
+        }
+
+        .preferences-chip-list {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 7px;
+        }
+
+        .preferences-chip {
+          min-height: 23px;
+          display: inline-flex;
+          align-items: center;
+          gap: 5px;
+          padding: 0 11px;
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          border-radius: 999px;
+          color: #bac5d1;
+          background: rgba(10, 20, 32, 0.26);
+          font-size: 0.6rem;
+          font-weight: 600;
+        }
+
+        .preferences-chip.genre-0 {
+          border-color: rgba(248, 126, 51, 0.34);
+          color: #f59a5e;
+          background: rgba(248, 126, 51, 0.08);
+        }
+
+        .preferences-chip.genre-1 {
+          border-color: rgba(34, 178, 226, 0.34);
+          color: #58c8ec;
+          background: rgba(34, 178, 226, 0.08);
+        }
+
+        .preferences-chip.genre-2 {
+          border-color: rgba(47, 196, 125, 0.34);
+          color: #63d79c;
+          background: rgba(47, 196, 125, 0.08);
+        }
+
+        .preferences-choice-divider {
+          height: 1px;
+          margin: 0 16px;
+          background: rgba(148, 163, 184, 0.09);
+        }
+
+        .preferences-empty {
+          color: #66778b;
+          font-size: 0.65rem;
+        }
+
+        .preferences-activity-section {
+          margin-top: 34px;
+        }
+
+        .preferences-activity-grid {
+          display: grid;
+          grid-template-columns: repeat(3, minmax(0, 1fr));
+          margin-top: 14px;
+          overflow: hidden;
+          border: 1px solid rgba(148, 163, 184, 0.12);
+          border-radius: 11px;
+          background: #18273b;
+        }
+
+        .preferences-activity-cell {
+          min-height: 84px;
+          padding: 18px 20px;
+          border-right: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .preferences-activity-cell:last-child {
+          border-right: 0;
+        }
+
+        .preferences-activity-cell strong {
+          display: block;
+          margin-bottom: 7px;
+          color: #ff8037;
+          font-size: 1.18rem;
+          line-height: 1;
+        }
+
+        .preferences-activity-cell span {
+          display: block;
+          margin-bottom: 4px;
+          color: #7f8fa2;
+          font-size: 0.56rem;
+          font-weight: 750;
+          letter-spacing: 0.07em;
+          text-transform: uppercase;
+        }
+
+        .preferences-activity-cell p {
+          margin: 0;
+          color: #65768a;
+          font-size: 0.56rem;
+          line-height: 1.35;
+        }
+
+        .preferences-error {
+          margin-bottom: 18px;
+          padding: 10px 13px;
+          border: 1px solid rgba(255, 99, 92, 0.3);
+          border-radius: 9px;
+          color: #ffaaa5;
+          background: rgba(153, 27, 27, 0.16);
+          font-size: 0.75rem;
+        }
+
+        .preferences-loading {
+          min-height: 55vh;
+          display: grid;
+          place-items: center;
+          color: #91a0b3;
+        }
+
+        .preferences-message-card {
+          width: min(500px, 100%);
+          margin: 60px auto;
+          padding: 42px;
+          border: 1px solid rgba(148, 163, 184, 0.14);
+          border-radius: 16px;
+          background: #101d2e;
+          text-align: center;
+        }
+
+        .preferences-message-card svg {
+          color: #ff7a1a;
+        }
+
+        .preferences-message-card h1 {
+          margin: 18px 0 10px;
+        }
+
+        .preferences-message-card p {
+          margin: 0 0 22px;
+          color: #8b99aa;
+          line-height: 1.65;
+        }
+
+        .preferences-message-card a,
+        .preferences-message-card button {
+          min-height: 42px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0 22px;
+          border: 0;
+          border-radius: 9px;
+          color: #fff;
+          background: linear-gradient(135deg, #ff8a2b, #ff5e31);
+          font-weight: 750;
+        }
+
+@media (max-width: 1000px) {
+  .preferences-page {
+    padding: 104px 28px 60px;
+  }
+
+  .preferences-welcome {
+    margin-left: 0;
+  }
+
+  .preferences-layout {
+    grid-template-columns: 210px minmax(0, 1fr);
+    gap: 24px;
+  }
+}
+
+@media (max-width: 780px) {
+  .preferences-page {
+    padding: 92px 18px 44px;
+  }
+
+  .preferences-welcome {
+    margin-bottom: 22px;
+    font-size: 44px;
+  }
+
+  .preferences-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .preferences-sidebar {
+    position: static;
+    min-height: auto;
+  }
+}
+
+/* ==========================================================
+   PREFERENCES EDIT MODE
+========================================================== */
+
+.preferences-edit-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.preferences-edit-heading h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.preferences-edit-heading p {
+  margin-top: 6px;
+  color: #8b97ab;
+  font-size: 0.92rem;
+}
+
+/* ==========================================================
+   GROUPS
+========================================================== */
+
+.preferences-edit-body {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+}
+
+.preferences-selection-group h3 {
+  margin: 0 0 14px;
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+/* ==========================================================
+   GENRES (3 columns)
+========================================================== */
+
+.preferences-selection-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+}
+
+/* ==========================================================
+   BUTTONS
+========================================================== */
+
+.preferences-selection-option {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  min-height: 58px;
+
+  padding: 0 18px;
+
+  border-radius: 14px;
+
+  border: 1px solid rgba(255,255,255,0.08);
+
+  background: rgba(255,255,255,0.02);
+
+  color: #d7dce6;
+
+  font-size: 0.92rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background .25s,
+    border-color .25s,
+    transform .2s,
+    box-shadow .25s;
+}
+
+.preferences-selection-option:hover {
+  transform: translateY(-2px);
+
+  border-color: rgba(255,255,255,.18);
+
+  background: rgba(255,255,255,.05);
+}
+
+.preferences-selection-option.active {
+  color: white;
+
+  border-color: #ff7a3d;
+
+  background: linear-gradient(
+      180deg,
+      rgba(255,122,61,.18),
+      rgba(255,122,61,.08)
+  );
+
+  box-shadow:
+      0 0 0 1px rgba(255,122,61,.18),
+      0 8px 22px rgba(255,122,61,.18);
+}
+
+/* ==========================================================
+   ACTION BUTTONS
+========================================================== */
+
+.preferences-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 14px;
+
+  padding-top: 26px;
+
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.preferences-cancel-button {
+  height: 42px;
+
+  padding: 0 22px;
+
+  border-radius: 999px;
+
+  border: 1px solid rgba(255,255,255,.12);
+
+  background: transparent;
+
+  color: #cfd6e4;
+
+  cursor: pointer;
+
+  transition: .25s;
+}
+
+.preferences-cancel-button:hover {
+  background: rgba(255,255,255,.05);
+}
+
+.preferences-save-button {
+  height: 42px;
+
+  padding: 0 24px;
+
+  border: none;
+
+  border-radius: 999px;
+
+  background: linear-gradient(
+      135deg,
+      #ff7a3d,
+      #ff5f3a
+  );
+
+  color: white;
+
+  font-weight: 700;
+
+  cursor: pointer;
+
+  transition:
+      transform .2s,
+      box-shadow .25s;
+}
+
+.preferences-save-button:hover {
+  transform: translateY(-2px);
+
+  box-shadow:
+      0 12px 28px rgba(255,122,61,.35);
+}
+
+.preferences-save-button:disabled,
+.preferences-cancel-button:disabled {
+  opacity: .55;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ==========================================================
+   RESPONSIVE
+========================================================== */
+
+@media (max-width: 1100px) {
+
+  .preferences-selection-grid {
+    grid-template-columns: repeat(2, minmax(0,1fr));
+  }
+
+}
+
+@media (max-width: 700px) {
+
+  .preferences-selection-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .preferences-edit-actions {
+    flex-direction: column-reverse;
+  }
+
+  .preferences-save-button,
+  .preferences-cancel-button {
+    width: 100%;
+  }
+
+}
+
+/* ==========================================
+   Preferences Edit Button
+========================================== */
+
+.preferences-edit-button {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+
+  height: 38px;
+  padding: 0 16px;
+
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.04);
+
+  color: #e5e7eb;
+  font-size: 0.88rem;
+  font-weight: 600;
+
+  cursor: pointer;
+
+  transition:
+    background 0.25s ease,
+    border-color 0.25s ease,
+    transform 0.2s ease,
+    box-shadow 0.25s ease;
+}
+
+.preferences-edit-button svg {
+  width: 14px;
+  height: 14px;
+}
+
+.preferences-edit-button:hover {
+  background: rgba(255, 122, 61, 0.12);
+  border-color: rgba(255, 122, 61, 0.4);
+
+  color: #ffffff;
+
+  transform: translateY(-1px);
+
+  box-shadow: 0 8px 20px rgba(255, 122, 61, 0.18);
+}
+
+.preferences-edit-button:active {
+  transform: translateY(0);
+}
+
+.preferences-edit-button:focus-visible {
+  outline: none;
+  box-shadow:
+    0 0 0 3px rgba(255, 122, 61, 0.25);
+}
+
+.preferences-edit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Edit-mode option cards */
+
+.preferences-selection-option {
+  min-height: 58px;
+  padding: 12px 16px;
+
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 12px;
+
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 11px;
+
+  color: #dce4ef;
+  background: rgba(255, 255, 255, 0.025);
+
+  text-align: left;
+  cursor: pointer;
+
+  transition:
+    transform 160ms ease,
+    color 160ms ease,
+    border-color 160ms ease,
+    background 160ms ease,
+    box-shadow 160ms ease;
+}
+
+.preferences-selection-option:hover {
+  transform: translateY(-1px);
+  border-color: rgba(255, 255, 255, 0.2);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.preferences-option-icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 24px;
+
+  display: grid;
+  place-items: center;
+}
+
+.preferences-option-icon img {
+  width: 18px;
+  height: 18px;
+  display: block;
+  object-fit: contain;
+}
+
+.preferences-option-copy {
+  min-width: 0;
+
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.preferences-option-copy strong {
+  color: inherit;
+  font-size: 0.82rem;
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.preferences-option-copy small {
+  color: #728096;
+  font-size: 0.64rem;
+  font-weight: 400;
+  line-height: 1.35;
+}
+
+/* Genre-specific colors */
+
+.preferences-genre-option {
+  color: var(--genre-color);
+  border-color: color-mix(
+    in srgb,
+    var(--genre-color) 55%,
+    transparent
+  );
+  background: color-mix(
+    in srgb,
+    var(--genre-color) 5%,
+    transparent
+  );
+}
+
+.preferences-genre-option .preferences-option-icon img {
+  /*
+    Use this only when your database icons are white PNGs.
+    The icon will inherit a color-like appearance from the card.
+  */
+  opacity: 0.95;
+}
+
+.preferences-genre-option:hover {
+  color: var(--genre-color);
+  border-color: var(--genre-color);
+
+  background: color-mix(
+    in srgb,
+    var(--genre-color) 10%,
+    transparent
+  );
+
+  box-shadow: 0 8px 20px
+    color-mix(
+      in srgb,
+      var(--genre-color) 14%,
+      transparent
+    );
+}
+
+.preferences-genre-option.active {
+  color: var(--genre-color);
+  border-color: var(--genre-color);
+
+  background: color-mix(
+    in srgb,
+    var(--genre-color) 14%,
+    #111d2e
+  );
+
+  box-shadow:
+    inset 0 0 0 1px
+      color-mix(
+        in srgb,
+        var(--genre-color) 30%,
+        transparent
+      ),
+    0 8px 22px
+      color-mix(
+        in srgb,
+        var(--genre-color) 18%,
+        transparent
+      );
+}
+
+/* Non-genre selected cards */
+
+.preferences-selection-option.active:not(
+    .preferences-genre-option
+  ) {
+  color: #ffffff;
+  border-color: #ff7043;
+  background: rgba(255, 112, 67, 0.13);
+
+  box-shadow:
+    inset 0 0 0 1px rgba(255, 112, 67, 0.12),
+    0 8px 22px rgba(255, 112, 67, 0.12);
+}
+
+/* Layout matching your design */
+
+.preferences-selection-grid-genres {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.preferences-selection-grid-factors,
+.preferences-selection-grid-content {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+@media (max-width: 900px) {
+  .preferences-selection-grid-genres,
+  .preferences-selection-grid-factors,
+  .preferences-selection-grid-content {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 600px) {
+  .preferences-selection-grid-genres,
+  .preferences-selection-grid-factors,
+  .preferences-selection-grid-content {
+    grid-template-columns: 1fr;
   }
 }
