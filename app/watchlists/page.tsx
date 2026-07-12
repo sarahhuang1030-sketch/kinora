@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { FormEvent, useCallback, useEffect, useMemo, useState } from 'react';
-import { useSession } from 'next-auth/react';
+import {signOut, useSession } from 'next-auth/react';
 import {
   Bookmark,
   Check,
@@ -355,13 +355,35 @@ const userId = user?.user_id;
 
           <div className="watchlists-sidebar-space" />
 
-          <Link
-            href="/api/auth/signout"
+          <button
+            type="button"
             className="watchlists-logout"
+            onClick={async () => {
+              try {
+                await fetch('/api/logout', {
+                  method: 'POST',
+                  headers: {
+                    'Content-Type': 'application/json',
+                  },
+                  body: JSON.stringify({
+                    email: session?.user?.email,
+                  }),
+                });
+              } catch (error) {
+                console.error(
+                  'Logout tracking failed',
+                  error
+                );
+              }
+
+              await signOut({
+                callbackUrl: '/',
+              });
+            }}
           >
             <LogOut size={17} />
             <span>Log out</span>
-          </Link>
+          </button>
         </aside>
 
         <section className="watchlists-content">
