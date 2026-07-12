@@ -51,19 +51,83 @@ export default function Navbar() {
 
   
 
-  useEffect(() => {
-    async function loadNavUser() {
-      if (!session?.user?.email) return;
-
-      const res = await fetch(`/api/profile?email=${session.user.email}`);
-      const data = await res.json();
-
-      setNavUser(data.user);
+ useEffect(() => {
+  async function loadNavUser() {
+    if (!session?.user?.email) {
+      setNavUser(null);
+      return;
     }
 
-    loadNavUser();
-  }, [session?.user?.email]);
+    try {
+      const response = await fetch(
+        `/api/profile?email=${encodeURIComponent(
+          session.user.email
+        )}&timestamp=${Date.now()}`,
+        {
+          cache: "no-store",
+        }
+      );
 
+      const data = await response.json();
+
+      if (!response.ok || !data.user) {
+        return;
+      }
+
+      setNavUser(data.user);
+    } catch (error) {
+      console.error(
+        "Unable to load navbar profile:",
+        error
+      );
+    }
+  }
+
+  void loadNavUser();
+
+  function handleProfileUpdated(event: Event) {
+    const customEvent = event as CustomEvent<{
+      profileImage?: string;
+      firstName?: string;
+      lastName?: string;
+    }>;
+
+    const updatedProfile = customEvent.detail;
+
+    if (updatedProfile) {
+      setNavUser((current) => ({
+        first_name:
+          updatedProfile.firstName ??
+          current?.first_name ??
+          "",
+        last_name:
+          updatedProfile.lastName ??
+          current?.last_name ??
+          "",
+        profile_image:
+          updatedProfile.profileImage ??
+          current?.profile_image ??
+          "",
+      }));
+
+      return;
+    }
+
+    void loadNavUser();
+  }
+
+  window.addEventListener(
+    "profile-updated",
+    handleProfileUpdated
+  );
+
+  return () => {
+    window.removeEventListener(
+      "profile-updated",
+      handleProfileUpdated
+    );
+  };
+}, [session?.user?.email]);
   const menuRef = useRef<HTMLDivElement>(null);
 
 useEffect(() => {
