@@ -3,7 +3,7 @@ import pool from "@/app/src/lib/db";
 
 export async function GET() {
   const [rows] = await pool.query(`
-    SELECT platform_id, platform_name
+    SELECT platform_id, platform_name, logo_url
     FROM streaming_platforms
     ORDER BY platform_name
   `);
