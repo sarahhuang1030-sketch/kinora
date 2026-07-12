@@ -48,7 +48,14 @@ type Watchlist = {
   watchlist_id: number;
   name: string;
   total_titles: number;
-  watched_count: number;
+  movie_count: number;
+  tv_count: number;
+  completed_count: number;
+  previews: {
+    movie_id: number;
+    title: string;
+    portrait_url: string | null;
+  }[];
 };
 
 type DbGenre = {
@@ -137,16 +144,18 @@ function MovieCard({
 function WatchlistBox({
   title,
   totalTitles,
-  watchedCount,
+  completedCount,
 }: {
   title: string;
   totalTitles: number;
-  watchedCount: number;
+  completedCount: number;
 }) {
   const progress =
-    totalTitles > 0
-      ? Math.round((watchedCount / totalTitles) * 100)
-      : 0;
+  totalTitles > 0
+    ? Math.round(
+        (completedCount / totalTitles) * 100
+      )
+    : 0;
 
   return (
     <div className="home-watch-box">
@@ -163,7 +172,7 @@ function WatchlistBox({
       </div>
 
       <div className="home-watch-row">
-        <span>{watchedCount} watched</span>
+        <span>{completedCount} watched</span>
         <span>{progress}%</span>
       </div>
 
@@ -296,9 +305,13 @@ const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
       return;
     }
 
-    const updatedWatchlists = await updatedRes.json();
+   const updatedData = await updatedRes.json();
 
-    setWatchlists(updatedWatchlists);
+    setWatchlists(
+      Array.isArray(updatedData.watchlists)
+        ? updatedData.watchlists
+        : []
+    );
   } catch (error) {
     console.error("Error saving movie to watchlist:", error);
   }
@@ -392,28 +405,55 @@ function handleMoodClick(moodName: string) {
     loadHomeMovies();
   }, [user?.user_id, appliedMood, selectedPlatform, selectedDuration, selectedGenre]);
 
-  useEffect(() => {
+ useEffect(() => {
   async function loadWatchlists() {
-    if (!user?.user_id) return;
-// const userId = user?.user_id || 29;
+    if (!user?.user_id) {
+      setWatchlists([]);
+      return;
+    }
+
     try {
       const res = await fetch(
-        `/api/watchlists?userId=${user.user_id}`
+        `/api/watchlists?userId=${user.user_id}`,
+        {
+          cache: 'no-store',
+        }
       );
 
-      // const res = await fetch(`/api/watchlists?userId=${userId}`);
+      if (!res.ok) {
+        const errorData = await res
+          .json()
+          .catch(() => null);
 
-      if (!res.ok) return;
+        console.error(
+          'Failed to load watchlists:',
+          errorData?.details ||
+            errorData?.error ||
+            res.statusText
+        );
+
+        setWatchlists([]);
+        return;
+      }
 
       const data = await res.json();
 
-      setWatchlists(data);
+      setWatchlists(
+        Array.isArray(data.watchlists)
+          ? data.watchlists
+          : []
+      );
     } catch (error) {
-      console.error(error);
+      console.error(
+        'Error loading watchlists:',
+        error
+      );
+
+      setWatchlists([]);
     }
   }
 
-  loadWatchlists();
+  void loadWatchlists();
 }, [user?.user_id]);
 
 async function handleToggleSaved(movie: CardMovie) {
@@ -436,9 +476,27 @@ async function handleToggleSaved(movie: CardMovie) {
       current.filter((id) => id !== movie.movie_id)
     );
 
-    const updated = await fetch(`/api/watchlists?userId=${user?.user_id}`);
-    const data = await updated.json();
-    setWatchlists(data);
+    const updated = await fetch(
+  `/api/watchlists?userId=${user?.user_id}`,
+  {
+    cache: 'no-store',
+  }
+);
+
+if (!updated.ok) {
+  console.error(
+    'Failed to refresh watchlists'
+  );
+  return;
+}
+
+const data = await updated.json();
+
+setWatchlists(
+  Array.isArray(data.watchlists)
+    ? data.watchlists
+    : []
+);
 
     return;
   }
@@ -782,14 +840,17 @@ const currentMood = moods.find(
                   key={list.watchlist_id}
                   title={list.name}
                   totalTitles={Number(list.total_titles)}
-                  watchedCount={Number(list.watched_count)}
+                  completedCount={Number(
+                    list.completed_count
+                  )}
                 />
               ))}
-
-              <div className="home-create-list">
-                <span>＋</span>
-                <p>Create new list</p>
-              </div>
+              <Link href="/watchlists" className="home-create-list">
+                {/* <div className="home-create-list"> */}
+                  <span>＋</span>
+                  <p>Create new list</p>
+                {/* </div> */}
+              </Link>
             </>
           )}
         </div>

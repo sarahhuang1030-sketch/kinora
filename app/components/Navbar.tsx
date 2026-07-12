@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
 
 type Movie = {
@@ -28,6 +28,7 @@ export default function Navbar() {
   const [searchText, setSearchText] = useState("");
   const [results, setResults] = useState<Movie[]>([]);
   const [navUser, setNavUser] = useState<NavUser | null>(null); 
+  const [profileMenuOpen, setProfileMenuOpen] = useState(false);
 
   useEffect(() => {
     const query = searchText.trim();
@@ -47,6 +48,9 @@ export default function Navbar() {
     return () => clearTimeout(timer);
   }, [searchText]);
 
+
+  
+
   useEffect(() => {
     async function loadNavUser() {
       if (!session?.user?.email) return;
@@ -59,6 +63,29 @@ export default function Navbar() {
 
     loadNavUser();
   }, [session?.user?.email]);
+
+  const menuRef = useRef<HTMLDivElement>(null);
+
+useEffect(() => {
+  function handleClickOutside(event: MouseEvent) {
+    if (
+      menuRef.current &&
+      !menuRef.current.contains(event.target as Node)
+    ) {
+      setProfileMenuOpen(false);
+    }
+  }
+
+  document.addEventListener("mousedown", handleClickOutside);
+
+  return () => {
+    document.removeEventListener(
+      "mousedown",
+      handleClickOutside
+    );
+  };
+}, []);
+
 
   if (status === "loading") {
     return null;
@@ -73,6 +100,8 @@ export default function Navbar() {
     setSearchText("");
     setResults([]);
   };
+
+  
 
   return (
     <nav>
@@ -146,45 +175,83 @@ export default function Navbar() {
 
         {session ? (
           <>
-            <Link href="/profile" className="nav-profile">
-                {navUser?.profile_image || session?.user?.image ? (
-                  <Image
-                    src={navUser?.profile_image || session?.user?.image || ""}
-                    alt="Profile"
-                    width={40}
-                    height={40}
-                    className="nav-profile-img"
-                  />
-                ) : (
-                  <span className="nav-profile-initials">
-                    {navUser?.first_name?.charAt(0)}
-                    {navUser?.last_name?.charAt(0)}
-                  </span>
-                )}
-              </Link>
+           <div
+  className="nav-profile-menu"
+  ref={menuRef}
+>
+  <a
+    type="button"
+    className="nav-profile"
+    onClick={() => setProfileMenuOpen((open) => !open)}
+  >
+    {navUser?.profile_image || session?.user?.image ? (
+      <Image
+        src={navUser?.profile_image || session?.user?.image || ""}
+        alt="Profile"
+        width={40}
+        height={40}
+        className="nav-profile-img"
+      />
+    ) : (
+      <span className="nav-profile-initials">
+        {navUser?.first_name?.charAt(0)}
+        {navUser?.last_name?.charAt(0)}
+      </span>
+    )}
+  </a>
 
-            <button
-              className="login-btn"
-              onClick={async () => {
-                try {
-                  await fetch("/api/logout", {
-                    method: "POST",
-                    headers: {
-                      "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify({
-                      email: session?.user?.email,
-                    }),
-                  });
-                } catch (error) {
-                  console.error("Logout tracking failed", error);
-                }
+  {profileMenuOpen && (
+    <div className="nav-profile-dropdown">
+      <Link
+        href="/profile"
+        onClick={() => setProfileMenuOpen(false)}
+      >
+        My Profile
+      </Link>
 
-                signOut({ callbackUrl: "/" });
-              }}
-            >
-              Logout
-            </button>
+      <Link
+        href="/watchlists"
+        onClick={() => setProfileMenuOpen(false)}
+      >
+        My Watchlists
+      </Link>
+
+      <Link
+        href="/profile/preferences"
+        onClick={() => setProfileMenuOpen(false)}
+      >
+        Preferences
+      </Link>
+
+      <button
+        type="button"
+        onClick={async () => {
+          setProfileMenuOpen(false);
+
+          try {
+            await fetch("/api/logout", {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify({
+                email: session?.user?.email,
+              }),
+            });
+          } catch (error) {
+            console.error("Logout tracking failed", error);
+          }
+
+          signOut({ callbackUrl: "/" });
+        }}
+      >
+        Logout
+      </button>
+    </div>
+  )}
+</div>
+
+           
           </>
         ) : (
           <>
