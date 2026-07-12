@@ -304,19 +304,24 @@ const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
   }
 }
 
-  function handleMoodClick(moodName: string) {
+function handleMoodClick(moodName: string) {
   if (moodName === "Surprise Me") {
     handleSurpriseMe();
     return;
   }
 
-  const nextMood = selectedMood === moodName ? "" : moodName;
+  const isDeselecting = selectedMood === moodName;
+  const nextMood = isDeselecting ? "" : moodName;
 
-  // Only update the selected button and hero background
   setSelectedMood(nextMood);
-
-  // Do not apply the mood or change recommendations yet
   setIsMoodPopupOpen(false);
+
+  // When no mood is selected, restore the original recommendations
+  if (isDeselecting) {
+    setAppliedMood("");
+    setMoodCarouselMovies([]);
+    setMoodSlideIndex(0);
+  }
 }
 
   const [moods, setMoods] = useState<DbMood[]>([]);

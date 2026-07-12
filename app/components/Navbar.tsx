@@ -116,7 +116,7 @@ export default function Navbar() {
 
     <input
       type="text"
-      placeholder="Search any title, genre, or mood..."
+      placeholder="Search any title..."
       value={searchText}
       onChange={(e) => setSearchText(e.target.value)}
     />
