@@ -562,8 +562,8 @@ if (
                 </button>
               </div>
 
-              <button className="text-btn" onClick={() => setStep(4)}>
-                ← Back
+              <button type="button" className="secondary-btn" onClick={() => setStep(4)} style={{ marginTop: "20px" }}>
+                Back
               </button>
             </>
           )}
