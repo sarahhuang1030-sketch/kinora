@@ -111,47 +111,37 @@ useEffect(() => {
 }
 
 async function continueNext() {
-  console.log("USER ID:", userId);
-  console.log("CONNECTED SERVICES:", connectedServices);
-
-  if (userId) {
-    async function continueNext() {
   if (!userId) {
     console.error("Missing userId");
-
+    alert("User information is missing. Please go back and try again.");
     return;
   }
 
   try {
-    const response = await fetch(
-      "/api/connect-service",
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: Number(userId),
-          services: connectedServices,
-        }),
-      }
-    );
+    const response = await fetch("/api/connect-service", {
+      method: "PUT",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: Number(userId),
+        services: connectedServices,
+      }),
+    });
 
     const data = await response.json();
 
     if (!response.ok) {
       throw new Error(
-        data.error ||
-          "Unable to save streaming services."
+        data.error || "Unable to save streaming services."
       );
     }
 
+    console.log("STREAMING SERVICES SAVED:", data.services);
+
     router.push(buildNextUrl());
   } catch (error) {
-    console.error(
-      "SAVE STREAMING SERVICES ERROR:",
-      error
-    );
+    console.error("SAVE STREAMING SERVICES ERROR:", error);
 
     alert(
       error instanceof Error
@@ -159,10 +149,6 @@ async function continueNext() {
         : "Unable to save streaming services."
     );
   }
-}
-  }
-
-  router.push(buildNextUrl());
 }
 
   function skipConnect() {

@@ -60,48 +60,75 @@ function OnboardingCompleteContent() {
  
 
 
-  useEffect(() => {
-    async function loadUser() {
-      if (!email) return;
+ useEffect(() => {
+  async function loadUser() {
+    if (!email) return;
 
-      try {
-        const res = await fetch(`/api/profile?email=${email}`);
-        const data = await res.json();
+    try {
+      const profileResponse = await fetch(
+        `/api/profile?email=${encodeURIComponent(email)}`,
+        {
+          cache: "no-store",
+        }
+      );
 
-        setUser(data.user);
+      const profileData = await profileResponse.json();
 
-        if (data.answers) {
-          setAnswers({
-              genres: unique(data.answers.genres || []),
-              streamingServices: unique(data.answers.streamingServices || []),
-              contentTypes: unique(data.answers.contentTypes || []),
-              preferences: unique(data.answers.preferences || []),
-            });
+      if (!profileResponse.ok) {
+        throw new Error(
+          profileData.error || "Unable to load profile."
+        );
+      }
+
+      setUser(profileData.user);
+
+      const profileAnswers = profileData.answers || {};
+
+      setAnswers({
+        genres: unique(profileAnswers.genres || []),
+        streamingServices: unique(
+          profileAnswers.streamingServices || []
+        ),
+        contentTypes: unique(profileAnswers.contentTypes || []),
+        preferences: unique(profileAnswers.preferences || []),
+      });
+
+      if (profileData.user?.user_id) {
+        const servicesResponse = await fetch(
+          `/api/connect-service?userId=${encodeURIComponent(
+            String(profileData.user.user_id)
+          )}`,
+          {
+            cache: "no-store",
+          }
+        );
+
+        const servicesData = await servicesResponse.json();
+
+        if (!servicesResponse.ok) {
+          throw new Error(
+            servicesData.error ||
+              "Unable to load connected services."
+          );
         }
 
-        if (data.user?.user_id) {
-  const servicesRes = await fetch(
-    `/api/connect-service/list?userId=${data.user.user_id}`
-  );
-
-  const servicesData = await servicesRes.json();
-
-  const profileServices = unique(data.answers?.streamingServices || []);
-  const connectedServices = unique(servicesData.services || []);
-
-  setAnswers((prev) => ({
-    ...prev,
-    streamingServices:
-      profileServices.length > 0 ? profileServices : connectedServices,
-  }));
-}
-      } catch (error) {
-        console.error("LOAD ONBOARDING COMPLETE ERROR:", error);
+        setAnswers((current) => ({
+          ...current,
+          streamingServices: unique(
+            servicesData.services || []
+          ),
+        }));
       }
+    } catch (error) {
+      console.error(
+        "LOAD ONBOARDING COMPLETE ERROR:",
+        error
+      );
     }
+  }
 
-    loadUser();
-  }, [email]);
+  void loadUser();
+}, [email]);
 
   function editStreamingServices() {
     const query = new URLSearchParams();
