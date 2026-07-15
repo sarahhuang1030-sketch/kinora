@@ -76,76 +76,76 @@ export async function GET() {
       - Filtering by genre, mood and platform
     */
     const [movieRows] = await pool.query<MovieRow[]>(
-      `
-        SELECT
-          m.movie_id,
-          m.title,
-          m.description,
-          m.release_year,
-          m.duration_minutes,
-          m.poster_url,
-          m.portrait_url,
-          m.trailer_url,
-          m.content_type_id,
+  `
+    SELECT
+      m.movie_id,
+      m.title,
+      m.description,
+      m.release_year,
+      m.duration_minutes,
+      m.poster_url,
+      m.portrait_url,
+      m.trailer_url,
+      m.content_type_id,
 
-          ct.type_name AS content_type,
+      ct.type_name AS content_type,
 
-          GROUP_CONCAT(
-            DISTINCT g.genre_name
-            ORDER BY g.genre_name
-            SEPARATOR ', '
-          ) AS genres,
+      GROUP_CONCAT(
+        DISTINCT g.genre_name
+        ORDER BY g.genre_name
+        SEPARATOR ', '
+      ) AS genres,
 
-          GROUP_CONCAT(
-            DISTINCT mo.mood_name
-            ORDER BY mo.mood_name
-            SEPARATOR ', '
-          ) AS moods,
+      GROUP_CONCAT(
+        DISTINCT mo.mood_name
+        ORDER BY mo.mood_name
+        SEPARATOR ', '
+      ) AS moods,
 
-          GROUP_CONCAT(
-            DISTINCT sp.platform_name
-            ORDER BY sp.platform_name
-            SEPARATOR ', '
-          ) AS platforms
+      GROUP_CONCAT(
+        DISTINCT sp.platform_name
+        ORDER BY sp.platform_name
+        SEPARATOR ', '
+      ) AS platforms
 
-        FROM movie_app.movies m
+    FROM movies m
 
-        LEFT JOIN movie_app.content_types ct
-          ON ct.content_type_id = m.content_type_id
+    LEFT JOIN content_types ct
+      ON ct.content_type_id = m.content_type_id
 
-        LEFT JOIN movie_app.movie_genres mg
-          ON mg.movie_id = m.movie_id
+    LEFT JOIN movie_genres mg
+      ON mg.movie_id = m.movie_id
 
-        LEFT JOIN movie_app.genres g
-          ON g.genre_id = mg.genre_id
+    LEFT JOIN genres g
+      ON g.genre_id = mg.genre_id
 
-        LEFT JOIN movie_app.movie_moods mm
-          ON mm.movie_id = m.movie_id
+    LEFT JOIN movie_moods mm
+      ON mm.movie_id = m.movie_id
 
-        LEFT JOIN movie_app.moods mo
-          ON mo.mood_id = mm.mood_id
+    LEFT JOIN moods mo
+      ON mo.mood_id = mm.mood_id
 
-        LEFT JOIN movie_app.movie_platforms mp
-          ON mp.movie_id = m.movie_id
+    LEFT JOIN movie_platforms mp
+      ON mp.movie_id = m.movie_id
 
-        LEFT JOIN movie_app.streaming_platforms sp
-          ON sp.platform_id = mp.platform_id
+    LEFT JOIN streaming_platforms sp
+      ON sp.platform_id = mp.platform_id
 
-        GROUP BY
-          m.movie_id,
-          m.title,
-          m.description,
-          m.release_year,
-          m.duration_minutes,
-          m.poster_url,
-          m.portrait_url,
-          m.trailer_url,
-          m.content_type_id,
-          ct.type_name
+    GROUP BY
+      m.movie_id,
+      m.title,
+      m.description,
+      m.release_year,
+      m.duration_minutes,
+      m.poster_url,
+      m.portrait_url,
+      m.trailer_url,
+      m.content_type_id,
+      ct.type_name
 
-        ORDER BY m.title ASC
-      `
-    );
+    ORDER BY m.title ASC
+  `
+);
 
     const movies: DiscoverMovie[] = movieRows.map((movie) => ({
       movie_id: Number(movie.movie_id),
@@ -185,97 +185,96 @@ export async function GET() {
       curated_collection_movies.display_order
     */
     const [curatedRows] = await pool.query<CuratedCollectionRow[]>(
-      `
-        SELECT
-          cc.collection_id,
-          cc.collection_name,
-          cc.display_order AS collection_display_order,
+  `
+    SELECT
+      cc.collection_id,
+      cc.collection_name,
+      cc.display_order AS collection_display_order,
 
-          ccm.display_order AS movie_display_order,
+      ccm.display_order AS movie_display_order,
 
-          m.movie_id,
-          m.title,
-          m.description,
-          m.release_year,
-          m.duration_minutes,
-          m.poster_url,
-          m.portrait_url,
-          m.trailer_url,
-          m.content_type_id,
+      m.movie_id,
+      m.title,
+      m.description,
+      m.release_year,
+      m.duration_minutes,
+      m.poster_url,
+      m.portrait_url,
+      m.trailer_url,
+      m.content_type_id,
 
-          ct.type_name AS content_type,
+      ct.type_name AS content_type,
 
-          GROUP_CONCAT(
-            DISTINCT g.genre_name
-            ORDER BY g.genre_name
-            SEPARATOR ', '
-          ) AS genres,
+      GROUP_CONCAT(
+        DISTINCT g.genre_name
+        ORDER BY g.genre_name
+        SEPARATOR ', '
+      ) AS genres,
 
-          GROUP_CONCAT(
-            DISTINCT mo.mood_name
-            ORDER BY mo.mood_name
-            SEPARATOR ', '
-          ) AS moods,
+      GROUP_CONCAT(
+        DISTINCT mo.mood_name
+        ORDER BY mo.mood_name
+        SEPARATOR ', '
+      ) AS moods,
 
-          GROUP_CONCAT(
-            DISTINCT sp.platform_name
-            ORDER BY sp.platform_name
-            SEPARATOR ', '
-          ) AS platforms
+      GROUP_CONCAT(
+        DISTINCT sp.platform_name
+        ORDER BY sp.platform_name
+        SEPARATOR ', '
+      ) AS platforms
 
-        FROM movie_app.curated_collections cc
+    FROM curated_collections cc
 
-        LEFT JOIN movie_app.curated_collection_movies ccm
-          ON ccm.collection_id = cc.collection_id
+    LEFT JOIN curated_collection_movies ccm
+      ON ccm.collection_id = cc.collection_id
 
-        LEFT JOIN movie_app.movies m
-          ON m.movie_id = ccm.movie_id
+    LEFT JOIN movies m
+      ON m.movie_id = ccm.movie_id
 
-        LEFT JOIN movie_app.content_types ct
-          ON ct.content_type_id = m.content_type_id
+    LEFT JOIN content_types ct
+      ON ct.content_type_id = m.content_type_id
 
-        LEFT JOIN movie_app.movie_genres mg
-          ON mg.movie_id = m.movie_id
+    LEFT JOIN movie_genres mg
+      ON mg.movie_id = m.movie_id
 
-        LEFT JOIN movie_app.genres g
-          ON g.genre_id = mg.genre_id
+    LEFT JOIN genres g
+      ON g.genre_id = mg.genre_id
 
-        LEFT JOIN movie_app.movie_moods mm
-          ON mm.movie_id = m.movie_id
+    LEFT JOIN movie_moods mm
+      ON mm.movie_id = m.movie_id
 
-        LEFT JOIN movie_app.moods mo
-          ON mo.mood_id = mm.mood_id
+    LEFT JOIN moods mo
+      ON mo.mood_id = mm.mood_id
 
-        LEFT JOIN movie_app.movie_platforms mp
-          ON mp.movie_id = m.movie_id
+    LEFT JOIN movie_platforms mp
+      ON mp.movie_id = m.movie_id
 
-        LEFT JOIN movie_app.streaming_platforms sp
-          ON sp.platform_id = mp.platform_id
+    LEFT JOIN streaming_platforms sp
+      ON sp.platform_id = mp.platform_id
 
-        WHERE cc.is_active = TRUE
+    WHERE cc.is_active = TRUE
 
-        GROUP BY
-          cc.collection_id,
-          cc.collection_name,
-          cc.display_order,
-          ccm.display_order,
+    GROUP BY
+      cc.collection_id,
+      cc.collection_name,
+      cc.display_order,
+      ccm.display_order,
+      m.movie_id,
+      m.title,
+      m.description,
+      m.release_year,
+      m.duration_minutes,
+      m.poster_url,
+      m.portrait_url,
+      m.trailer_url,
+      m.content_type_id,
+      ct.type_name
 
-          m.movie_id,
-          m.title,
-          m.description,
-          m.release_year,
-          m.duration_minutes,
-          m.poster_url,
-          m.portrait_url,
-          m.trailer_url,
-          m.content_type_id,
-          ct.type_name
-
-        ORDER BY
-          cc.display_order ASC,
-          ccm.display_order ASC
-      `
-    );
+    ORDER BY
+      cc.display_order ASC,
+      ccm.display_order ASC
+  `
+);
 
     const collectionMap = new Map<number, DiscoverCollection>();
 
