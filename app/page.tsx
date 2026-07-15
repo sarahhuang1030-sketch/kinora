@@ -123,18 +123,18 @@ function MovieCard({
         <p className="home-movie-desc">{movie.description}</p>
 
         <div className="home-movie-actions">
-          <Link href={`/movie/${movie.movie_id}`} className="home-show-btn">
+          <Link href={`/movie/${movie.movie_id}`} className="discover-browse-card-details">
             Show details
           </Link>
 
-          {isLoggedIn && (
+          {/* {isLoggedIn && (
               <button
                 className={isSaved ? 'home-save-btn saved' : 'home-save-btn'}
                 onClick={() => onWatchlistClick(movie)}
               >
                 {isSaved ? 'Saved' : 'Watchlist'}
               </button>
-          )}
+          )} */}
         </div>
       </div>
     </article>
@@ -739,7 +739,9 @@ const currentMood = moods.find(
         <div className="home-section-head">
           <div>
             <p className="home-eyebrow">Personalized recommendations</p>
-            <h2>Recommended for you</h2>
+            <h2 className="dongle-font" style={{ fontSize: "54px", marginBottom: "-18px" }}>
+              Recommended for you
+            </h2>
             <p>Based on your preferences, watch history and streaming subscriptions</p>
           </div>
 
@@ -815,7 +817,7 @@ const currentMood = moods.find(
         <div className="home-library-head">
           <div>
             <p className="home-eyebrow">Your library</p>
-            <h2>My watchlists</h2>
+            <h2 className="dongle-font" style={{ fontSize: "54px", marginBottom: "-18px" }}>My Watchlists</h2>
           </div>
 
           {/* <button>Manage ›</button> */}
@@ -878,7 +880,7 @@ const currentMood = moods.find(
         <section className="home-more-section">
   <p className="home-eyebrow">More to explore</p>
 
-  <h2>
+   <h2 className="dongle-font" style={{ fontSize: "54px", marginBottom: "-18px" }}>
     Trending movies you may like
   </h2>
 

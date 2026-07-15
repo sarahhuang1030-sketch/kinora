@@ -658,10 +658,10 @@ useEffect(() => {
               <div className="discover-curated-header">
                 <div className="discover-curated-title">
                   <p className="discover-eyebrow">Hand picked by Cineri</p>
-                  <h2>Curated Collections</h2>
+                  <h2 style={{ fontSize: "54px" }}>Curated Collections</h2>
                 </div>
 
-                <div
+                {/* <div
                   className="discover-collection-tabs"
                   role="tablist"
                   aria-label="Collection categories"
@@ -685,7 +685,7 @@ useEffect(() => {
                   >
                     Mood Collections
                   </button>
-                </div>
+                </div> */}
               </div>
 
               {displayedCollections.length > 0 ? (
@@ -708,7 +708,7 @@ useEffect(() => {
               <div className="discover-browse-header">
                 <div>
                   <p className="discover-eyebrow">Discovery</p>
-                  <h2>Browse All Content</h2>
+                   <h2 className="dongle-font" style={{ fontSize: "54px", marginBottom: "-18px" }}>Browse All Content</h2>
                   <p className="discover-browse-subtitle">
                     Newly released and trending titles across every platform
                   </p>
