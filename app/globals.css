@@ -5747,7 +5747,7 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 
 .discover-compact-collection {
   display: grid;
-  grid-template-columns: 150px minmax(0, 1fr);
+  grid-template-columns: 135px 1fr;
   min-height: 132px;
   overflow: hidden;
   border: 1px solid rgba(148, 163, 184, 0.08);
@@ -5838,12 +5838,12 @@ footer { border-top: 1px solid var(--border); padding: 32px 48px; display: flex;
 }
 
 .discover-compact-movies {
-  display: grid;
-  grid-template-columns: repeat(9, minmax(74px, 1fr));
-  gap: 8px;
-  min-width: 0;
-  overflow: hidden;
-  padding: 9px 10px;
+    display: grid;
+    grid-template-columns: repeat(8, 1fr);
+    gap: 12px;
+
+    padding: 14px 16px;
+    align-items: center;
 }
 
 .discover-compact-poster {

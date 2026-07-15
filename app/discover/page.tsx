@@ -20,16 +20,21 @@ type DiscoverMovie = {
   poster_url: string | null;
   portrait_url: string | null;
   trailer_url: string | null;
+
+  content_type_id: number | null;
   content_type: string | null;
+
   genres: string | null;
   moods: string | null;
   platforms: string | null;
 };
 
 type DiscoverCollection = {
-  mood_id: number;
-  mood_name: string;
-  icon_url: string | null;
+  collection_id: number;
+  collection_name: string;
+  display_order: number;
+  movie_count: number;
+  show_count: number;
   movies: DiscoverMovie[];
 };
 
@@ -143,41 +148,40 @@ function CompactCollectionRow({
 }: {
   collection: DiscoverCollection;
 }) {
-  const visibleMovies = collection.movies.slice(0, 9);
+  const visibleMovies = collection.movies.slice(0, 8);
 
-  const totalMinutes = collection.movies.reduce(
-    (total, movie) => total + (movie.duration_minutes || 0),
-    0
-  );
+  const countParts: string[] = [];
 
-  const totalHours =
-    totalMinutes > 0 ? Math.max(1, Math.round(totalMinutes / 60)) : null;
+  if (collection.movie_count > 0) {
+    countParts.push(
+      `${collection.movie_count} ${
+        collection.movie_count === 1 ? 'Movie' : 'Movies'
+      }`
+    );
+  }
+
+  if (collection.show_count > 0) {
+    countParts.push(
+      `${collection.show_count} ${
+        collection.show_count === 1 ? 'Show' : 'Shows'
+      }`
+    );
+  }
 
   return (
     <article className="discover-compact-collection">
       <div className="discover-compact-collection-label">
-        <div>
-          <h3>{collection.mood_name}</h3>
+        <div className="discover-compact-collection-copy">
+          <h3>{collection.collection_name}</h3>
 
-          <p>
-            {collection.movies.length}{' '}
-            {collection.movies.length === 1 ? 'Movie' : 'Movies'}
-
-            {totalHours && (
-              <>
-                <span>•</span>
-                {totalHours}hrs
-              </>
-            )}
-          </p>
+          <p>{countParts.join(' • ')}</p>
         </div>
 
         <Link
-          href={`/discover/collections/${collection.mood_id}`}
+          href={`/discover/collections/${collection.collection_id}`}
           className="discover-compact-view-all"
         >
-          View all
-          <span aria-hidden="true">→</span>
+          Show all
         </Link>
       </div>
 
@@ -185,7 +189,7 @@ function CompactCollectionRow({
         {visibleMovies.map((movie) => (
           <Link
             href={`/movie/${movie.movie_id}`}
-            key={`${collection.mood_id}-${movie.movie_id}`}
+            key={`${collection.collection_id}-${movie.movie_id}`}
             className="discover-compact-poster"
             aria-label={`View details for ${movie.title}`}
           >
@@ -193,10 +197,6 @@ function CompactCollectionRow({
               src={getMovieImage(movie, 'portrait')}
               alt={movie.title}
             />
-
-            <span className="discover-compact-poster-overlay">
-              View
-            </span>
           </Link>
         ))}
       </div>
@@ -230,14 +230,12 @@ export default function DiscoverPage() {
   const [watchlistError, setWatchlistError] = useState('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const [collectionTab, setCollectionTab] = useState<'cineri' | 'mood'>(
-    'cineri'
-  );
-
   const [trendingMovies, setTrendingMovies] = useState<DiscoverMovie[]>([]);
   const [currentTrending, setCurrentTrending] = useState(0);
   const featured = trendingMovies[currentTrending] || null;
 
+
+  
   useEffect(() => {
     async function loadDiscoverPage() {
       try {
@@ -343,7 +341,7 @@ export default function DiscoverPage() {
       const moviePlatforms = splitValues(movie.platforms);
       const movieMoods = splitValues(movie.moods);
       const duration = movie.duration_minutes || 0;
-      const contentType = (movie.content_type || '').toLowerCase();
+  
 
       const matchesDuration =
         !selectedDuration ||
@@ -353,11 +351,14 @@ export default function DiscoverPage() {
 
       const matchesContentType =
         !selectedContentType ||
-        (selectedContentType === 'movie' && contentType.includes('movie')) ||
-        (selectedContentType === 'series' &&
-          (contentType.includes('series') ||
-            contentType.includes('show') ||
-            contentType.includes('tv')));
+        (selectedContentType === 'movie' &&
+          movie.content_type_id === 1) ||
+
+        (selectedContentType === 'tv' &&
+          movie.content_type_id === 2) ||
+
+        (selectedContentType === 'limited' &&
+          movie.content_type_id === 4);
 
       return (
         (!selectedGenre || movieGenres.includes(selectedGenre)) &&
@@ -380,12 +381,10 @@ export default function DiscoverPage() {
   ]);
 
   const displayedCollections = useMemo(() => {
-    if (collectionTab === 'cineri') {
-      return data.collections.slice(0, 3);
-    }
-
-    return data.collections;
-  }, [collectionTab, data.collections]);
+  return [...data.collections]
+    .sort((a, b) => a.display_order - b.display_order)
+    .slice(0, 3);
+}, [data.collections]);
 
   function clearFilters() {
     setSelectedGenre('');
@@ -691,16 +690,16 @@ useEffect(() => {
               {displayedCollections.length > 0 ? (
                 <div className="discover-compact-collection-list">
                   {displayedCollections.map((collection) => (
-                    <CompactCollectionRow
-                      key={collection.mood_id}
-                      collection={collection}
-                    />
-                  ))}
+                  <CompactCollectionRow
+                    key={collection.collection_id}
+                    collection={collection}
+                  />
+                ))}
                 </div>
               ) : (
                 <div className="discover-empty-card">
-                  Add movie-to-mood relationships to show curated collections.
-                </div>
+                Add titles to your curated collections to display them here.
+              </div>
               )}
             </section>
 
@@ -831,12 +830,17 @@ useEffect(() => {
 
                   <button
                     type="button"
-                    className={
-                      selectedContentType === 'series' ? 'active' : ''
-                    }
-                    onClick={() => setSelectedContentType('series')}
+                    className={selectedContentType === 'tv' ? 'active' : ''}
+                    onClick={() => setSelectedContentType('tv')}
                   >
-                    Series
+                    TV Series
+                  </button>
+                  <button
+                    type="button"
+                    className={selectedContentType === 'limited' ? 'active' : ''}
+                    onClick={() => setSelectedContentType('limited')}
+                  >
+                    Limited Series
                   </button>
                 </div>
               </div>
