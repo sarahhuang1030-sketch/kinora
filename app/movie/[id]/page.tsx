@@ -1,8 +1,9 @@
+"use client";
+
 import Image from "next/image";
 import Link from "next/link";
-import pool from "@/app/src/lib/db";
-import type { RowDataPacket } from "mysql2";
-import { notFound } from "next/navigation";
+import { useEffect, useState } from "react";
+import { useParams } from "next/navigation";
 import {
   Bookmark,
   CalendarDays,
@@ -13,12 +14,6 @@ import {
   Share2,
   Star,
 } from "lucide-react";
-
-type MovieDetailPageProps = {
-  params: Promise<{
-    id: string;
-  }>;
-};
 
 type Movie = {
   movie_id: number;
@@ -39,29 +34,7 @@ type Movie = {
   moods: string[];
 };
 
-type MovieRow = RowDataPacket & {
-  movie_id: number;
-  title: string;
-  description: string | null;
-  release_year: number | null;
-  duration_minutes: number | null;
-  poster_url: string | null;
-  portrait_url: string | null;
-  trailer_url: string | null;
-  content_type_id: number | null;
-  source: string | null;
-  author: string | null;
-  performers: string | null;
-  broadcaster: string | null;
-};
 
-type GenreRow = RowDataPacket & {
-  genre_name: string;
-};
-
-type MoodRow = RowDataPacket & {
-  mood_name: string;
-};
 
 type SimilarMovie = {
   movie_id: number;
@@ -89,22 +62,6 @@ type SimilarMovie = {
 //   return "http://localhost:3000";
 // }
 
-function getContentTypeName(contentTypeId: number | null) {
-  switch (contentTypeId) {
-    case 1:
-      return "Movie";
-
-    case 2:
-      return "TV Series";
-
-    case 4:
-      return "Limited Series";
-
-    default:
-      return "Movie";
-  }
-}
-
 function formatRuntime(minutes: number | null) {
   if (!minutes || minutes <= 0) {
     return "Runtime unavailable";
@@ -124,194 +81,161 @@ function formatRuntime(minutes: number | null) {
   return `${hours}h ${remainingMinutes}m`;
 }
 
-function getYouTubeEmbedUrl(url: string | null) {
-  if (!url) {
-    return null;
+export default function MovieDetailPage() {
+  const params = useParams<{ id: string }>();
+  const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
+
+  const [movie, setMovie] = useState<Movie | null>(null);
+  const [similarMovies, setSimilarMovies] = useState<SimilarMovie[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [pageError, setPageError] = useState("");
+
+useEffect(() => {
+  if (!id) {
+    return;
   }
 
-  try {
-    const parsedUrl = new URL(url);
+  let cancelled = false;
 
-    if (parsedUrl.hostname.includes("youtu.be")) {
-      const videoId = parsedUrl.pathname.replace("/", "");
+  async function loadMoviePage() {
+    try {
+      setIsLoading(true);
+      setPageError("");
 
-      return videoId
-        ? `https://www.youtube.com/embed/${videoId}`
-        : null;
-    }
+      const [movieResponse, similarResponse] =
+        await Promise.all([
+          fetch(`/api/movie/${id}`, {
+            cache: "no-store",
+          }),
+          fetch(`/api/movie/${id}/similar`, {
+            cache: "no-store",
+          }),
+        ]);
 
-    if (parsedUrl.hostname.includes("youtube.com")) {
-      const videoId = parsedUrl.searchParams.get("v");
+      if (!movieResponse.ok) {
+        const result = await movieResponse
+          .json()
+          .catch(() => null);
 
-      return videoId
-        ? `https://www.youtube.com/embed/${videoId}`
-        : null;
-    }
-
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-async function getMovie(id: string): Promise<Movie | null> {
-  try {
-    const movieId = Number(id);
-
-    if (!Number.isInteger(movieId) || movieId <= 0) {
-      return null;
-    }
-
-    const [movieRows] = await pool.query<MovieRow[]>(
-      `
-        SELECT
-          movie_id,
-          title,
-          description,
-          release_year,
-          duration_minutes,
-          poster_url,
-          portrait_url,
-          trailer_url,
-          content_type_id,
-          source,
-          author,
-          performers,
-          broadcaster
-        FROM movie_app.movies
-        WHERE movie_id = ?
-        LIMIT 1
-      `,
-      [movieId]
-    );
-
-    const movie = movieRows[0];
-
-    if (!movie) {
-      return null;
-    }
-
-    const [genreRows] = await pool.query<GenreRow[]>(
-      `
-        SELECT DISTINCT
-          g.genre_name
-        FROM movie_app.movie_genres AS mg
-        INNER JOIN movie_app.genres AS g
-          ON g.genre_id = mg.genre_id
-        WHERE mg.movie_id = ?
-        ORDER BY g.genre_name
-      `,
-      [movieId]
-    );
-
-    const [moodRows] = await pool.query<MoodRow[]>(
-      `
-        SELECT DISTINCT
-          m.mood_name
-        FROM movie_app.movie_moods AS mm
-        INNER JOIN movie_app.moods AS m
-          ON m.mood_id = mm.mood_id
-        WHERE mm.movie_id = ?
-        ORDER BY m.mood_name
-      `,
-      [movieId]
-    );
-
-    const performers = movie.performers
-      ? movie.performers
-          .split(",")
-          .map((performer) => performer.trim())
-          .filter(Boolean)
-      : [];
-
-    return {
-      movie_id: movie.movie_id,
-      title: movie.title,
-      description: movie.description,
-      release_year: movie.release_year,
-      duration_minutes: movie.duration_minutes,
-      poster_url: movie.poster_url,
-      portrait_url: movie.portrait_url,
-      trailer_url: movie.trailer_url,
-      content_type_id: movie.content_type_id,
-      content_type: getContentTypeName(movie.content_type_id),
-      source: movie.source,
-      author: movie.author,
-      performers,
-      broadcaster: movie.broadcaster,
-      genres: genreRows.map((genre) => genre.genre_name),
-      moods: moodRows.map((mood) => mood.mood_name),
-    };
-  } catch (error) {
-  console.error("Unable to load movie detail page:", error);
-  throw error;
-}
-}
-
-async function getSimilarMovies(
-  id: string
-): Promise<SimilarMovie[]> {
-  try {
-    const baseUrl =
-      process.env.NEXT_PUBLIC_APP_URL ||
-      process.env.NEXTAUTH_URL ||
-      "http://localhost:3000";
-
-    const response = await fetch(
-      `${baseUrl.replace(/\/$/, "")}/api/movie/${id}/similar`,
-      {
-        cache: "no-store",
+        throw new Error(
+          result?.details ||
+            result?.error ||
+            `Unable to load movie (${movieResponse.status}).`
+        );
       }
-    );
 
-    if (!response.ok) {
-      const result = await response.json().catch(() => null);
+      const movieData: Movie =
+        await movieResponse.json();
 
+      let similarData: SimilarMovie[] = [];
+
+      if (similarResponse.ok) {
+        const result = await similarResponse.json();
+
+        similarData = Array.isArray(result)
+          ? result
+          : [];
+      } else {
+        const result = await similarResponse
+          .json()
+          .catch(() => null);
+
+        console.error(
+          "Similar movies API error:",
+          result?.details ||
+            result?.error ||
+            similarResponse.statusText
+        );
+      }
+
+      if (!cancelled) {
+        setMovie(movieData);
+        setSimilarMovies(similarData);
+      }
+    } catch (error) {
       console.error(
-        "Similar movies API error:",
-        result?.details ||
-          result?.error ||
-          response.statusText
+        "Unable to load movie detail page:",
+        error
       );
 
-      return [];
+      if (!cancelled) {
+        setMovie(null);
+        setSimilarMovies([]);
+
+        setPageError(
+          error instanceof Error
+            ? error.message
+            : "Unable to load this movie."
+        );
+      }
+    } finally {
+      if (!cancelled) {
+        setIsLoading(false);
+      }
     }
-
-    const result = await response.json();
-
-    return Array.isArray(result) ? result : [];
-  } catch (error) {
-    console.error("Unable to load similar movies:", error);
-    return [];
   }
+
+  void loadMoviePage();
+
+  return () => {
+    cancelled = true;
+  };
+}, [id]);
+
+if (!id) {
+  return (
+    <main className="movie-detail-page">
+      <div className="movie-detail-container">
+        <section className="movie-detail-review-empty">
+          <div>
+            <h1>Invalid movie</h1>
+            <p>No movie ID was provided.</p>
+
+            <Link
+              href="/discover"
+              className="movie-detail-card-details"
+            >
+              Back to Discover
+            </Link>
+          </div>
+        </section>
+      </div>
+    </main>
+  );
 }
 
-export default async function MovieDetailPage({
-  params,
-}: MovieDetailPageProps) {
-  const { id } = await params;
-
-  const movie = await getMovie(id);
-
-  if (!movie) {
-    notFound();
+  if (isLoading) {
+    return (
+      <main className="movie-detail-page">
+        <div className="movie-detail-container">
+          <p className="movie-detail-empty-copy">Loading movie...</p>
+        </div>
+      </main>
+    );
   }
 
-  const similarMovies = await getSimilarMovies(id);
+  if (pageError || !movie) {
+    return (
+      <main className="movie-detail-page">
+        <div className="movie-detail-container">
+          <section className="movie-detail-review-empty">
+            <div>
+              <h1>Movie unavailable</h1>
+              <p>{pageError || "This movie could not be found."}</p>
+              <Link href="/discover" className="movie-detail-card-details">
+                Back to Discover
+              </Link>
+            </div>
+          </section>
+        </div>
+      </main>
+    );
+  }
 
   const portraitImage =
     movie.portrait_url ||
     movie.poster_url ||
     "/placeholder.jpg";
-
-  const backdropImage =
-    movie.poster_url ||
-    movie.portrait_url ||
-    "/placeholder.jpg";
-
-  const trailerEmbedUrl = getYouTubeEmbedUrl(
-    movie.trailer_url
-  );
 
   return (
     <main className="movie-detail-page">
@@ -714,10 +638,10 @@ export default async function MovieDetailPage({
           {similarMovies.length > 0 ? (
             <div className="movie-detail-similar-grid">
               {similarMovies.map((similarMovie) => {
-                const similarImage =
-                  similarMovie.poster_url ||
-                  similarMovie.portrait_url ||
-                  "/placeholder.jpg";
+                // const similarImage =
+                //   similarMovie.poster_url ||
+                //   similarMovie.portrait_url ||
+                //   "/placeholder.jpg";
 
                 const matchPercentage = Math.min(
                   99,
