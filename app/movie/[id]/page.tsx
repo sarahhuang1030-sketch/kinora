@@ -1,5 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
+import pool from "@/app/src/lib/db";
+import type { RowDataPacket } from "mysql2";
 import { notFound } from "next/navigation";
 import {
   Bookmark,
@@ -37,6 +39,30 @@ type Movie = {
   moods: string[];
 };
 
+type MovieRow = RowDataPacket & {
+  movie_id: number;
+  title: string;
+  description: string | null;
+  release_year: number | null;
+  duration_minutes: number | null;
+  poster_url: string | null;
+  portrait_url: string | null;
+  trailer_url: string | null;
+  content_type_id: number | null;
+  source: string | null;
+  author: string | null;
+  performers: string | null;
+  broadcaster: string | null;
+};
+
+type GenreRow = RowDataPacket & {
+  genre_name: string;
+};
+
+type MoodRow = RowDataPacket & {
+  mood_name: string;
+};
+
 type SimilarMovie = {
   movie_id: number;
   title: string;
@@ -51,16 +77,32 @@ type SimilarMovie = {
   match_score: number;
 };
 
-function getBaseUrl() {
-  if (process.env.NEXT_PUBLIC_APP_URL) {
-    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-  }
+// function getBaseUrl() {
+//   if (process.env.NEXT_PUBLIC_APP_URL) {
+//     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
+//   }
 
-  if (process.env.NEXTAUTH_URL) {
-    return process.env.NEXTAUTH_URL.replace(/\/$/, "");
-  }
+//   if (process.env.NEXTAUTH_URL) {
+//     return process.env.NEXTAUTH_URL.replace(/\/$/, "");
+//   }
 
-  return "http://localhost:3000";
+//   return "http://localhost:3000";
+// }
+
+function getContentTypeName(contentTypeId: number | null) {
+  switch (contentTypeId) {
+    case 1:
+      return "Movie";
+
+    case 2:
+      return "TV Series";
+
+    case 4:
+      return "Limited Series";
+
+    default:
+      return "Movie";
+  }
 }
 
 function formatRuntime(minutes: number | null) {
@@ -114,43 +156,109 @@ function getYouTubeEmbedUrl(url: string | null) {
 
 async function getMovie(id: string): Promise<Movie | null> {
   try {
-    const response = await fetch(
-      `${getBaseUrl()}/api/movie/${id}`,
-      {
-        cache: "no-store",
-      }
+    const movieId = Number(id);
+
+    if (!Number.isInteger(movieId) || movieId <= 0) {
+      return null;
+    }
+
+    const [movieRows] = await pool.query<MovieRow[]>(
+      `
+        SELECT
+          movie_id,
+          title,
+          description,
+          release_year,
+          duration_minutes,
+          poster_url,
+          portrait_url,
+          trailer_url,
+          content_type_id,
+          source,
+          author,
+          performers,
+          broadcaster
+        FROM movie_app.movies
+        WHERE movie_id = ?
+        LIMIT 1
+      `,
+      [movieId]
     );
 
-    if (response.status === 404) {
+    const movie = movieRows[0];
+
+    if (!movie) {
       return null;
     }
 
-    if (!response.ok) {
-      const result = await response.json().catch(() => null);
+    const [genreRows] = await pool.query<GenreRow[]>(
+      `
+        SELECT DISTINCT
+          g.genre_name
+        FROM movie_app.movie_genres AS mg
+        INNER JOIN movie_app.genres AS g
+          ON g.genre_id = mg.genre_id
+        WHERE mg.movie_id = ?
+        ORDER BY g.genre_name
+      `,
+      [movieId]
+    );
 
-      console.error(
-        "Movie API error:",
-        result?.details ||
-          result?.error ||
-          response.statusText
-      );
+    const [moodRows] = await pool.query<MoodRow[]>(
+      `
+        SELECT DISTINCT
+          m.mood_name
+        FROM movie_app.movie_moods AS mm
+        INNER JOIN movie_app.moods AS m
+          ON m.mood_id = mm.mood_id
+        WHERE mm.movie_id = ?
+        ORDER BY m.mood_name
+      `,
+      [movieId]
+    );
 
-      return null;
-    }
+    const performers = movie.performers
+      ? movie.performers
+          .split(",")
+          .map((performer) => performer.trim())
+          .filter(Boolean)
+      : [];
 
-    return response.json();
+    return {
+      movie_id: movie.movie_id,
+      title: movie.title,
+      description: movie.description,
+      release_year: movie.release_year,
+      duration_minutes: movie.duration_minutes,
+      poster_url: movie.poster_url,
+      portrait_url: movie.portrait_url,
+      trailer_url: movie.trailer_url,
+      content_type_id: movie.content_type_id,
+      content_type: getContentTypeName(movie.content_type_id),
+      source: movie.source,
+      author: movie.author,
+      performers,
+      broadcaster: movie.broadcaster,
+      genres: genreRows.map((genre) => genre.genre_name),
+      moods: moodRows.map((mood) => mood.mood_name),
+    };
   } catch (error) {
-    console.error("Unable to load movie:", error);
-    return null;
-  }
+  console.error("Unable to load movie detail page:", error);
+  throw error;
+}
 }
 
 async function getSimilarMovies(
   id: string
 ): Promise<SimilarMovie[]> {
   try {
+    const baseUrl =
+      process.env.NEXT_PUBLIC_APP_URL ||
+      process.env.NEXTAUTH_URL ||
+      "http://localhost:3000";
+
     const response = await fetch(
-      `${getBaseUrl()}/api/movie/${id}/similar`,
+      `${baseUrl.replace(/\/$/, "")}/api/movie/${id}/similar`,
       {
         cache: "no-store",
       }
@@ -173,11 +281,7 @@ async function getSimilarMovies(
 
     return Array.isArray(result) ? result : [];
   } catch (error) {
-    console.error(
-      "Unable to load similar movies:",
-      error
-    );
-
+    console.error("Unable to load similar movies:", error);
     return [];
   }
 }
@@ -265,9 +369,9 @@ export default async function MovieDetailPage({
             <div className="movie-detail-hero-content">
               <div className="movie-detail-badge-row">
                   {/* Content Type */}
-                  <span className="movie-detail-primary-badge">
+                  {/* <span className="movie-detail-primary-badge">
                     {movie.content_type || "Movie"}
-                  </span>
+                  </span> */}
 
                   {/* Mood Badges */}
                   {movie.moods?.length ? (
