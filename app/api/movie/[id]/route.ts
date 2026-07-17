@@ -81,7 +81,7 @@ export async function GET(
           author,
           performers,
           broadcaster
-        FROM movie_app.movies
+        FROM movies
         WHERE movie_id = ?
         LIMIT 1
       `,
@@ -105,8 +105,8 @@ export async function GET(
       `
         SELECT DISTINCT
           g.genre_name
-        FROM movie_app.movie_genres AS mg
-        INNER JOIN movie_app.genres AS g
+        FROM movie_genres AS mg
+        INNER JOIN genres AS g
           ON g.genre_id = mg.genre_id
         WHERE mg.movie_id = ?
         ORDER BY g.genre_name
@@ -118,8 +118,8 @@ export async function GET(
       `
         SELECT DISTINCT
           m.mood_name
-        FROM movie_app.movie_moods AS mm
-        INNER JOIN movie_app.moods AS m
+        FROM movie_moods AS mm
+        INNER JOIN moods AS m
           ON m.mood_id = mm.mood_id
         WHERE mm.movie_id = ?
         ORDER BY m.mood_name
