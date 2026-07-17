@@ -1,0 +1,148 @@
+import { NextResponse } from "next/server";
+import pool from "@/app/src/lib/db";
+import { RowDataPacket } from "mysql2";
+
+type MovieRow = RowDataPacket & {
+  movie_id: number;
+  title: string;
+  description: string | null;
+  release_year: number | null;
+  duration_minutes: number | null;
+  poster_url: string | null;
+  portrait_url: string | null;
+  trailer_url: string | null;
+  content_type_id: number | null;
+  source: string | null;
+  author: string | null;
+  performers: string | null;
+  broadcaster: string | null;
+};
+
+type GenreRow = RowDataPacket & {
+  genre_name: string;
+};
+
+function getContentTypeName(contentTypeId: number | null) {
+  switch (contentTypeId) {
+    case 1:
+      return "Movie";
+
+    case 2:
+      return "TV Series";
+
+    case 4:
+      return "Limited Series";
+
+    default:
+      return "Movie";
+  }
+}
+
+export async function GET(
+  request: Request,
+  context: {
+    params: Promise<{ id: string }>;
+  }
+) {
+  try {
+    const { id } = await context.params;
+    const movieId = Number(id);
+
+    if (!Number.isInteger(movieId) || movieId <= 0) {
+      return NextResponse.json(
+        { error: "Invalid movie ID." },
+        { status: 400 }
+      );
+    }
+
+    const [movieRows] = await pool.query<MovieRow[]>(
+      `
+        SELECT
+          movie_id,
+          title,
+          description,
+          release_year,
+          duration_minutes,
+          poster_url,
+          portrait_url,
+          trailer_url,
+          content_type_id,
+          source,
+          author,
+          performers,
+          broadcaster
+
+        FROM movies
+
+        WHERE movie_id = ?
+
+        LIMIT 1
+      `,
+      [movieId]
+    );
+
+    const movie = movieRows[0];
+
+    if (!movie) {
+      return NextResponse.json(
+        { error: "Movie not found." },
+        { status: 404 }
+      );
+    }
+
+    const [genreRows] = await pool.query<GenreRow[]>(
+      `
+        SELECT
+          g.genre_name
+
+        FROM movie_genres mg
+
+        INNER JOIN genres g
+          ON mg.genre_id = g.genre_id
+
+        WHERE mg.movie_id = ?
+
+        ORDER BY g.genre_name
+      `,
+      [movieId]
+    );
+
+    const performers = movie.performers
+      ? movie.performers
+          .split(",")
+          .map((performer) => performer.trim())
+          .filter(Boolean)
+      : [];
+
+    return NextResponse.json({
+      movie_id: movie.movie_id,
+      title: movie.title,
+      description: movie.description,
+      release_year: movie.release_year,
+      duration_minutes: movie.duration_minutes,
+      poster_url: movie.poster_url,
+      portrait_url: movie.portrait_url,
+      trailer_url: movie.trailer_url,
+      content_type_id: movie.content_type_id,
+      content_type: getContentTypeName(movie.content_type_id),
+      source: movie.source,
+      author: movie.author,
+      performers,
+      broadcaster: movie.broadcaster,
+      genres: genreRows.map((row) => row.genre_name),
+    });
+  } catch (error) {
+  console.error(error);
+
+  return NextResponse.json(
+    {
+      error: "Unable to load this movie.",
+      details:
+        error instanceof Error
+          ? error.message
+          : String(error),
+    },
+    { status: 500 }
+  );
+}
+}

@@ -1,358 +1,678 @@
-import pool from "../../src/lib/db";
-import { RowDataPacket } from "mysql2";
-import { notFound } from "next/navigation";
+import Image from "next/image";
 import Link from "next/link";
-import MovieInteractionPanel from "./MovieInteractionPanel";
+import { notFound } from "next/navigation";
+import {
+  Bookmark,
+  CalendarDays,
+  ChevronRight,
+  Clock3,
+  Film,
+  Play,
+  Share2,
+  Star,
+} from "lucide-react";
 
-type Movie = RowDataPacket & {
-  movie_id: number;
-  title: string;
-  description: string;
-  release_year: number;
-  poster_url?: string | null;
-  trailer_url?: string | null;
-  duration?: string | null;
-  content_type?: string | null;
-  genres?: string | null;
-  moods?: string | null;
-  platforms?: string | null;
-  source?: string | null;
-  author?: string | null;
-  performers?: string | null;
-  broadcaster?: string | null;
+type MovieDetailPageProps = {
+  params: Promise<{
+    id: string;
+  }>;
 };
 
-type SimilarMovie = RowDataPacket & {
+type Movie = {
   movie_id: number;
   title: string;
-  poster_url?: string | null;
-  duration?: string | null;
-  platforms?: string | null;
+  description: string | null;
+  release_year: number | null;
+  duration_minutes: number | null;
+  poster_url: string | null;
+  portrait_url: string | null;
+  trailer_url: string | null;
+  content_type_id: number | null;
+  content_type: string | null;
+  source: string | null;
+  author: string | null;
+  performers: string[];
+  broadcaster: string | null;
+  genres: string[];
+};
+
+type SimilarMovie = {
+  movie_id: number;
+  title: string;
+  description: string | null;
+  release_year: number | null;
+  duration_minutes: number | null;
+  poster_url: string | null;
+  portrait_url: string | null;
+  content_type: string | null;
+  broadcaster: string | null;
+  genres: string[];
   match_score: number;
 };
 
-function getTrailerEmbedUrl(url?: string | null) {
-  if (!url) return null;
-
-  if (url.includes("youtube.com/watch?v=")) {
-    const videoId = url.split("v=")[1]?.split("&")[0];
-
-    return videoId
-      ? `https://www.youtube.com/embed/${videoId}`
-      : null;
+function getBaseUrl() {
+  if (process.env.NEXT_PUBLIC_APP_URL) {
+    return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
   }
 
-  if (url.includes("youtu.be/")) {
-    const videoId = url.split("youtu.be/")[1]?.split("?")[0];
-
-    return videoId
-      ? `https://www.youtube.com/embed/${videoId}`
-      : null;
+  if (process.env.NEXTAUTH_URL) {
+    return process.env.NEXTAUTH_URL.replace(/\/$/, "");
   }
 
-  if (url.includes("youtube.com/embed/")) {
-    return url;
-  }
-
-  return url;
+  return "http://localhost:3000";
 }
 
-export default async function MovieDetailsPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
-  const { id } = await params;
-  const movieId = Number(id);
-
-  if (!movieId || Number.isNaN(movieId)) {
-    notFound();
+function formatRuntime(minutes: number | null) {
+  if (!minutes || minutes <= 0) {
+    return "Runtime unavailable";
   }
 
-  const [movies] = await pool.query<Movie[]>(
-    `
-      SELECT
-        m.movie_id,
-        m.title,
-        m.description,
-        m.release_year,
-        m.poster_url,
-        m.trailer_url,
-        m.source,
-        m.author,
-        m.performers,
-        m.broadcaster,
-        ct.type_name AS content_type,
+  const hours = Math.floor(minutes / 60);
+  const remainingMinutes = minutes % 60;
 
-        CASE
-          WHEN m.duration_minutes IS NULL THEN NULL
-          ELSE CONCAT(
-            FLOOR(m.duration_minutes / 60),
-            'h ',
-            MOD(m.duration_minutes, 60),
-            'm'
-          )
-        END AS duration,
+  if (hours === 0) {
+    return `${remainingMinutes}m`;
+  }
 
-        GROUP_CONCAT(
-          DISTINCT g.genre_name
-          ORDER BY g.genre_name
-          SEPARATOR ', '
-        ) AS genres,
+  if (remainingMinutes === 0) {
+    return `${hours}h`;
+  }
 
-        GROUP_CONCAT(
-          DISTINCT mo.mood_name
-          ORDER BY mo.mood_name
-          SEPARATOR ', '
-        ) AS moods,
+  return `${hours}h ${remainingMinutes}m`;
+}
 
-        GROUP_CONCAT(
-          DISTINCT sp.platform_name
-          ORDER BY sp.platform_name
-          SEPARATOR ', '
-        ) AS platforms
+function getYouTubeEmbedUrl(url: string | null) {
+  if (!url) {
+    return null;
+  }
 
-      FROM movies m
+  try {
+    const parsedUrl = new URL(url);
 
-      LEFT JOIN content_types ct
-        ON m.content_type_id = ct.content_type_id
+    if (parsedUrl.hostname.includes("youtu.be")) {
+      const videoId = parsedUrl.pathname.replace("/", "");
 
-      LEFT JOIN movie_genres mg
-        ON m.movie_id = mg.movie_id
+      return videoId
+        ? `https://www.youtube.com/embed/${videoId}`
+        : null;
+    }
 
-      LEFT JOIN genres g
-        ON mg.genre_id = g.genre_id
+    if (parsedUrl.hostname.includes("youtube.com")) {
+      const videoId = parsedUrl.searchParams.get("v");
 
-      LEFT JOIN movie_moods mm
-        ON m.movie_id = mm.movie_id
+      return videoId
+        ? `https://www.youtube.com/embed/${videoId}`
+        : null;
+    }
 
-      LEFT JOIN moods mo
-        ON mm.mood_id = mo.mood_id
+    return null;
+  } catch {
+    return null;
+  }
+}
 
-      LEFT JOIN movie_platforms mp
-        ON m.movie_id = mp.movie_id
+async function getMovie(id: string): Promise<Movie | null> {
+  try {
+    const response = await fetch(
+      `http://localhost:3000/api/movie/${id}`,
+      {
+        cache: "no-store",
+      }
+    );
 
-      LEFT JOIN streaming_platforms sp
-        ON mp.platform_id = sp.platform_id
+    if (response.status === 404) {
+      return null;
+    }
 
-      WHERE m.movie_id = ?
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
 
-      GROUP BY
-        m.movie_id,
-        m.title,
-        m.description,
-        m.release_year,
-        m.poster_url,
-        m.trailer_url,
-        m.source,
-        m.author,
-        m.performers,
-        m.broadcaster,
-        m.duration_minutes,
-        ct.type_name
-    `,
-    [movieId]
-  );
+      console.error(
+        "Movie API error:",
+        result?.details || result?.error
+      );
 
-  const movie = movies[0];
+      return null;
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error("Unable to load movie:", error);
+    return null;
+  }
+}
+
+async function getSimilarMovies(
+  id: string
+): Promise<SimilarMovie[]> {
+  try {
+    const response = await fetch(
+      `${getBaseUrl()}/api/movie/${id}/similar`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (!response.ok) {
+      const result = await response.json().catch(() => null);
+
+      console.error(
+        "Similar movies API error:",
+        result?.details ||
+          result?.error ||
+          response.statusText
+      );
+
+      return [];
+    }
+
+    const result = await response.json();
+
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    console.error(
+      "Unable to load similar movies:",
+      error
+    );
+
+    return [];
+  }
+}
+
+export default async function MovieDetailPage({
+  params,
+}: MovieDetailPageProps) {
+  const { id } = await params;
+
+  const movie = await getMovie(id);
 
   if (!movie) {
     notFound();
   }
 
-  const trailerEmbedUrl = getTrailerEmbedUrl(movie.trailer_url);
+  const similarMovies = await getSimilarMovies(id);
 
-  const [similarMovies] = await pool.query<SimilarMovie[]>(
-    `
-      SELECT
-        m.movie_id,
-        m.title,
-        m.poster_url,
+  const portraitImage =
+    movie.portrait_url ||
+    movie.poster_url ||
+    "/placeholder.jpg";
 
-        CASE
-          WHEN m.duration_minutes IS NULL THEN NULL
-          ELSE CONCAT(
-            FLOOR(m.duration_minutes / 60),
-            'h ',
-            MOD(m.duration_minutes, 60),
-            'm'
-          )
-        END AS duration,
+  const backdropImage =
+    movie.poster_url ||
+    movie.portrait_url ||
+    "/placeholder.jpg";
 
-        GROUP_CONCAT(
-          DISTINCT sp.platform_name
-          ORDER BY sp.platform_name
-          SEPARATOR ', '
-        ) AS platforms,
-
-        (
-          COUNT(DISTINCT matching_genres.genre_id) * 2 +
-          COUNT(DISTINCT matching_moods.mood_id)
-        ) AS match_score
-
-      FROM movies m
-
-      LEFT JOIN movie_platforms mp
-        ON m.movie_id = mp.movie_id
-
-      LEFT JOIN streaming_platforms sp
-        ON mp.platform_id = sp.platform_id
-
-      LEFT JOIN movie_genres matching_genres
-        ON m.movie_id = matching_genres.movie_id
-        AND matching_genres.genre_id IN (
-          SELECT genre_id
-          FROM movie_genres
-          WHERE movie_id = ?
-        )
-
-      LEFT JOIN movie_moods matching_moods
-        ON m.movie_id = matching_moods.movie_id
-        AND matching_moods.mood_id IN (
-          SELECT mood_id
-          FROM movie_moods
-          WHERE movie_id = ?
-        )
-
-      WHERE m.movie_id != ?
-
-      GROUP BY
-        m.movie_id,
-        m.title,
-        m.poster_url,
-        m.duration_minutes
-
-      HAVING match_score > 0
-
-      ORDER BY
-        match_score DESC,
-        m.title ASC
-
-      LIMIT 6
-    `,
-    [movieId, movieId, movieId]
+  const trailerEmbedUrl = getYouTubeEmbedUrl(
+    movie.trailer_url
   );
-
-  const trailerVideoId = trailerEmbedUrl
-    ?.split("/")
-    .pop()
-    ?.split("?")[0];
 
   return (
     <main className="movie-detail-page">
-      <section className="streaming-hero-detail">
-        {trailerEmbedUrl ? (
-          <div className="hero-trailer-bg">
-            <iframe
-              src={`${trailerEmbedUrl}?autoplay=1&mute=1&controls=0&loop=1&playlist=${trailerVideoId}`}
-              title={`${movie.title} background trailer`}
-              allow="autoplay; encrypted-media"
-              allowFullScreen
-            />
-          </div>
-        ) : (
-          <div
-            className="hero-poster-bg"
-            style={{
-              backgroundImage: movie.poster_url
-                ? `url("${movie.poster_url}")`
-                : `url("/placeholder.jpg")`,
-            }}
-          />
-        )}
+      <section
+        className="movie-detail-hero"
+        // style={{
+        //   backgroundImage: `
+        //     linear-gradient(
+        //       90deg,
+        //       rgba(7, 16, 25, 0.99) 0%,
+        //       rgba(7, 16, 25, 0.96) 34%,
+        //       rgba(7, 16, 25, 0.79) 68%,
+        //       rgba(7, 16, 25, 0.94) 100%
+        //     ),
+        //     url("${backdropImage}")
+        //   `,
+        // }}
+      >
+        {/* <div className="movie-detail-hero-glow" /> */}
 
-        <div className="hero-detail-overlay" />
+        <div className="movie-detail-container">
+          <div className="movie-detail-hero-grid">
+            <aside className="movie-detail-poster-column">
+              <div className="movie-detail-poster-wrapper">
+                <Image
+                  src={portraitImage}
+                  alt={`${movie.title} poster`}
+                  fill
+                  priority
+                  sizes="(max-width: 760px) 76vw, 245px"
+                  className="movie-detail-poster"
+                />
+              </div>
 
-        <div className="streaming-hero-content">
-          <h1>{movie.title}</h1>
+              <button
+                type="button"
+                className="movie-detail-watchlist-button"
+              >
+                <Bookmark size={17} />
+                Add to watchlist
+              </button>
 
-          <div className="streaming-hero-bottom">
-            <div className="streaming-main-info">
+              <div className="movie-detail-poster-actions">
+                <button type="button">
+                  <Share2 size={15} />
+                  Share
+                </button>
+
+                <button type="button">
+                  ... More
+                </button>
+              </div>
+            </aside>
+
+            <div className="movie-detail-hero-content">
+              <div className="movie-detail-badge-row">
+                <span className="movie-detail-primary-badge">
+                  {movie.content_type || "Movie"}
+                </span>
+
+                <span className="movie-detail-release-badge">
+                  Available
+                </span>
+              </div>
+
+              <h1 className="dongle-font">{movie.title}</h1>
+
+              <div className="movie-detail-metadata">
+                <span>
+                  <Film size={15} />
+                  {movie.content_type || "Movie"}
+                </span>
+
+                <span>
+                  <Clock3 size={15} />
+                  {formatRuntime(movie.duration_minutes)}
+                </span>
+
+                {movie.release_year && (
+                  <span>
+                    <CalendarDays size={15} />
+                    {movie.release_year}
+                  </span>
+                )}
+              </div>
+
+              {movie.genres.length > 0 && (
+                <div className="movie-detail-genre-row">
+                  {movie.genres.map((genre) => (
+                    <span key={genre}>{genre}</span>
+                  ))}
+                </div>
+              )}
+
               <p className="movie-detail-description">
-                {movie.description}
+                {movie.description ||
+                  "No description is currently available."}
               </p>
 
-              <p className="streaming-meta">
-                <span>{movie.genres || "Genre unavailable"}</span>
-                <span>•</span>
-                <span>{movie.moods || "Mood unavailable"}</span>
-                <span>•</span>
-                <span>{movie.release_year}</span>
-                <span>•</span>
-                <span>{movie.duration || "N/A"}</span>
-              </p>
+              <div className="movie-detail-statistics-grid">
+                <div>
+                  <span className="movie-detail-stat-label">
+                    Rating
+                  </span>
+
+                  <strong>
+                    <Star size={17} fill="currentColor" />
+                    New
+                  </strong>
+
+                  <small>User reviews</small>
+                </div>
+
+                <div>
+                  <span className="movie-detail-stat-label">
+                    Runtime
+                  </span>
+
+                  <strong>
+                    {movie.duration_minutes
+                      ? `${movie.duration_minutes} min`
+                      : "N/A"}
+                  </strong>
+
+                  <small>Feature length</small>
+                </div>
+
+                <div>
+                  <span className="movie-detail-stat-label">
+                    Released
+                  </span>
+
+                  <strong>
+                    {movie.release_year || "N/A"}
+                  </strong>
+
+                  <small>
+                    {movie.content_type || "Movie"}
+                  </small>
+                </div>
+              </div>
+
+              {movie.broadcaster && (
+                <div className="movie-detail-streaming-section">
+                  <span className="movie-detail-streaming-label">
+                    Available on
+                  </span>
+
+                  <div className="movie-detail-streaming-buttons">
+                    <button type="button">
+                      <Play size={15} fill="currentColor" />
+                      {movie.broadcaster}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
+          </div>
 
-            <div className="streaming-side-info">
-              <p>
-                <span>Cast:</span>{" "}
-                {movie.performers || "Not available"}
-              </p>
+          <div className="movie-detail-information-grid">
+  <div className="movie-detail-people-column">
+    <section className="movie-detail-creators-section">
+      <span className="movie-detail-eyebrow">
+        Creators
+      </span>
 
-              <p>
-                <span>Director:</span>{" "}
-                {movie.author || "Not available"}
-              </p>
+      <div className="movie-detail-creators-grid">
+        <article className="movie-detail-creator-card">
+          <div className="movie-detail-creator-avatar">
+            {movie.author
+              ? movie.author
+                  .split(" ")
+                  .map((part) => part[0])
+                  .join("")
+                  .slice(0, 2)
+                  .toUpperCase()
+              : "DR"}
+          </div>
 
-              <p>
-                <span>Available On:</span>{" "}
-                {movie.platforms ||
-                  movie.broadcaster ||
-                  "Not available"}
-              </p>
-            </div>
+          <div className="movie-detail-creator-copy">
+            <span>Director</span>
+
+            <strong>
+              {movie.author || "Not available"}
+            </strong>
+
+            <p>
+              {movie.content_type || "Movie"} creator
+            </p>
+          </div>
+        </article>
+
+        <article className="movie-detail-creator-card">
+          <div className="movie-detail-creator-copy">
+            <span>Production</span>
+
+            <strong>
+              {movie.source || "Not available"}
+            </strong>
+
+            <p>
+              {movie.broadcaster || "Platform unavailable"}
+            </p>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section className="movie-detail-cast-section">
+      <div className="movie-detail-cast-heading-row">
+        <span className="movie-detail-eyebrow">
+          Cast
+        </span>
+
+        {movie.performers.length > 5 && (
+          <Link
+            href={`/movie/${movie.movie_id}/cast`}
+            className="movie-detail-cast-see-all"
+          >
+            See all
+            <ChevronRight size={12} />
+          </Link>
+        )}
+      </div>
+
+      {movie.performers.length > 0 ? (
+        <div className="movie-detail-cast-grid">
+          {movie.performers
+            .slice(0, 5)
+            .map((performer) => {
+              const initials = performer
+                .split(" ")
+                .map((part) => part[0])
+                .join("")
+                .slice(0, 2)
+                .toUpperCase();
+
+              return (
+                <article
+                  className="movie-detail-cast-card"
+                  key={performer}
+                >
+                  <div className="movie-detail-cast-placeholder">
+                    {initials}
+                  </div>
+
+                  <h3>{performer}</h3>
+                  <p>Cast member</p>
+                </article>
+              );
+            })}
+        </div>
+      ) : (
+        <p className="movie-detail-empty-copy">
+          Cast information is not available.
+        </p>
+      )}
+    </section>
+  </div>
+
+  <section className="movie-detail-trailer-section">
+    <span className="movie-detail-eyebrow">
+      Trailer
+    </span>
+
+    <div className="movie-detail-trailer-box">
+      {movie.trailer_url ? (
+        <Link
+          href={movie.trailer_url}
+          target="_blank"
+          rel="noreferrer"
+          className="movie-detail-trailer-button"
+        >
+          <Play size={13} fill="currentColor" />
+          Watch trailer
+        </Link>
+      ) : (
+        <span className="movie-detail-trailer-unavailable">
+          Trailer unavailable
+        </span>
+      )}
+    </div>
+  </section>
+</div>
+        </div>
+      </section>
+
+      <section className="movie-detail-review-area">
+        <div className="movie-detail-container">
+          <div className="movie-detail-review-grid">
+            <section className="movie-detail-review-section">
+              <div className="movie-detail-section-heading">
+                <div>
+                  <span className="movie-detail-eyebrow">
+                    What viewers say
+                  </span>
+
+                  <h2 className="dongle-font" style={{ fontSize: '54px' }}>
+                    Reviews
+                  </h2>
+                </div>
+
+                <button
+                  type="button"
+                  className="movie-detail-write-review-button"
+                >
+                  Write a review
+                </button>
+              </div>
+
+              <div className="movie-detail-review-empty">
+                <Star size={21} />
+
+                <div>
+                  <h3>Be the first to review</h3>
+                  <p>
+                    Share what you thought about{" "}
+                    {movie.title}.
+                  </p>
+                </div>
+              </div>
+            </section>
+
+            <aside className="movie-detail-match-card">
+              <div className="movie-detail-match-heading">
+                <strong>98</strong>
+
+                <div>
+                  <span>%</span>
+                  <p>match for you</p>
+                </div>
+              </div>
+
+              <div className="movie-detail-match-reasons">
+                {[
+                  ["Genre match", 96],
+                  ["Mood match", 92],
+                  ["Content preference", 90],
+                  ["Streaming service", 88],
+                  ["Similar titles", 94],
+                ].map(([label, value]) => (
+                  <div
+                    className="movie-detail-match-reason"
+                    key={String(label)}
+                  >
+                    <div>
+                      <span>{label}</span>
+                      <strong>{value}%</strong>
+                    </div>
+
+                    <div className="movie-detail-progress-track">
+                      <span
+                        className="movie-detail-progress-fill"
+                        style={{
+                          width: `${value}%`,
+                        }}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </aside>
           </div>
         </div>
       </section>
 
-      <MovieInteractionPanel
-        movieId={movie.movie_id}
-        movieTitle={movie.title}
-        director={movie.author}
-        production={movie.source}
-        performers={movie.performers}
-        platforms={movie.platforms}
-        broadcaster={movie.broadcaster}
-        genres={movie.genres}
-        moods={movie.moods}
-      />
+      <section className="movie-detail-similar-section">
+        <div className="movie-detail-container">
+          <div className="movie-detail-section-heading">
+            <div>
+              <span className="movie-detail-eyebrow">
+                You might also enjoy
+              </span>
 
-      <section className="more-like-section">
-        <p className="section-label">MORE LIKE THIS</p>
+              <h2 className="dongle-font" style={{ fontSize: '54px' }}>More like this</h2>
+            </div>
 
-        <h2>
-          Because you choose <span>{movie.title}</span>
-        </h2>
-
-        {similarMovies.length > 0 ? (
-          <div className="similar-grid-disney">
-            {similarMovies.map((item) => (
-              <Link
-                href={`/movie/${item.movie_id}`}
-                key={item.movie_id}
-                className="similar-card-disney"
-              >
-                <img
-                  src={item.poster_url || "/placeholder.jpg"}
-                  alt={item.title}
-                />
-
-                <div className="similar-card-overlay">
-                  <h3>{item.title}</h3>
-
-                  <p>
-                    {item.platforms?.split(", ")[0] || "Available"}{" "}
-                    • {item.duration || "N/A"}
-                  </p>
-                </div>
-              </Link>
-            ))}
+            <Link href="/discover">
+              See all
+              <ChevronRight size={15} />
+            </Link>
           </div>
-        ) : (
-          <p className="movie-empty-state">
-            No similar movies were found.
-          </p>
-        )}
+
+          {similarMovies.length > 0 ? (
+            <div className="movie-detail-similar-grid">
+              {similarMovies.map((similarMovie) => {
+                const similarImage =
+                  similarMovie.poster_url ||
+                  similarMovie.portrait_url ||
+                  "/placeholder.jpg";
+
+                const matchPercentage = Math.min(
+                  99,
+                  75 +
+                    Number(similarMovie.match_score || 0) *
+                      3
+                );
+
+                return (
+                 <article
+  className="movie-detail-movie-card"
+  key={similarMovie.movie_id}
+>
+  <Link
+    href={`/movie/${similarMovie.movie_id}`}
+    className="movie-detail-movie-image-wrapper"
+  >
+    <img
+      src={
+        similarMovie.poster_url ||
+        similarMovie.portrait_url ||
+        "/placeholder.jpg"
+      }
+      alt={`${similarMovie.title} poster`}
+      className="movie-detail-movie-image"
+    />
+
+    <div className="movie-detail-movie-image-overlay" />
+
+    <span className="movie-detail-movie-match">
+      {matchPercentage}% match
+    </span>
+  </Link>
+
+  <div className="movie-detail-movie-card-content">
+    <p className="movie-detail-movie-meta">
+      {similarMovie.broadcaster || "Platform unavailable"}
+      {" · "}
+      {similarMovie.content_type || "Movie"}
+      {" · "}
+      {formatRuntime(similarMovie.duration_minutes)}
+    </p>
+
+    <h3>{similarMovie.title}</h3>
+
+    <p className="movie-detail-movie-description">
+      {similarMovie.description ||
+        "Open this title to learn more about the story."}
+    </p>
+
+    <div className="movie-detail-movie-actions">
+      <button
+        type="button"
+        className="movie-detail-card-watchlist"
+      >
+        <Bookmark size={12} />
+        Add to watchlist
+      </button>
+
+      <Link
+        href={`/movie/${similarMovie.movie_id}`}
+        className="movie-detail-card-details"
+      >
+        <Play size={11} />
+        Show details
+      </Link>
+    </div>
+  </div>
+</article>
+                );
+              })}
+            </div>
+          ) : (
+            <p className="movie-detail-empty-copy">
+              No similar movies were found.
+            </p>
+          )}
+        </div>
       </section>
     </main>
   );
