@@ -34,6 +34,7 @@ type Movie = {
   performers: string[];
   broadcaster: string | null;
   genres: string[];
+  moods: string[];
 };
 
 type SimilarMovie = {
@@ -114,7 +115,7 @@ function getYouTubeEmbedUrl(url: string | null) {
 async function getMovie(id: string): Promise<Movie | null> {
   try {
     const response = await fetch(
-      `http://localhost:3000/api/movie/${id}`,
+      `${getBaseUrl()}/api/movie/${id}`,
       {
         cache: "no-store",
       }
@@ -129,7 +130,9 @@ async function getMovie(id: string): Promise<Movie | null> {
 
       console.error(
         "Movie API error:",
-        result?.details || result?.error
+        result?.details ||
+          result?.error ||
+          response.statusText
       );
 
       return null;
@@ -261,14 +264,30 @@ export default async function MovieDetailPage({
 
             <div className="movie-detail-hero-content">
               <div className="movie-detail-badge-row">
-                <span className="movie-detail-primary-badge">
-                  {movie.content_type || "Movie"}
-                </span>
+                  {/* Content Type */}
+                  <span className="movie-detail-primary-badge">
+                    {movie.content_type || "Movie"}
+                  </span>
 
-                <span className="movie-detail-release-badge">
-                  Available
-                </span>
-              </div>
+                  {/* Mood Badges */}
+                  {movie.moods?.length ? (
+                    movie.moods.map((mood) => (
+                      <span
+                        key={mood}
+                        className={`movie-detail-mood-badge ${mood
+                        .toLowerCase()
+                        .replace(/\s*\/\s*/g, "-")
+                        .replace(/\s+/g, "-")}`}
+                      >
+                        {mood}
+                      </span>
+                    ))
+                  ) : (
+                    <span className="movie-detail-mood-badge">
+                      No mood
+                    </span>
+                  )}
+                </div>
 
               <h1 className="dongle-font">{movie.title}</h1>
 

@@ -22,6 +22,10 @@ type GenreRow = RowDataPacket & {
   genre_name: string;
 };
 
+type MoodRow = RowDataPacket & {
+  mood_name: string;
+};
+
 function getContentTypeName(contentTypeId: number | null) {
   switch (contentTypeId) {
     case 1:
@@ -41,7 +45,9 @@ function getContentTypeName(contentTypeId: number | null) {
 export async function GET(
   request: Request,
   context: {
-    params: Promise<{ id: string }>;
+    params: Promise<{
+      id: string;
+    }>;
   }
 ) {
   try {
@@ -50,8 +56,12 @@ export async function GET(
 
     if (!Number.isInteger(movieId) || movieId <= 0) {
       return NextResponse.json(
-        { error: "Invalid movie ID." },
-        { status: 400 }
+        {
+          error: "Invalid movie ID.",
+        },
+        {
+          status: 400,
+        }
       );
     }
 
@@ -71,11 +81,8 @@ export async function GET(
           author,
           performers,
           broadcaster
-
-        FROM movies
-
+        FROM movie_app.movies
         WHERE movie_id = ?
-
         LIMIT 1
       `,
       [movieId]
@@ -85,24 +92,37 @@ export async function GET(
 
     if (!movie) {
       return NextResponse.json(
-        { error: "Movie not found." },
-        { status: 404 }
+        {
+          error: "Movie not found.",
+        },
+        {
+          status: 404,
+        }
       );
     }
 
     const [genreRows] = await pool.query<GenreRow[]>(
       `
-        SELECT
+        SELECT DISTINCT
           g.genre_name
-
-        FROM movie_genres mg
-
-        INNER JOIN genres g
-          ON mg.genre_id = g.genre_id
-
+        FROM movie_app.movie_genres AS mg
+        INNER JOIN movie_app.genres AS g
+          ON g.genre_id = mg.genre_id
         WHERE mg.movie_id = ?
-
         ORDER BY g.genre_name
+      `,
+      [movieId]
+    );
+
+    const [moodRows] = await pool.query<MoodRow[]>(
+      `
+        SELECT DISTINCT
+          m.mood_name
+        FROM movie_app.movie_moods AS mm
+        INNER JOIN movie_app.moods AS m
+          ON m.mood_id = mm.mood_id
+        WHERE mm.movie_id = ?
+        ORDER BY m.mood_name
       `,
       [movieId]
     );
@@ -124,25 +144,30 @@ export async function GET(
       portrait_url: movie.portrait_url,
       trailer_url: movie.trailer_url,
       content_type_id: movie.content_type_id,
-      content_type: getContentTypeName(movie.content_type_id),
+      content_type: getContentTypeName(
+        movie.content_type_id
+      ),
       source: movie.source,
       author: movie.author,
       performers,
       broadcaster: movie.broadcaster,
-      genres: genreRows.map((row) => row.genre_name),
+      genres: genreRows.map((genre) => genre.genre_name),
+      moods: moodRows.map((mood) => mood.mood_name),
     });
   } catch (error) {
-  console.error(error);
+    console.error("Unable to load movie:", error);
 
-  return NextResponse.json(
-    {
-      error: "Unable to load this movie.",
-      details:
-        error instanceof Error
-          ? error.message
-          : String(error),
-    },
-    { status: 500 }
-  );
-}
+    return NextResponse.json(
+      {
+        error: "Unable to load this movie.",
+        details:
+          error instanceof Error
+            ? error.message
+            : String(error),
+      },
+      {
+        status: 500,
+      }
+    );
+  }
 }

@@ -1358,28 +1358,18 @@ margin: 0;
 }
 
 .discover-page {
-min-height: 100vh;
-  padding: 112px 0 90px;
-  color: #ffffff;
-min-height: 100vh;
-  padding: 0;
-  color: #ffffff;
+
 min-height: 100vh;
   padding: 0;
   color: #ffffff;
 }
 
 .discover-page-inner {
-width: min(1480px, calc(100% - 96px));
-  margin: 0 auto;
-width: min(1480px, calc(100% - 96px));
-  margin: 0 auto;
-width: min(1480px, calc(100% - 96px));
+  width: min(1180px, calc(100% - 48px));
   margin: 0 auto;
 }
 
 .discover-loading-area {
-padding-top: 120px;
 padding-top: 120px;
 }
 
@@ -2158,17 +2148,37 @@ border-color: #f97316;
   display: flex;
   align-items: center;
   justify-content: center;
+
   width: 100%;
-  min-height: 43px;
+  min-height: 42px;
   margin-top: 15px;
-  color: #fff;
-  font-size: 0.78rem;
-  font-weight: 700;
-  cursor: pointer;
-  background: #f05a63;
-  border: 0;
+
+  border: 1px solid #ff4f4f;
   border-radius: 999px;
-  gap: 8px;
+
+  background: transparent;
+  color: #ffffff;
+
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+
+  gap: 7px;
+
+  transition:
+    background-color 180ms ease,
+    border-color 180ms ease,
+    color 180ms ease,
+    transform 180ms ease;
+}
+
+.movie-detail-watchlist-button:hover {
+  border-color: #f97316;
+  background: #f97316;
+  color: #ffffff;
+  transform: translateY(-1px);
 }
 
 .movie-detail-poster-actions {
@@ -2206,7 +2216,7 @@ border-color: #f97316;
 }
 
 .movie-detail-primary-badge,
-.movie-detail-release-badge {
+.movie-detail-mood-badge{
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -2219,16 +2229,53 @@ border-color: #f97316;
   text-transform: uppercase;
 }
 
+.movie-detail-mood-badge {
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: white;
+}
+
 .movie-detail-primary-badge {
   color: #70b8ff;
   background: rgba(37, 99, 235, 0.1);
   border: 1px solid rgba(96, 165, 250, 0.45);
 }
 
-.movie-detail-release-badge {
-  color: #ff8890;
-  background: rgba(239, 68, 68, 0.08);
-  border: 1px solid rgba(248, 113, 113, 0.46);
+/* Individual moods */
+.movie-detail-mood-badge.mind-bending {
+  background: rgba(59, 130, 246, 0.12);
+  border-color: #3b82f6;
+  color: #8fb8ff;
+}
+
+.movie-detail-mood-badge.intense {
+  background: rgba(239, 68, 68, 0.12);
+  border-color: #ef4444;
+  color: #ff8b8b;
+}
+
+.movie-detail-mood-badge.relaxing-feel-good {
+  background: rgba(34, 197, 94, 0.12);
+  border-color: #22c55e;
+  color: #7ee787;
+}
+
+.movie-detail-mood-badge.romantic {
+  background: rgba(236, 72, 153, 0.12);
+  border-color: #ec4899;
+  color: #f9a8d4;
+}
+
+.movie-detail-mood-badge.spooky {
+  background: rgba(124, 58, 237, 0.12);
+  border-color: #7c3aed;
+  color: #c4b5fd;
+}
+
+.movie-detail-mood-badge.adventurous-thrilling {
+  background: rgba(249, 115, 22, 0.12);
+  border-color: #f97316;
+  color: #fdba74;
 }
 
 .movie-detail-hero-content h1 {
