@@ -4,6 +4,8 @@ import type {
   RowDataPacket,
 } from 'mysql2';
 import pool from '@/app/src/lib/db';
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/src/lib/auth";
 
 interface WatchlistRow extends RowDataPacket {
   watchlist_id: number;
@@ -12,6 +14,7 @@ interface WatchlistRow extends RowDataPacket {
   movie_count: number | string;
   tv_count: number | string;
   completed_count: number | string;
+  contains_movie: number;
 }
 
 interface PreviewRow extends RowDataPacket {
@@ -29,14 +32,59 @@ interface StatsRow extends RowDataPacket {
   completed: number | string;
 }
 
+interface UserRow extends RowDataPacket {
+  user_id: number;
+}
+
+async function getLoggedInUserId() {
+  const session = await getServerSession(authOptions);
+
+  if (!session?.user?.email) {
+    return null;
+  }
+
+  const [users] = await pool.execute<UserRow[]>(
+    `
+      SELECT user_id
+      FROM users
+      WHERE email = ?
+      LIMIT 1
+    `,
+    [session.user.email]
+  );
+
+  return users[0]?.user_id ?? null;
+}
+
 export async function GET(req: Request) {
   try {
-    const { searchParams } = new URL(req.url);
-    const userId = searchParams.get('userId');
+    const userId = await getLoggedInUserId();
 
     if (!userId) {
       return NextResponse.json(
-        { error: 'Missing userId' },
+        {
+          error: "You must be logged in.",
+          requiresLogin: true,
+        },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+
+    const movieIdParam =
+      searchParams.get("movieId");
+
+    const movieId = movieIdParam
+      ? Number(movieIdParam)
+      : null;
+
+    if (
+      movieId !== null &&
+      (!Number.isInteger(movieId) || movieId <= 0)
+    ) {
+      return NextResponse.json(
+        { error: "Invalid movie ID." },
         { status: 400 }
       );
     }
@@ -87,7 +135,19 @@ export async function GET(req: Request) {
                 END
               ),
               0
-            ) AS completed_count
+            ) AS completed_count,
+
+            CASE
+              WHEN EXISTS (
+                SELECT 1
+                FROM watchlist_movies selected_movie
+                WHERE selected_movie.watchlist_id =
+                  w.watchlist_id
+                  AND selected_movie.movie_id = ?
+              )
+              THEN 1
+              ELSE 0
+            END AS contains_movie
 
           FROM watchlists w
 
@@ -98,7 +158,8 @@ export async function GET(req: Request) {
             ON m.movie_id = wm.movie_id
 
           LEFT JOIN content_types ct
-            ON ct.content_type_id = m.content_type_id
+            ON ct.content_type_id =
+              m.content_type_id
 
           WHERE w.user_id = ?
 
@@ -108,7 +169,7 @@ export async function GET(req: Request) {
 
           ORDER BY w.watchlist_id DESC
         `,
-        [userId]
+        [movieId, userId]
       );
 
     const [previewRows] =
@@ -199,7 +260,8 @@ export async function GET(req: Request) {
             ON m.movie_id = wm.movie_id
 
           LEFT JOIN content_types ct
-            ON ct.content_type_id = m.content_type_id
+            ON ct.content_type_id =
+              m.content_type_id
 
           WHERE w.user_id = ?
         `,
@@ -216,7 +278,9 @@ export async function GET(req: Request) {
     >();
 
     for (const row of previewRows) {
-      const watchlistId = Number(row.watchlist_id);
+      const watchlistId = Number(
+        row.watchlist_id
+      );
 
       const current =
         previewsByWatchlist.get(watchlistId) ?? [];
@@ -259,6 +323,10 @@ export async function GET(req: Request) {
           watchlist.completed_count ?? 0
         ),
 
+        contains_movie: Boolean(
+          watchlist.contains_movie
+        ),
+
         previews:
           previewsByWatchlist.get(
             Number(watchlist.watchlist_id)
@@ -295,19 +363,17 @@ export async function GET(req: Request) {
     });
   } catch (error) {
     console.error(
-      'GET WATCHLISTS ERROR:',
+      "GET WATCHLISTS ERROR:",
       error
     );
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unknown database error';
-
     return NextResponse.json(
       {
-        error: 'Failed to load watchlists',
-        details: message,
+        error: "Failed to load watchlists",
+        details:
+          error instanceof Error
+            ? error.message
+            : "Unknown database error",
       },
       { status: 500 }
     );

@@ -2,18 +2,26 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams } from "next/navigation";
 import {
   Bookmark,
   CalendarDays,
+  Check,
   ChevronRight,
   Clock3,
+  Copy,
+  Download,
   Film,
+  Mail,
+  MessageCircle,
   Play,
   Share2,
   Star,
+  X,
 } from "lucide-react";
+import MovieWatchlistButton from "../../components/MovieWatchlistButton";
+import { FaFacebookF } from "react-icons/fa6";
 
 type Movie = {
   movie_id: number;
@@ -32,6 +40,7 @@ type Movie = {
   broadcaster: string | null;
   genres: string[];
   moods: string[];
+  logo_url: string | null;
 };
 
 
@@ -50,17 +59,7 @@ type SimilarMovie = {
   match_score: number;
 };
 
-// function getBaseUrl() {
-//   if (process.env.NEXT_PUBLIC_APP_URL) {
-//     return process.env.NEXT_PUBLIC_APP_URL.replace(/\/$/, "");
-//   }
 
-//   if (process.env.NEXTAUTH_URL) {
-//     return process.env.NEXTAUTH_URL.replace(/\/$/, "");
-//   }
-
-//   return "http://localhost:3000";
-// }
 
 function formatRuntime(minutes: number | null) {
   if (!minutes || minutes <= 0) {
@@ -90,6 +89,9 @@ export default function MovieDetailPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [pageError, setPageError] = useState("");
 
+  const [isShareOpen, setIsShareOpen] = useState(false);
+  const [shareMessage, setShareMessage] = useState("");
+  const shareCardRef = useRef<HTMLDivElement | null>(null);
 useEffect(() => {
   if (!id) {
     return;
@@ -232,10 +234,130 @@ if (!id) {
     );
   }
 
-  const portraitImage =
-    movie.portrait_url ||
-    movie.poster_url ||
-    "/placeholder.jpg";
+  const currentMovie = movie;
+
+const portraitImage =
+  currentMovie.portrait_url ||
+  currentMovie.poster_url ||
+  "/placeholder.jpg";
+
+
+function handleShare() {
+  setShareMessage("");
+  setIsShareOpen(true);
+}
+
+async function handleCopyLink() {
+  const url =
+    `${window.location.origin}/movie/${currentMovie.movie_id}`;
+
+  try {
+    await navigator.clipboard.writeText(url);
+    setShareMessage("Movie link copied!");
+  } catch (error) {
+    console.error("Copy link error:", error);
+    setShareMessage("Unable to copy the link.");
+  }
+}
+
+function handleEmailShare() {
+  const url =
+    `${window.location.origin}/movie/${currentMovie.movie_id}`;
+
+  window.location.href =
+    `mailto:?subject=${encodeURIComponent(
+      `Check out ${currentMovie.title} on Cineri`
+    )}` +
+    `&body=${encodeURIComponent(
+      `I thought you might like ${currentMovie.title}.\n\n${url}`
+    )}`;
+}
+
+function handleWhatsAppShare() {
+  const url =
+    `${window.location.origin}/movie/${currentMovie.movie_id}`;
+
+  window.open(
+    `https://wa.me/?text=${encodeURIComponent(
+      `Check out ${currentMovie.title} on Cineri!\n${url}`
+    )}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
+
+function handleFacebookShare() {
+  const url =
+    `${window.location.origin}/movie/${currentMovie.movie_id}`;
+
+  window.open(
+    `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(
+      url
+    )}`,
+    "_blank",
+    "noopener,noreferrer"
+  );
+}
+
+async function handleNativeShare() {
+  const url =
+    `${window.location.origin}/movie/${currentMovie.movie_id}`;
+
+  try {
+    if (navigator.share) {
+      await navigator.share({
+        title: currentMovie.title,
+        text: `Check out ${currentMovie.title} on Cineri!`,
+        url,
+      });
+
+      return;
+    }
+
+    await handleCopyLink();
+  } catch (error) {
+    console.error("Native share error:", error);
+  }
+}
+
+async function handleDownloadCard() {
+  if (!shareCardRef.current) {
+    return;
+  }
+
+  try {
+    const { toPng } = await import("html-to-image");
+
+    const dataUrl = await toPng(
+      shareCardRef.current,
+      {
+        cacheBust: true,
+        pixelRatio: 2,
+      }
+    );
+
+    const link = document.createElement("a");
+
+    link.download = `${currentMovie.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")}-cineri.png`;
+
+    link.href = dataUrl;
+    link.click();
+
+    setShareMessage("Share card downloaded!");
+  } catch (error) {
+    console.error(
+      "Download share card error:",
+      error
+    );
+
+    setShareMessage(
+      "Unable to download the share card."
+    );
+  }
+}
 
   return (
     <main className="movie-detail-page">
@@ -270,22 +392,27 @@ if (!id) {
                 />
               </div>
 
-              <button
-                type="button"
-                className="movie-detail-watchlist-button"
-              >
-                <Bookmark size={17} />
-                Add to watchlist
-              </button>
+             <MovieWatchlistButton
+                movieId={movie.movie_id}
+                movieTitle={movie.title}
+              />
 
               <div className="movie-detail-poster-actions">
-                <button type="button">
+                <button
+                  type="button"
+                  className="movie-detail-share-button"
+                  onClick={handleShare}
+                >
                   <Share2 size={15} />
                   Share
                 </button>
 
-                <button type="button">
-                  ... More
+                <button
+                  type="button"
+                  className="movie-detail-more-button"
+                >
+                  <span className="movie-detail-more-dots">•••</span>
+                  <span>More</span>
                 </button>
               </div>
             </aside>
@@ -402,8 +529,15 @@ if (!id) {
 
                   <div className="movie-detail-streaming-buttons">
                     <button type="button">
-                      <Play size={15} fill="currentColor" />
-                      {movie.broadcaster}
+                      {movie.logo_url && (
+                        <img
+                          src={movie.logo_url}
+                          alt={movie.broadcaster ?? "Streaming service"}
+                          className="movie-detail-streaming-logo"
+                        />
+                      )}
+
+                      <span>{movie.broadcaster}</span>
                     </button>
                   </div>
                 </div>
@@ -721,6 +855,170 @@ if (!id) {
           )}
         </div>
       </section>
+
+      {isShareOpen && (
+  <div
+    className="movie-share-overlay"
+    onClick={() => setIsShareOpen(false)}
+  >
+    <div
+      className="movie-share-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="movie-share-title"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="movie-share-close"
+        aria-label="Close share popup"
+        onClick={() => setIsShareOpen(false)}
+      >
+        <X size={20} />
+      </button>
+
+      <div className="movie-share-heading">
+        <span>Share movie</span>
+        <h2 id="movie-share-title">
+          Share {movie.title}
+        </h2>
+        <p>
+          Send the movie link or download a shareable card.
+        </p>
+      </div>
+
+      <div
+        className="movie-share-card"
+        ref={shareCardRef}
+      >
+        <div className="movie-share-card-poster">
+          <img
+            src={portraitImage}
+            alt={`${movie.title} poster`}
+          />
+          <div className="movie-share-card-poster-overlay" />
+        </div>
+
+        <div className="movie-share-card-content">
+          <span className="movie-share-card-brand">
+            CINERI
+          </span>
+
+          <h3>{movie.title}</h3>
+
+          <div className="movie-share-card-metadata">
+            <span>
+              <Film size={14} />
+              {movie.content_type || "Movie"}
+            </span>
+
+            <span>
+              <Clock3 size={14} />
+              {formatRuntime(movie.duration_minutes)}
+            </span>
+
+            {movie.release_year && (
+              <span>
+                <CalendarDays size={14} />
+                {movie.release_year}
+              </span>
+            )}
+          </div>
+
+          {movie.genres.length > 0 && (
+            <div className="movie-share-card-genres">
+              {movie.genres.slice(0, 3).map((genre) => (
+                <span key={genre}>{genre}</span>
+              ))}
+            </div>
+          )}
+
+          {movie.moods.length > 0 && (
+            <div className="movie-share-card-moods">
+              {movie.moods.slice(0, 2).map((mood) => (
+                <span key={mood}>{mood}</span>
+              ))}
+            </div>
+          )}
+
+          {movie.broadcaster && (
+            <p className="movie-share-card-streaming">
+              Available on{" "}
+              <strong>{movie.broadcaster}</strong>
+            </p>
+          )}
+
+          <p className="movie-share-card-tagline">
+            Find your next favorite story on Cineri.
+          </p>
+
+          <span className="movie-share-card-url">
+            {typeof window !== "undefined"
+              ? `${window.location.host}/movie/${movie.movie_id}`
+              : `/movie/${movie.movie_id}`}
+          </span>
+        </div>
+      </div>
+
+      <div className="movie-share-options">
+        <button
+          type="button"
+          onClick={handleCopyLink}
+        >
+          <Copy size={17} />
+          Copy link
+        </button>
+
+        <button
+          type="button"
+          onClick={handleNativeShare}
+        >
+          <Share2 size={17} />
+          Share
+        </button>
+
+        <button
+          type="button"
+          onClick={handleEmailShare}
+        >
+          <Mail size={17} />
+          Email
+        </button>
+
+        <button
+          type="button"
+          onClick={handleWhatsAppShare}
+        >
+          <MessageCircle size={17} />
+          WhatsApp
+        </button>
+
+       <button
+          type="button"
+          onClick={handleFacebookShare}
+        >
+          <FaFacebookF size={17} />
+          Facebook
+        </button>
+
+        <button
+          type="button"
+          onClick={handleDownloadCard}
+        >
+          <Download size={17} />
+          Download card
+        </button>
+      </div>
+
+      {shareMessage && (
+        <p className="movie-share-message">
+          <Check size={15} />
+          {shareMessage}
+        </p>
+      )}
+    </div>
+  </div>
+)}
     </main>
   );
 }
