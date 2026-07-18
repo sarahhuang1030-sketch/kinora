@@ -3568,8 +3568,24 @@ border-color: #f97316;
 }
 
 .movie-watchlist-option.is-saved {
-  border-color: rgba(74, 222, 128, 0.35);
-  background: rgba(74, 222, 128, 0.08);
+  border-color: rgba(52, 211, 153, 0.42);
+  background: rgba(16, 185, 129, 0.08);
+  cursor: pointer;
+}
+
+.movie-watchlist-option.is-saved:hover:not(:disabled) {
+  border-color: rgba(248, 113, 113, 0.6);
+  background: rgba(239, 68, 68, 0.08);
+}
+
+.movie-watchlist-option.is-saved:hover
+  .movie-watchlist-option-icon {
+  color: #fca5a5;
+}
+
+.movie-watchlist-option.is-saved:hover
+  .movie-watchlist-option-copy small {
+  color: #fca5a5;
 }
 
 .movie-watchlist-option-icon {
@@ -3914,6 +3930,51 @@ border-color: #f97316;
   height: 24px;
   object-fit: contain;
   flex-shrink: 0;
+}
+
+.movie-watchlist-create-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  margin-top: 22px;
+}
+
+.movie-watchlist-create-form input {
+  width: 100%;
+  padding: 14px 18px;
+  border-radius: 14px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.05);
+  color: white;
+  font-size: .95rem;
+}
+
+.movie-watchlist-create-form input:focus {
+  outline: none;
+  border-color: #ff6f61;
+}
+
+.movie-watchlist-create-form button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: .6rem;
+
+  padding: 14px;
+
+  border: none;
+  border-radius: 14px;
+
+  background: linear-gradient(
+    135deg,
+    #ff7b6b,
+    #ff5c54
+  );
+
+  color: white;
+  font-weight: 700;
+
+  cursor: pointer;
 }
 
 /* ==========================================================================

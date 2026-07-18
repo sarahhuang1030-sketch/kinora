@@ -34,6 +34,8 @@ export default function MovieWatchlistButton({
   const [savingWatchlistId, setSavingWatchlistId] =
     useState<number | null>(null);
   const [message, setMessage] = useState("");
+const [newWatchlistName, setNewWatchlistName] = useState("");
+const [creatingWatchlist, setCreatingWatchlist] = useState(false);
 
   async function loadWatchlists() {
     setIsLoading(true);
@@ -132,6 +134,109 @@ export default function MovieWatchlistButton({
     );
   } finally {
     setSavingWatchlistId(null);
+  }
+}
+
+async function handleRemoveFromWatchlist(
+  watchlistId: number
+) {
+  setSavingWatchlistId(watchlistId);
+  setMessage("");
+
+  try {
+    const response = await fetch(
+      `/api/movie/${movieId}/watchlist`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          watchlistId,
+        }),
+      }
+    );
+
+    const result = await response
+      .json()
+      .catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error ||
+          "Unable to remove this movie from the watchlist."
+      );
+    }
+
+    setWatchlists((currentWatchlists) =>
+      currentWatchlists.map((watchlist) =>
+        watchlist.watchlist_id === watchlistId
+          ? {
+              ...watchlist,
+              contains_movie: false,
+            }
+          : watchlist
+      )
+    );
+
+    setMessage(
+      result?.watchlistName
+        ? `${movieTitle} was removed from ${result.watchlistName}.`
+        : `${movieTitle} was removed from the watchlist.`
+    );
+  } catch (error) {
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "Unable to remove this movie."
+    );
+  } finally {
+    setSavingWatchlistId(null);
+  }
+}
+
+async function handleCreateWatchlist() {
+  if (!newWatchlistName.trim()) {
+    setMessage("Please enter a watchlist name.");
+    return;
+  }
+
+  setCreatingWatchlist(true);
+  setMessage("");
+
+  try {
+    const response = await fetch("/api/watchlists", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name: newWatchlistName.trim(),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(
+        result.error ||
+          "Unable to create watchlist."
+      );
+    }
+
+    setNewWatchlistName("");
+
+    await loadWatchlists();
+
+    setMessage("Watchlist created!");
+  } catch (error) {
+    setMessage(
+      error instanceof Error
+        ? error.message
+        : "Unable to create watchlist."
+    );
+  } finally {
+    setCreatingWatchlist(false);
   }
 }
 
@@ -244,13 +349,37 @@ async function handleOpen() {
             before saving <strong>{movieTitle}</strong>.
           </p>
 
-          <Link
-            href="/watchlists"
-            className="movie-watchlist-create-link"
-          >
-            <Plus size={16} />
-            Create a watchlist
-          </Link>
+          <div className="movie-watchlist-create-form">
+                <input
+                    type="text"
+                    placeholder="My Weekend Movies"
+                    value={newWatchlistName}
+                    onChange={(e) =>
+                    setNewWatchlistName(e.target.value)
+                    }
+                />
+
+                <button
+                    type="button"
+                    onClick={handleCreateWatchlist}
+                    disabled={creatingWatchlist}
+                >
+                    {creatingWatchlist ? (
+                    <>
+                        <Loader2
+                        size={16}
+                        className="watchlist-spinner"
+                        />
+                        Creating...
+                    </>
+                    ) : (
+                    <>
+                        <Plus size={16} />
+                        Create watchlist
+                    </>
+                    )}
+                </button>
+                </div>
         </div>
       ) : (
         <>
@@ -269,52 +398,95 @@ async function handleOpen() {
 
           <div className="movie-watchlist-list">
             {watchlists.map((watchlist) => (
-              <button
-                type="button"
-                key={watchlist.watchlist_id}
-                className={`movie-watchlist-option ${
-                  watchlist.contains_movie
-                    ? "is-saved"
-                    : ""
-                }`}
-                disabled={
-                  watchlist.contains_movie ||
-                  savingWatchlistId !== null
-                }
-                onClick={() =>
-                  handleAddToWatchlist(
-                    watchlist.watchlist_id
-                  )
-                }
-              >
-                <span className="movie-watchlist-option-icon">
-                  {watchlist.contains_movie ? (
-                    <Check size={17} />
-                  ) : (
-                    <Bookmark size={17} />
-                  )}
-                </span>
+  <button
+    type="button"
+    key={watchlist.watchlist_id}
+    className={`movie-watchlist-option ${
+      watchlist.contains_movie
+        ? "is-saved"
+        : ""
+    }`}
+    disabled={savingWatchlistId !== null}
+    onClick={() => {
+      if (watchlist.contains_movie) {
+        void handleRemoveFromWatchlist(
+          watchlist.watchlist_id
+        );
+      } else {
+        void handleAddToWatchlist(
+          watchlist.watchlist_id
+        );
+      }
+    }}
+  >
+    <span className="movie-watchlist-option-icon">
+      {savingWatchlistId ===
+      watchlist.watchlist_id ? (
+        <Loader2
+          size={17}
+          className="watchlist-spinner"
+        />
+      ) : watchlist.contains_movie ? (
+        <Check size={17} />
+      ) : (
+        <Bookmark size={17} />
+      )}
+    </span>
 
-                <span className="movie-watchlist-option-copy">
-                  <strong>{watchlist.name}</strong>
+    <span className="movie-watchlist-option-copy">
+      <strong>{watchlist.name}</strong>
 
-                  <small>
-                    {watchlist.contains_movie
-                      ? "Already saved"
-                      : "Add to this list"}
-                  </small>
-                </span>
-
-                {savingWatchlistId ===
-                  watchlist.watchlist_id && (
-                  <Loader2
-                    size={17}
-                    className="watchlist-spinner"
-                  />
-                )}
-              </button>
-            ))}
+      <small>
+        {watchlist.contains_movie
+          ? "Click to remove"
+          : "Add to this list"}
+      </small>
+    </span>
+  </button>
+))}
           </div>
+          <div className="movie-watchlist-create-form">
+  <input
+    type="text"
+    placeholder="New watchlist name"
+    value={newWatchlistName}
+    maxLength={100}
+    disabled={creatingWatchlist}
+    onChange={(event) =>
+      setNewWatchlistName(event.target.value)
+    }
+    onKeyDown={(event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        void handleCreateWatchlist();
+      }
+    }}
+  />
+
+  <button
+    type="button"
+    onClick={() => void handleCreateWatchlist()}
+    disabled={
+      creatingWatchlist ||
+      !newWatchlistName.trim()
+    }
+  >
+    {creatingWatchlist ? (
+      <>
+        <Loader2
+          size={16}
+          className="watchlist-spinner"
+        />
+        Creating...
+      </>
+    ) : (
+      <>
+        <Plus size={16} />
+        Create new watchlist
+      </>
+    )}
+  </button>
+</div>
         </>
       )}
 

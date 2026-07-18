@@ -382,20 +382,30 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
+    const userId = await getLoggedInUserId();
 
-    const userId = body.userId;
-
-    const name =
-      typeof body.name === 'string'
-        ? body.name.trim()
-        : '';
-
-    if (!userId || !name) {
+    if (!userId) {
       return NextResponse.json(
         {
           error:
-            'User and watchlist name are required.',
+            "You must be logged in to create a watchlist.",
+          requiresLogin: true,
+        },
+        { status: 401 }
+      );
+    }
+
+    const body = await req.json();
+
+    const name =
+      typeof body.name === "string"
+        ? body.name.trim()
+        : "";
+
+    if (!name) {
+      return NextResponse.json(
+        {
+          error: "Watchlist name is required.",
         },
         { status: 400 }
       );
@@ -405,9 +415,31 @@ export async function POST(req: Request) {
       return NextResponse.json(
         {
           error:
-            'Watchlist name must be 100 characters or fewer.',
+            "Watchlist name must be 100 characters or fewer.",
         },
         { status: 400 }
+      );
+    }
+
+    const [existingRows] =
+      await pool.execute<RowDataPacket[]>(
+        `
+          SELECT watchlist_id
+          FROM watchlists
+          WHERE user_id = ?
+            AND LOWER(name) = LOWER(?)
+          LIMIT 1
+        `,
+        [userId, name]
+      );
+
+    if (existingRows.length > 0) {
+      return NextResponse.json(
+        {
+          error:
+            "You already have a watchlist with that name.",
+        },
+        { status: 409 }
       );
     }
 
@@ -427,24 +459,23 @@ export async function POST(req: Request) {
       {
         success: true,
         watchlistId: result.insertId,
+        name,
       },
       { status: 201 }
     );
   } catch (error) {
     console.error(
-      'CREATE WATCHLIST ERROR:',
+      "CREATE WATCHLIST ERROR:",
       error
     );
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unknown database error';
-
     return NextResponse.json(
       {
-        error: 'Failed to create watchlist',
-        details: message,
+        error: "Failed to create watchlist.",
+        details:
+          error instanceof Error
+            ? error.message
+            : "Unknown database error",
       },
       { status: 500 }
     );
