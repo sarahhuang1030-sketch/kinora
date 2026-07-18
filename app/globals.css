@@ -3112,15 +3112,35 @@ border-color: #f97316;
 }
 
 .movie-detail-creator-card {
+  flex: 0 0 220px;      /* fixed width */
+  width: 220px;
+  min-width: 220px;
+
   display: flex;
   align-items: center;
-  min-height: 76px;
-  padding: 14px 16px;
-  overflow: hidden;
-  background: rgba(15, 28, 42, 0.56);
-  border: 1px solid rgba(148, 163, 184, 0.1);
-  border-radius: 11px;
-  gap: 13px;
+  gap: 14px;
+
+  padding: 16px;
+
+  border-radius: 18px;
+  border: 1px solid rgba(255,255,255,.08);
+  background: rgba(255,255,255,.03);
+}
+
+.movie-detail-creators-scroll {
+  display: flex;
+  gap: 16px;
+  overflow-x: auto;
+  padding-bottom: 8px;
+}
+
+.movie-detail-creators-scroll::-webkit-scrollbar {
+  height: 6px;
+}
+
+.movie-detail-creators-scroll::-webkit-scrollbar-thumb {
+  background: rgba(255,255,255,.18);
+  border-radius: 999px;
 }
 
 .movie-detail-creator-avatar {

@@ -32,6 +32,27 @@ type PersonRow = RowDataPacket & {
   photo_url: string | null;
 };
 
+type Creator ={
+  name: string;
+  role: string;
+}
+
+function parseCreator(value: string): Creator {
+  const match = value.match(/^(.*?)\s*\((.*?)\)\s*$/);
+
+  if (match) {
+    return {
+      name: match[1].trim(),
+      role: match[2].trim(),
+    };
+  }
+
+  return {
+    name: value.trim(),
+    role: "Director",
+  };
+}
+
 function getContentTypeName(
   contentTypeId: number | null
 ) {
@@ -175,10 +196,20 @@ export async function GET(
           .filter(Boolean)
       : [];
 
+      const creators = movie.author
+  ? movie.author
+      .split(",")
+      .map((creator) => creator.trim())
+      .filter(Boolean)
+      .map(parseCreator)
+  : [];
+
+
     const peopleNames = [
   ...performers,
-  ...(movie.author ? [movie.author] : []),
+  ...creators.map((creator) => creator.name),
 ];
+
 
 let peopleRows: PersonRow[] = [];
 
@@ -197,13 +228,7 @@ if (peopleNames.length > 0) {
   peopleRows = rows;
 }
 
-const creatorPerson = movie.author
-  ? peopleRows.find(
-      (person) =>
-        person.name.toLowerCase() ===
-        movie.author?.toLowerCase()
-    )
-  : null;
+
 
     return NextResponse.json({
       movie_id: movie.movie_id,
@@ -224,7 +249,19 @@ const creatorPerson = movie.author
 
       source: movie.source,
       author: movie.author,
-      author_photo_url: creatorPerson?.photo_url || null,
+     creators: creators.map((creator) => {
+  const person = peopleRows.find(
+    (item) =>
+      item.name.toLowerCase() ===
+      creator.name.toLowerCase()
+  );
+
+  return {
+    name: creator.name,
+    role: creator.role,
+    photo_url: person?.photo_url || null,
+  };
+}),
       performers: performers.map((name) => {
         const person = peopleRows.find(
           (item) =>

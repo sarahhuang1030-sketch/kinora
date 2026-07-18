@@ -36,8 +36,13 @@ type Movie = {
   content_type: string | null;
   source: string | null;
 
-  author: string | null;
-  author_photo_url: string | null;
+ author: string | null;
+
+creators: {
+  name: string;
+  role: string;
+  photo_url: string | null;
+}[];
 
   performers: {
     name: string;
@@ -85,6 +90,30 @@ function formatRuntime(minutes: number | null) {
   }
 
   return `${hours}h ${remainingMinutes}m`;
+}
+
+function getYouTubeEmbedUrl(url: string | null) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname.includes("youtu.be")) {
+      const id = parsed.pathname.replace("/", "");
+      return `https://www.youtube.com/embed/${id}`;
+    }
+
+    if (parsed.hostname.includes("youtube.com")) {
+      const id = parsed.searchParams.get("v");
+      if (id) {
+        return `https://www.youtube.com/embed/${id}`;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
 }
 
 export default function MovieDetailPage() {
@@ -244,7 +273,9 @@ if (!id) {
 
   const currentMovie = movie;
 
-  const trailerEmbedUrl = getYouTubeEmbedUrl(movie.trailer_url);
+const trailerEmbedUrl = getYouTubeEmbedUrl(
+  currentMovie.trailer_url
+);
 
 const portraitImage =
   currentMovie.portrait_url ||
@@ -252,29 +283,6 @@ const portraitImage =
   "/placeholder.jpg";
 
 
-function getYouTubeEmbedUrl(url: string | null) {
-  if (!url) return null;
-
-  try {
-    const parsed = new URL(url);
-
-    if (parsed.hostname.includes("youtu.be")) {
-      const id = parsed.pathname.replace("/", "");
-      return `https://www.youtube.com/embed/${id}`;
-    }
-
-    if (parsed.hostname.includes("youtube.com")) {
-      const id = parsed.searchParams.get("v");
-      if (id) {
-        return `https://www.youtube.com/embed/${id}`;
-      }
-    }
-  } catch {
-    return null;
-  }
-
-  return null;
-}
 
 function handleShare() {
   setShareMessage("");
@@ -582,61 +590,56 @@ async function handleDownloadCard() {
           <div className="movie-detail-information-grid">
             <div className="movie-detail-people-column">
               <section className="movie-detail-creators-section">
-                <span className="movie-detail-eyebrow">
-                  Creators
-                </span>
+  <span className="movie-detail-eyebrow">
+    Creators
+  </span>
 
-                <div className="movie-detail-creators-grid">
-                  <article className="movie-detail-creator-card">
-                    <div className="movie-detail-creator-avatar">
-                      {movie.author_photo_url ? (
-                        <img
-                          src={movie.author_photo_url}
-                          alt={movie.author || "Director"}
-                          className="movie-detail-creator-image"
-                        />
-                      ) : (
-                        <span>
-                          {movie.author
-                            ? movie.author
-                                .split(" ")
-                                .map((part) => part[0])
-                                .join("")
-                                .slice(0, 2)
-                                .toUpperCase()
-                            : "DR"}
-                        </span>
-                      )}
-                    </div>
+  {movie.creators?.length > 0 ? (
+    <div className="movie-detail-creators-scroll">
+      {movie.creators.map((creator, index) => {
+        const initials = creator.name
+          .split(" ")
+          .map((word) => word[0])
+          .join("")
+          .slice(0, 2)
+          .toUpperCase();
 
-                    <div className="movie-detail-creator-copy">
-                      <span>Director</span>
+        return (
+          <article
+            key={`${creator.role}-${creator.name}-${index}`}
+            className="movie-detail-creator-card"
+          >
+            <div className="movie-detail-creator-avatar">
+              {creator.photo_url ? (
+                <img
+                  src={creator.photo_url}
+                  alt={creator.name}
+                  className="movie-detail-creator-image"
+                />
+              ) : (
+                <span>{initials}</span>
+              )}
+            </div>
 
-                      <strong>
-                        {movie.author || "Not available"}
-                      </strong>
+            <div className="movie-detail-creator-copy">
+              <span>{creator.role}</span>
 
-                      <p>
-                        {movie.content_type || "Movie"} creator
-                      </p>
-                    </div>
-                  </article>
+              <strong>{creator.name}</strong>
 
-                  <article className="movie-detail-creator-card">
-                    <div className="movie-detail-creator-copy">
-                      <span>Production</span>
-
-                      <strong>
-                        {movie.source || "Not available"}
-                      </strong>
-
-                      <p>
-                        {movie.broadcaster || "Platform unavailable"}
-                      </p>
-                    </div>
-                  </article>
-                </div>
-              </section>
+              <p>
+                {movie.content_type || "Movie"} creator
+              </p>
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  ) : (
+    <p className="movie-detail-empty-copy">
+      Creator information is not available.
+    </p>
+  )}
+</section>
 
     <section className="movie-detail-cast-section">
       <div className="movie-detail-cast-heading-row">
