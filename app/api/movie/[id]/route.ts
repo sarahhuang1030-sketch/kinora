@@ -27,6 +27,11 @@ type MoodRow = RowDataPacket & {
   mood_name: string;
 };
 
+type PersonRow = RowDataPacket & {
+  name: string;
+  photo_url: string | null;
+};
+
 function getContentTypeName(
   contentTypeId: number | null
 ) {
@@ -170,6 +175,36 @@ export async function GET(
           .filter(Boolean)
       : [];
 
+    const peopleNames = [
+  ...performers,
+  ...(movie.author ? [movie.author] : []),
+];
+
+let peopleRows: PersonRow[] = [];
+
+if (peopleNames.length > 0) {
+  const [rows] = await pool.query<PersonRow[]>(
+    `
+      SELECT
+        name,
+        photo_url
+      FROM people
+      WHERE name IN (?)
+    `,
+    [peopleNames]
+  );
+
+  peopleRows = rows;
+}
+
+const creatorPerson = movie.author
+  ? peopleRows.find(
+      (person) =>
+        person.name.toLowerCase() ===
+        movie.author?.toLowerCase()
+    )
+  : null;
+
     return NextResponse.json({
       movie_id: movie.movie_id,
       title: movie.title,
@@ -189,7 +224,18 @@ export async function GET(
 
       source: movie.source,
       author: movie.author,
-      performers,
+      author_photo_url: creatorPerson?.photo_url || null,
+      performers: performers.map((name) => {
+        const person = peopleRows.find(
+          (item) =>
+            item.name.toLowerCase() === name.toLowerCase()
+        );
+
+        return {
+          name,
+          photo_url: person?.photo_url || null,
+        };
+      }),
       broadcaster: movie.broadcaster,
       logo_url: movie.logo_url,
 

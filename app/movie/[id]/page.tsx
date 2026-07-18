@@ -35,8 +35,15 @@ type Movie = {
   content_type_id: number | null;
   content_type: string | null;
   source: string | null;
+
   author: string | null;
-  performers: string[];
+  author_photo_url: string | null;
+
+  performers: {
+    name: string;
+    photo_url: string | null;
+  }[];
+
   broadcaster: string | null;
   genres: string[];
   moods: string[];
@@ -92,6 +99,7 @@ export default function MovieDetailPage() {
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [shareMessage, setShareMessage] = useState("");
   const shareCardRef = useRef<HTMLDivElement | null>(null);
+  
 useEffect(() => {
   if (!id) {
     return;
@@ -236,11 +244,37 @@ if (!id) {
 
   const currentMovie = movie;
 
+  const trailerEmbedUrl = getYouTubeEmbedUrl(movie.trailer_url);
+
 const portraitImage =
   currentMovie.portrait_url ||
   currentMovie.poster_url ||
   "/placeholder.jpg";
 
+
+function getYouTubeEmbedUrl(url: string | null) {
+  if (!url) return null;
+
+  try {
+    const parsed = new URL(url);
+
+    if (parsed.hostname.includes("youtu.be")) {
+      const id = parsed.pathname.replace("/", "");
+      return `https://www.youtube.com/embed/${id}`;
+    }
+
+    if (parsed.hostname.includes("youtube.com")) {
+      const id = parsed.searchParams.get("v");
+      if (id) {
+        return `https://www.youtube.com/embed/${id}`;
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
 
 function handleShare() {
   setShareMessage("");
@@ -528,7 +562,7 @@ async function handleDownloadCard() {
                   </span>
 
                   <div className="movie-detail-streaming-buttons">
-                    <button type="button">
+                   
                       {movie.logo_url && (
                         <img
                           src={movie.logo_url}
@@ -538,7 +572,7 @@ async function handleDownloadCard() {
                       )}
 
                       <span>{movie.broadcaster}</span>
-                    </button>
+                    
                   </div>
                 </div>
               )}
@@ -546,53 +580,63 @@ async function handleDownloadCard() {
           </div>
 
           <div className="movie-detail-information-grid">
-  <div className="movie-detail-people-column">
-    <section className="movie-detail-creators-section">
-      <span className="movie-detail-eyebrow">
-        Creators
-      </span>
+            <div className="movie-detail-people-column">
+              <section className="movie-detail-creators-section">
+                <span className="movie-detail-eyebrow">
+                  Creators
+                </span>
 
-      <div className="movie-detail-creators-grid">
-        <article className="movie-detail-creator-card">
-          <div className="movie-detail-creator-avatar">
-            {movie.author
-              ? movie.author
-                  .split(" ")
-                  .map((part) => part[0])
-                  .join("")
-                  .slice(0, 2)
-                  .toUpperCase()
-              : "DR"}
-          </div>
+                <div className="movie-detail-creators-grid">
+                  <article className="movie-detail-creator-card">
+                    <div className="movie-detail-creator-avatar">
+                      {movie.author_photo_url ? (
+                        <img
+                          src={movie.author_photo_url}
+                          alt={movie.author || "Director"}
+                          className="movie-detail-creator-image"
+                        />
+                      ) : (
+                        <span>
+                          {movie.author
+                            ? movie.author
+                                .split(" ")
+                                .map((part) => part[0])
+                                .join("")
+                                .slice(0, 2)
+                                .toUpperCase()
+                            : "DR"}
+                        </span>
+                      )}
+                    </div>
 
-          <div className="movie-detail-creator-copy">
-            <span>Director</span>
+                    <div className="movie-detail-creator-copy">
+                      <span>Director</span>
 
-            <strong>
-              {movie.author || "Not available"}
-            </strong>
+                      <strong>
+                        {movie.author || "Not available"}
+                      </strong>
 
-            <p>
-              {movie.content_type || "Movie"} creator
-            </p>
-          </div>
-        </article>
+                      <p>
+                        {movie.content_type || "Movie"} creator
+                      </p>
+                    </div>
+                  </article>
 
-        <article className="movie-detail-creator-card">
-          <div className="movie-detail-creator-copy">
-            <span>Production</span>
+                  <article className="movie-detail-creator-card">
+                    <div className="movie-detail-creator-copy">
+                      <span>Production</span>
 
-            <strong>
-              {movie.source || "Not available"}
-            </strong>
+                      <strong>
+                        {movie.source || "Not available"}
+                      </strong>
 
-            <p>
-              {movie.broadcaster || "Platform unavailable"}
-            </p>
-          </div>
-        </article>
-      </div>
-    </section>
+                      <p>
+                        {movie.broadcaster || "Platform unavailable"}
+                      </p>
+                    </div>
+                  </article>
+                </div>
+              </section>
 
     <section className="movie-detail-cast-section">
       <div className="movie-detail-cast-heading-row">
@@ -616,7 +660,7 @@ async function handleDownloadCard() {
           {movie.performers
             .slice(0, 5)
             .map((performer) => {
-              const initials = performer
+              const initials = performer.name
                 .split(" ")
                 .map((part) => part[0])
                 .join("")
@@ -626,13 +670,21 @@ async function handleDownloadCard() {
               return (
                 <article
                   className="movie-detail-cast-card"
-                  key={performer}
+                  key={performer.name}
                 >
                   <div className="movie-detail-cast-placeholder">
-                    {initials}
+                    {performer.photo_url ? (
+                      <img
+                        src={performer.photo_url}
+                        alt={performer.name}
+                        className="movie-detail-cast-image"
+                      />
+                    ) : (
+                      <span>{initials}</span>
+                    )}
                   </div>
 
-                  <h3>{performer}</h3>
+                  <h3>{performer.name}</h3>
                   <p>Cast member</p>
                 </article>
               );
@@ -647,28 +699,26 @@ async function handleDownloadCard() {
   </div>
 
   <section className="movie-detail-trailer-section">
-    <span className="movie-detail-eyebrow">
-      Trailer
-    </span>
+  <span className="movie-detail-eyebrow">
+    Trailer
+  </span>
 
-    <div className="movie-detail-trailer-box">
-      {movie.trailer_url ? (
-        <Link
-          href={movie.trailer_url}
-          target="_blank"
-          rel="noreferrer"
-          className="movie-detail-trailer-button"
-        >
-          <Play size={13} fill="currentColor" />
-          Watch trailer
-        </Link>
-      ) : (
-        <span className="movie-detail-trailer-unavailable">
-          Trailer unavailable
-        </span>
-      )}
-    </div>
-  </section>
+  <div className="movie-detail-trailer-box">
+    {trailerEmbedUrl ? (
+      <iframe
+        src={trailerEmbedUrl}
+        title={`${movie.title} Trailer`}
+        className="movie-detail-trailer-video"
+        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+        allowFullScreen
+      />
+    ) : (
+      <span className="movie-detail-trailer-unavailable">
+        Trailer unavailable
+      </span>
+    )}
+  </div>
+</section>
 </div>
         </div>
       </section>
