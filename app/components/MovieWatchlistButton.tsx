@@ -10,6 +10,7 @@ import {
   Plus,
   X,
 } from "lucide-react";
+import { createPortal } from "react-dom";
 
 type MovieWatchlistButtonProps = {
   movieId: number;
@@ -273,28 +274,29 @@ async function handleOpen() {
         Add to watchlist
       </button>
 
-    {isOpen && (
-  <div
-    className="movie-watchlist-modal-overlay"
-    onClick={() => setIsOpen(false)}
-  >
+  {isOpen &&
+  createPortal(
     <div
-      className="movie-watchlist-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="movie-watchlist-title"
-      onClick={(event) => event.stopPropagation()}
+      className="movie-watchlist-modal-overlay"
+      onClick={() => setIsOpen(false)}
     >
-      <button
-        type="button"
-        className="movie-watchlist-modal-close"
-        aria-label="Close"
-        onClick={() => setIsOpen(false)}
+      <div
+        className="movie-watchlist-modal"
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="movie-watchlist-title"
+        onClick={(event) => event.stopPropagation()}
       >
-        <X size={20} />
-      </button>
+        <button
+          type="button"
+          className="movie-watchlist-modal-close"
+          aria-label="Close"
+          onClick={() => setIsOpen(false)}
+        >
+          <X size={20} />
+        </button>
 
-      {status === "unauthenticated" ? (
+        {status === "unauthenticated" ? (
         <div className="movie-watchlist-modal-state">
           <div className="movie-watchlist-modal-icon">
             <Bookmark size={26} />
@@ -496,7 +498,8 @@ async function handleOpen() {
         </p>
       )}
     </div>
-  </div>
+  </div>,
+  document.body
 )}
     </>
   );

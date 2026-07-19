@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import MovieWatchlistButton from "../../components/MovieWatchlistButton";
 import { FaFacebookF } from "react-icons/fa6";
+import { useSession } from "next-auth/react";
 
 type Movie = {
   movie_id: number;
@@ -71,7 +72,116 @@ type SimilarMovie = {
   match_score: number;
 };
 
+type MovieReview = {
+  comment_id: number;
+  movie_id: number;
+  user_id: number;
+  rating: number;
+  comment_text: string;
+  created_at: string;
+  updated_at: string;
+  reviewer_name?: string | null;
+};
 
+type UserProfileAnswers = {
+  genres: string[];
+  streamingServices: string[];
+  contentTypes: string[];
+  excludedContentTypes: string[];
+  preferences: string[];
+};
+
+type MatchReason = {
+  label: string;
+  value: number;
+};
+
+type MovieMatch = {
+  overall: number;
+  reasons: MatchReason[];
+};
+
+const emptyMovieMatch: MovieMatch = {
+  overall: 0,
+  reasons: [],
+};
+
+function normalizeMatchValue(value: string | null | undefined) {
+  return String(value || "")
+    .trim()
+    .toLowerCase()
+    .replace(/[+]/g, " plus")
+    .replace(/[^a-z0-9]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+function calculateListOverlap(
+  movieValues: string[],
+  userValues: string[]
+) {
+  if (movieValues.length === 0 || userValues.length === 0) {
+    return 0;
+  }
+
+  const normalizedMovieValues = movieValues.map(
+    normalizeMatchValue
+  );
+
+  const normalizedUserValues = new Set(
+    userValues.map(normalizeMatchValue)
+  );
+
+  const matchingValues = normalizedMovieValues.filter((value) =>
+    normalizedUserValues.has(value)
+  );
+
+  /*
+   * Score is based on how many of this movie's values
+   * match the user's selected values.
+   */
+  return Math.round(
+    (matchingValues.length / normalizedMovieValues.length) * 100
+  );
+}
+
+function calculateSingleValueMatch(
+  movieValue: string | null | undefined,
+  userValues: string[]
+) {
+  if (!movieValue || userValues.length === 0) {
+    return 0;
+  }
+
+  const normalizedMovieValue =
+    normalizeMatchValue(movieValue);
+
+  const matches = userValues.some(
+    (userValue) =>
+      normalizeMatchValue(userValue) === normalizedMovieValue
+  );
+
+  return matches ? 100 : 0;
+}
+
+function getPriorityWeight(
+  savedPreferences: string[],
+  keywords: string[]
+) {
+  const normalizedPreferences =
+    savedPreferences.map(normalizeMatchValue);
+
+  const isPriority = normalizedPreferences.some((preference) =>
+    keywords.some((keyword) =>
+      preference.includes(normalizeMatchValue(keyword))
+    )
+  );
+
+  /*
+   * A selected priority counts twice in the final score.
+   */
+  return isPriority ? 2 : 1;
+}
 
 function formatRuntime(minutes: number | null) {
   if (!minutes || minutes <= 0) {
@@ -129,6 +239,22 @@ export default function MovieDetailPage() {
   const [shareMessage, setShareMessage] = useState("");
   const shareCardRef = useRef<HTMLDivElement | null>(null);
   
+const { data: session } = useSession();
+
+const [reviews, setReviews] = useState<MovieReview[]>([]);
+const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
+const [reviewRating, setReviewRating] = useState(5);
+const [reviewText, setReviewText] = useState("");
+const [reviewError, setReviewError] = useState("");
+const [reviewMessage, setReviewMessage] = useState("");
+const [isSubmittingReview, setIsSubmittingReview] = useState(false);
+
+const [movieMatch, setMovieMatch] =
+  useState<MovieMatch>(emptyMovieMatch);
+
+const [isMatchLoading, setIsMatchLoading] =
+  useState(false);
+
 useEffect(() => {
   if (!id) {
     return;
@@ -220,6 +346,359 @@ useEffect(() => {
     cancelled = true;
   };
 }, [id]);
+
+useEffect(() => {
+  if (!id) {
+    return;
+  }
+
+  let cancelled = false;
+
+  async function fetchReviews() {
+    try {
+      const response = await fetch(`/api/movie/${id}/reviews`, {
+        cache: "no-store",
+      });
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok) {
+        throw new Error(
+          result?.details ||
+            result?.error ||
+            "Unable to load reviews."
+        );
+      }
+
+      if (!cancelled) {
+        setReviews(Array.isArray(result) ? result : []);
+      }
+    } catch (error) {
+      console.error("Unable to load reviews:", error);
+
+      if (!cancelled) {
+        setReviews([]);
+      }
+    }
+  }
+
+  void fetchReviews();
+
+  return () => {
+    cancelled = true;
+  };
+}, [id]);
+
+useEffect(() => {
+  const email = session?.user?.email ?? "";
+
+  if (!email || !movie) {
+    return;
+  }
+
+  // TypeScript now knows this is definitely a Movie.
+  const movieForMatch: Movie = movie;
+
+  let cancelled = false;
+
+  async function loadMovieMatch() {
+    try {
+      setIsMatchLoading(true);
+
+      const response = await fetch(
+        `/api/profile?email=${encodeURIComponent(email)}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      const result = await response.json().catch(() => null);
+
+      if (!response.ok || !result?.user) {
+        throw new Error(
+          result?.error ||
+            "Unable to calculate your movie match."
+        );
+      }
+
+      const answers: UserProfileAnswers = {
+        genres: Array.isArray(result.answers?.genres)
+          ? result.answers.genres
+          : [],
+
+        streamingServices: Array.isArray(
+          result.answers?.streamingServices
+        )
+          ? result.answers.streamingServices
+          : [],
+
+        contentTypes: Array.isArray(
+          result.answers?.contentTypes
+        )
+          ? result.answers.contentTypes
+          : [],
+
+        excludedContentTypes: Array.isArray(
+          result.answers?.excludedContentTypes
+        )
+          ? result.answers.excludedContentTypes
+          : [],
+
+        preferences: Array.isArray(
+          result.answers?.preferences
+        )
+          ? result.answers.preferences
+          : [],
+      };
+
+      const genreScore = calculateListOverlap(
+        movieForMatch.genres || [],
+        answers.genres
+      );
+
+      const contentTypeScore =
+        calculateSingleValueMatch(
+          movieForMatch.content_type,
+          answers.contentTypes
+        );
+
+      const streamingScore =
+        calculateSingleValueMatch(
+          movieForMatch.broadcaster,
+          answers.streamingServices
+        );
+
+      const excludedContentScore =
+        calculateSingleValueMatch(
+          movieForMatch.content_type,
+          answers.excludedContentTypes
+        );
+
+      
+
+      /*
+       * The priority score represents how many personalization
+       * factors the user selected in "What matters most."
+       */
+      const priorityScore =
+        answers.preferences.length === 0
+          ? 50
+          : Math.min(
+              100,
+              Math.round(
+                (answers.preferences.length / 3) * 100
+              )
+            );
+
+      /*
+       * Preferences selected under "What matters most"
+       * increase that category's influence.
+       */
+      const genreWeight = getPriorityWeight(
+        answers.preferences,
+        ["genre", "genres"]
+      );
+
+      const contentWeight = getPriorityWeight(
+        answers.preferences,
+        ["content", "content type"]
+      );
+
+      const streamingWeight = getPriorityWeight(
+        answers.preferences,
+        ["streaming", "service", "availability"]
+      );
+
+      const priorityWeight = 1;
+
+      const totalWeight =
+        genreWeight +
+        contentWeight +
+        streamingWeight +
+        priorityWeight;
+
+      let overallScore = Math.round(
+        (
+          genreScore * genreWeight +
+          contentTypeScore * contentWeight +
+          streamingScore * streamingWeight +
+          priorityScore * priorityWeight
+        ) / totalWeight
+      );
+
+      /*
+       * Penalize titles the user explicitly said
+       * they do not want to see.
+       */
+      if (excludedContentScore === 100) {
+        overallScore = Math.min(overallScore, 20);
+      }
+
+      const calculatedMatch: MovieMatch = {
+        overall: Math.max(
+          0,
+          Math.min(100, overallScore)
+        ),
+
+        reasons: [
+          {
+            label: "Genre match",
+            value: genreScore,
+          },
+          {
+            label: "Content preference",
+            value:
+              excludedContentScore === 100
+                ? 0
+                : contentTypeScore,
+          },
+          {
+            label: "Streaming service",
+            value: streamingScore,
+          },
+          {
+            label: "Preference priorities",
+            value: priorityScore,
+          },
+        ],
+      };
+
+      if (!cancelled) {
+        setMovieMatch(calculatedMatch);
+      }
+    } catch (error) {
+      console.error(
+        "Unable to calculate movie match:",
+        error
+      );
+
+      if (!cancelled) {
+        setMovieMatch(emptyMovieMatch);
+      }
+    } finally {
+      if (!cancelled) {
+        setIsMatchLoading(false);
+      }
+    }
+  }
+
+  void loadMovieMatch();
+
+  return () => {
+    cancelled = true;
+  };
+}, [movie, session?.user?.email]);
+
+async function refreshReviews() {
+  if (!id) {
+    return;
+  }
+
+  const response = await fetch(`/api/movie/${id}/reviews`, {
+    cache: "no-store",
+  });
+
+  const result = await response.json().catch(() => null);
+
+  if (!response.ok) {
+    throw new Error(
+      result?.details ||
+        result?.error ||
+        "Unable to refresh reviews."
+    );
+  }
+
+  setReviews(Array.isArray(result) ? result : []);
+}
+
+async function handleSubmitReview(
+  event: React.FormEvent<HTMLFormElement>
+) {
+  event.preventDefault();
+
+  setReviewError("");
+  setReviewMessage("");
+
+ if (!id) {
+    setReviewError("The movie ID is missing.");
+    return;
+  }
+
+
+ const sessionUser = session?.user as
+  | {
+      id?: string | number;
+      user_id?: string | number;
+    }
+  | undefined;
+
+const currentUserId = Number(
+  sessionUser?.id || sessionUser?.user_id
+);
+
+  if (!session?.user) {
+    setReviewError("Please sign in before writing a review.");
+    return;
+  }
+
+  if (!currentUserId) {
+    setReviewError("Your user account could not be identified.");
+    return;
+  }
+
+  if (!reviewText.trim()) {
+    setReviewError("Please write something about the movie.");
+    return;
+  }
+
+  if (reviewText.trim().length < 5) {
+    setReviewError("Your review must contain at least 5 characters.");
+    return;
+  }
+
+  try {
+    setIsSubmittingReview(true);
+
+    const response = await fetch(`/api/movie/${id}/reviews`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: currentUserId,
+        rating: reviewRating,
+        commentText: reviewText.trim(),
+      }),
+    });
+
+    const result = await response.json();
+
+    if (!response.ok) {
+      throw new Error(result?.error || "Unable to save your review.");
+    }
+
+    setReviewText("");
+    setReviewRating(5);
+    setIsReviewFormOpen(false);
+    setReviewMessage("Your review was posted successfully.");
+
+    setTimeout(() => {
+    setReviewMessage("");
+      }, 3000);
+
+    await refreshReviews();
+  } catch (error) {
+    console.error("Submit review error:", error);
+
+    setReviewError(
+      error instanceof Error
+        ? error.message
+        : "Unable to save your review."
+    );
+  } finally {
+    setIsSubmittingReview(false);
+  }
+}
 
 if (!id) {
   return (
@@ -401,6 +880,8 @@ async function handleDownloadCard() {
   }
 }
 
+
+
   return (
     <main className="movie-detail-page">
       <section
@@ -434,10 +915,12 @@ async function handleDownloadCard() {
                 />
               </div>
 
-             <MovieWatchlistButton
-                movieId={movie.movie_id}
-                movieTitle={movie.title}
-              />
+             {session?.user && (
+                  <MovieWatchlistButton
+                    movieId={movie.movie_id}
+                    movieTitle={movie.title}
+                  />
+                )}
 
               <div className="movie-detail-poster-actions">
                 <button
@@ -730,97 +1213,322 @@ async function handleDownloadCard() {
         <div className="movie-detail-container">
           <div className="movie-detail-review-grid">
             <section className="movie-detail-review-section">
-              <div className="movie-detail-section-heading">
-                <div>
-                  <span className="movie-detail-eyebrow">
-                    What viewers say
-                  </span>
+  <div className="movie-detail-section-heading">
+    <div>
+      <span className="movie-detail-eyebrow">
+        What viewers say
+      </span>
 
-                  <h2 className="dongle-font" style={{ fontSize: '54px' }}>
-                    Reviews
-                  </h2>
-                </div>
+      <h2
+        className="dongle-font"
+        style={{ fontSize: "54px" }}
+      >
+        Reviews
+      </h2>
+    </div>
 
-                <button
-                  type="button"
-                  className="movie-detail-write-review-button"
-                >
-                  Write a review
-                </button>
-              </div>
+    <button
+      type="button"
+      className="movie-detail-write-review-button"
+      onClick={() => {
+        setReviewError("");
+        setReviewMessage("");
+        setIsReviewFormOpen((current) => !current);
+      }}
+    >
+      {isReviewFormOpen ? "Cancel" : "Write a review"}
+    </button>
+  </div>
 
-              <div className="movie-detail-review-empty">
-                <Star size={21} />
+  {reviewMessage && (
+    <p className="movie-detail-review-success">
+      <Check size={16} />
+      {reviewMessage}
+    </p>
+  )}
 
-                <div>
-                  <h3>Be the first to review</h3>
-                  <p>
-                    Share what you thought about{" "}
-                    {movie.title}.
-                  </p>
-                </div>
-              </div>
-            </section>
+  {isReviewFormOpen && (
+    <form
+      className="movie-detail-review-form"
+      onSubmit={handleSubmitReview}
+    >
+      <div className="movie-detail-review-form-heading">
+        <div>
+          <h3>Share your thoughts</h3>
+          <p>
+            What did you think about {movie.title}?
+          </p>
+        </div>
 
-            <aside className="movie-detail-match-card">
-              <div className="movie-detail-match-heading">
-                <strong>98</strong>
+        <button
+          type="button"
+          className="movie-detail-review-form-close"
+          aria-label="Close review form"
+          onClick={() => {
+            setIsReviewFormOpen(false);
+            setReviewError("");
+          }}
+        >
+          <X size={18} />
+        </button>
+      </div>
 
-                <div>
-                  <span>%</span>
-                  <p>match for you</p>
-                </div>
-              </div>
+      <div className="movie-detail-rating-field">
+        <span>Your rating</span>
 
-              <div className="movie-detail-match-reasons">
-                {[
-                  ["Genre match", 96],
-                  ["Mood match", 92],
-                  ["Content preference", 90],
-                  ["Streaming service", 88],
-                  ["Similar titles", 94],
-                ].map(([label, value]) => (
-                  <div
-                    className="movie-detail-match-reason"
-                    key={String(label)}
-                  >
-                    <div>
-                      <span>{label}</span>
-                      <strong>{value}%</strong>
-                    </div>
+        <div className="movie-detail-rating-buttons">
+          {[1, 2, 3, 4, 5].map((rating) => (
+            <button
+              key={rating}
+              type="button"
+              className={
+                reviewRating >= rating ? "active" : ""
+              }
+              onClick={() => setReviewRating(rating)}
+              aria-label={`${rating} star rating`}
+            >
+              <Star
+                size={23}
+                fill={
+                  reviewRating >= rating
+                    ? "currentColor"
+                    : "none"
+                }
+              />
+            </button>
+          ))}
 
-                    <div className="movie-detail-progress-track">
-                      <span
-                        className="movie-detail-progress-fill"
-                        style={{
-                          width: `${value}%`,
-                        }}
-                      />
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </aside>
+          <strong>{reviewRating}.0</strong>
+        </div>
+      </div>
+
+      <label className="movie-detail-review-textarea-field">
+        <span>Your review</span>
+
+        <textarea
+          value={reviewText}
+          onChange={(event) =>
+            setReviewText(event.target.value)
+          }
+          placeholder={`Write what you thought about ${movie.title}...`}
+          rows={5}
+          maxLength={1000}
+        />
+
+        <small>
+          {reviewText.length}/1000 characters
+        </small>
+      </label>
+
+      {reviewError && (
+        <p className="movie-detail-review-error">
+          {reviewError}
+        </p>
+      )}
+
+      <div className="movie-detail-review-form-actions">
+        <button
+          type="button"
+          className="movie-detail-review-cancel-button"
+          onClick={() => {
+            setIsReviewFormOpen(false);
+            setReviewError("");
+          }}
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          className="movie-detail-review-submit-button"
+          disabled={isSubmittingReview}
+        >
+          {isSubmittingReview
+            ? "Posting..."
+            : "Post review"}
+        </button>
+      </div>
+    </form>
+  )}
+
+  {reviews.length > 0 ? (
+    <div className="movie-detail-review-list">
+      {reviews.map((review) => (
+        <article
+          className="movie-detail-review-card"
+          key={review.comment_id}
+        >
+          <div className="movie-detail-review-card-top">
+            <div className="movie-detail-review-score">
+              {Number(review.rating).toFixed(1)}
+            </div>
+
+            {/* <div className="movie-detail-review-stars">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <Star
+                  key={star}
+                  size={13}
+                  fill={
+                    review.rating >= star
+                      ? "currentColor"
+                      : "none"
+                  }
+                />
+              ))}
+            </div> */}
+          </div>
+
+          <p className="movie-detail-review-comment">
+            “{review.comment_text}”
+          </p>
+{/* 
+          <div className="movie-detail-review-footer">
+            <span>
+              {review.reviewer_name || "Cineri viewer"}
+            </span>
+
+            <time dateTime={review.created_at}>
+              {new Date(review.created_at).toLocaleDateString(
+                undefined,
+                {
+                  year: "numeric",
+                  month: "short",
+                  day: "numeric",
+                }
+              )}
+            </time>
+          </div> */}
+        </article>
+      ))}
+    </div>
+  ) : (
+    !isReviewFormOpen && (
+      <div className="movie-detail-review-empty">
+        <Star size={21} />
+
+        <div>
+          <h3>Be the first to review</h3>
+          <p>
+            Share what you thought about {movie.title}.
+          </p>
+        </div>
+      </div>
+    )
+  )}
+</section>
+
+            {session?.user ? (
+  <aside className="movie-detail-match-card">
+    <div className="movie-detail-match-heading">
+      <strong>
+        {isMatchLoading ? "—" : movieMatch.overall}
+      </strong>
+
+      <div>
+        <span>%</span>
+        <p>
+          {isMatchLoading
+            ? "calculating match"
+            : "match for you"}
+        </p>
+      </div>
+    </div>
+
+    <div className="movie-detail-match-reasons">
+      {isMatchLoading ? (
+        <p className="movie-detail-match-loading">
+          Comparing this title with your preferences...
+        </p>
+      ) : movieMatch.reasons.length > 0 ? (
+        movieMatch.reasons.map(({ label, value }) => (
+          <div
+            className="movie-detail-match-reason"
+            key={label}
+          >
+            <div>
+              <span>{label}</span>
+              <strong>{value}%</strong>
+            </div>
+
+            <div className="movie-detail-progress-track">
+              <span
+                className="movie-detail-progress-fill"
+                style={{
+                  width: `${value}%`,
+                }}
+              />
+            </div>
+          </div>
+        ))
+      ) : (
+        <p className="movie-detail-match-loading">
+          Complete your preferences to receive a match score.
+        </p>
+      )}
+    </div>
+  </aside>
+) : (
+  <aside className="movie-detail-match-card movie-detail-match-guest">
+    <div className="movie-detail-match-guest-icon">
+      <Star size={22} />
+    </div>
+
+    <div className="movie-detail-match-guest-copy">
+      <span className="movie-detail-eyebrow">
+        Personalized for you
+      </span>
+
+      <h3>See how well this title matches your taste</h3>
+
+      <p>
+        Sign in to compare this title with your favourite
+        genres, content preferences, and streaming services.
+      </p>
+    </div>
+
+    <Link
+      href={`/login?callbackUrl=${encodeURIComponent(
+        `/movie/${movie.movie_id}`
+      )}`}
+      className="movie-detail-match-login"
+    >
+      Sign in to see your match
+      <ChevronRight size={15} />
+    </Link>
+  </aside>
+)}
           </div>
         </div>
       </section>
 
       <section className="movie-detail-similar-section">
         <div className="movie-detail-container">
-          <div className="movie-detail-section-heading">
-            <div>
-              <span className="movie-detail-eyebrow">
-                You might also enjoy
-              </span>
+          <div className="movie-detail-section-heading movie-detail-similar-heading">
+  <div className="movie-detail-similar-heading">
+  <div>
+    <span className="movie-detail-eyebrow">
+      You might also enjoy
+    </span>
 
-              <h2 className="dongle-font" style={{ fontSize: '54px' }}>More like this</h2>
-            </div>
+    <div className="movie-detail-similar-title-row">
+      <h2
+        className="dongle-font"
+        style={{ fontSize: "54px" }}
+      >
+        More like this
+      </h2>
 
-            <Link href="/discover">
-              See all
-              <ChevronRight size={15} />
-            </Link>
-          </div>
+      <Link
+        href="/discover"
+        className="movie-detail-similar-see-all"
+      >
+        See all
+        <ChevronRight size={15} />
+      </Link>
+    </div>
+  </div>
+</div>
+</div>
 
           {similarMovies.length > 0 ? (
             <div className="movie-detail-similar-grid">
@@ -879,23 +1587,26 @@ async function handleDownloadCard() {
         "Open this title to learn more about the story."}
     </p>
 
-    <div className="movie-detail-movie-actions">
-      <button
-        type="button"
-        className="movie-detail-card-watchlist"
-      >
-        <Bookmark size={12} />
-        Add to watchlist
-      </button>
+    <div
+  className={`movie-detail-movie-actions ${
+    !session?.user ? "details-only" : ""
+  }`}
+>
+{session?.user && (
+  <MovieWatchlistButton
+    movieId={similarMovie.movie_id}
+    movieTitle={similarMovie.title}
+  />
+)}
 
-      <Link
-        href={`/movie/${similarMovie.movie_id}`}
-        className="movie-detail-card-details"
-      >
-        <Play size={11} />
-        Show details
-      </Link>
-    </div>
+  <Link
+    href={`/movie/${similarMovie.movie_id}`}
+    className="movie-detail-watchlist-button"
+  >
+    <Play size={11} />
+    Show details
+  </Link>
+</div>
   </div>
 </article>
                 );

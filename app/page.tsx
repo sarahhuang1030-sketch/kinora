@@ -142,26 +142,27 @@ function MovieCard({
 }
 
 function WatchlistBox({
-  title,
-  totalTitles,
-  completedCount,
+  watchlist,
+  onViewList,
 }: {
-  title: string;
-  totalTitles: number;
-  completedCount: number;
+  watchlist: Watchlist;
+  onViewList: (watchlist: Watchlist) => void;
 }) {
+  const totalTitles = Number(watchlist.total_titles);
+  const completedCount = Number(watchlist.completed_count);
+
   const progress =
-  totalTitles > 0
-    ? Math.round(
-        (completedCount / totalTitles) * 100
-      )
-    : 0;
+    totalTitles > 0
+      ? Math.round((completedCount / totalTitles) * 100)
+      : 0;
 
   return (
     <div className="home-watch-box">
-      <h4>{title}</h4>
+      <h4>{watchlist.name}</h4>
 
-      <p>{totalTitles} titles</p>
+      <p>
+        {totalTitles} {totalTitles === 1 ? "title" : "titles"}
+      </p>
 
       <div className="home-progress-line">
         <span
@@ -176,7 +177,12 @@ function WatchlistBox({
         <span>{progress}%</span>
       </div>
 
-      <button>View list</button>
+      <button
+        type="button"
+        onClick={() => onViewList(watchlist)}
+      >
+        View list
+      </button>
     </div>
   );
 }
@@ -254,6 +260,8 @@ const heroBackgroundPosition =
   activeBackground?.position || "center right";
 
 const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
+const [selectedWatchlist, setSelectedWatchlist] =
+  useState<Watchlist | null>(null);
 
   async function handleSaveToWatchlist(watchlistId: number) {
   if (!selectedMovie || !user?.user_id) return;
@@ -314,6 +322,129 @@ const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
     );
   } catch (error) {
     console.error("Error saving movie to watchlist:", error);
+  }
+}
+
+async function handleRemoveFromWatchlist(
+  watchlistId: number,
+  movieId: number
+) {
+  try {
+    const confirmed = window.confirm(
+      "Remove this title from the watchlist?"
+    );
+
+    if (!confirmed) return;
+
+    const res = await fetch("/api/watchlist-movies/remove", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        watchlistId,
+        movieId,
+      }),
+    });
+
+    if (!res.ok) {
+      const errorData = await res.json().catch(() => null);
+
+      console.error(
+        "Failed to remove movie:",
+        errorData?.error || res.statusText
+      );
+
+      return;
+    }
+
+    // Update the popup immediately
+    setSelectedWatchlist((current) => {
+      if (!current) return null;
+
+      const updatedPreviews = current.previews.filter(
+        (movie) => movie.movie_id !== movieId
+      );
+
+      return {
+        ...current,
+        previews: updatedPreviews,
+        total_titles: Math.max(
+          0,
+          Number(current.total_titles) - 1
+        ),
+        completed_count: Math.min(
+          Number(current.completed_count),
+          Math.max(0, Number(current.total_titles) - 1)
+        ),
+      };
+    });
+
+    // Update the watchlist cards behind the popup
+    setWatchlists((current) =>
+      current.map((list) => {
+        if (list.watchlist_id !== watchlistId) {
+          return list;
+        }
+
+        return {
+          ...list,
+          previews: list.previews.filter(
+            (movie) => movie.movie_id !== movieId
+          ),
+          total_titles: Math.max(
+            0,
+            Number(list.total_titles) - 1
+          ),
+        };
+      })
+    );
+
+    // Update Saved button status when the movie
+    // is no longer inside any watchlist
+    const refreshRes = await fetch(
+      `/api/watchlists?userId=${user?.user_id}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (refreshRes.ok) {
+      const data = await refreshRes.json();
+
+      const refreshedWatchlists = Array.isArray(data.watchlists)
+        ? data.watchlists
+        : [];
+
+      setWatchlists(refreshedWatchlists);
+
+      const refreshedSelected = refreshedWatchlists.find(
+        (list: Watchlist) =>
+          list.watchlist_id === watchlistId
+      );
+
+      if (refreshedSelected) {
+        setSelectedWatchlist(refreshedSelected);
+      }
+
+      const stillSaved = refreshedWatchlists.some(
+        (list: Watchlist) =>
+          list.previews?.some(
+            (movie) => movie.movie_id === movieId
+          )
+      );
+
+      if (!stillSaved) {
+        setSavedMovieIds((current) =>
+          current.filter((id) => id !== movieId)
+        );
+      }
+    }
+  } catch (error) {
+    console.error(
+      "Error removing movie from watchlist:",
+      error
+    );
   }
 }
 
@@ -837,14 +968,11 @@ const currentMood = moods.find(
           </div>
           ) : (
             <>
-              {watchlists.map((list) => (
+             {watchlists.map((list) => (
                 <WatchlistBox
                   key={list.watchlist_id}
-                  title={list.name}
-                  totalTitles={Number(list.total_titles)}
-                  completedCount={Number(
-                    list.completed_count
-                  )}
+                  watchlist={list}
+                  onViewList={setSelectedWatchlist}
                 />
               ))}
               <Link href="/watchlists" className="home-create-list">
@@ -920,7 +1048,115 @@ const currentMood = moods.find(
     </div>
   </div>
 )}
+{selectedWatchlist && (
+  <div
+    className="watchlist-view-backdrop"
+    onClick={() => setSelectedWatchlist(null)}
+  >
+    <div
+      className="watchlist-view-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="watchlist-view-title"
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="watchlist-view-close"
+        aria-label="Close watchlist"
+        onClick={() => setSelectedWatchlist(null)}
+      >
+        ×
+      </button>
 
+      <div className="watchlist-view-heading">
+        <div>
+          <p className="home-eyebrow">Your watchlist</p>
+
+          <h2 id="watchlist-view-title">
+            {selectedWatchlist.name}
+          </h2>
+
+          <p>
+            {Number(selectedWatchlist.total_titles)}{" "}
+            {Number(selectedWatchlist.total_titles) === 1
+              ? "title"
+              : "titles"}
+          </p>
+        </div>
+
+        {/* <Link
+          href={`/watchlists/${selectedWatchlist.watchlist_id}`}
+          className="watchlist-view-full-link"
+        >
+          Open full list
+        </Link> */}
+      </div>
+
+      {selectedWatchlist.previews?.length > 0 ? (
+        <div className="watchlist-view-movies">
+  {selectedWatchlist.previews.map((movie) => (
+    <article
+      key={movie.movie_id}
+      className="watchlist-view-movie"
+    >
+      <Link
+        href={`/movie/${movie.movie_id}`}
+        className="watchlist-view-movie-main"
+        onClick={() => setSelectedWatchlist(null)}
+      >
+        <div className="watchlist-view-poster">
+          <img
+            src={
+              movie.portrait_url ||
+              "/placeholder.jpg"
+            }
+            alt={`${movie.title} poster`}
+          />
+        </div>
+
+        <div className="watchlist-view-movie-info">
+          <h3>{movie.title}</h3>
+          <span>View movie details ›</span>
+        </div>
+      </Link>
+
+      <button
+        type="button"
+        className="watchlist-view-remove"
+        aria-label={`Remove ${movie.title} from ${selectedWatchlist.name}`}
+        onClick={() =>
+          handleRemoveFromWatchlist(
+            selectedWatchlist.watchlist_id,
+            movie.movie_id
+          )
+        }
+      >
+        Remove
+      </button>
+    </article>
+  ))}
+</div>
+      ) : (
+        <div className="watchlist-view-empty">
+          <span>＋</span>
+          <h3>This list is empty</h3>
+          <p>
+            Add movies or shows to start building this
+            watchlist.
+          </p>
+
+          <Link
+            href="/discover"
+            onClick={() => setSelectedWatchlist(null)}
+          >
+            Browse movies
+          </Link>
+        </div>
+      )}
+    </div>
+  </div>
+)}
 
     </main>
   );
