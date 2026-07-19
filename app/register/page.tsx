@@ -336,13 +336,9 @@ async function saveEditedPreferences() {
         body: JSON.stringify({
           userId: Number(editUserId),
           genres: answers.genres,
-          streamingServices: [],
-          contentTypes:
-            answers.contentTypes,
-          excludedContentTypes:
-            answers.excludedContentTypes,
-          preferences:
-            answers.preferences,
+          contentTypes: answers.contentTypes,
+          excludedContentTypes: answers.excludedContentTypes,
+          preferences: answers.preferences,
         }),
       }
     );
