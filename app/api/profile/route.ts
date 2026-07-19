@@ -73,6 +73,17 @@ const [preferenceRows] = await pool.execute<RowDataPacket[]>(
   [user.user_id]
 );
 
+const [excludedContentRows] = await pool.execute<RowDataPacket[]>(
+  `
+    SELECT ct.type_name AS content_type
+    FROM user_excluded_content_types uect
+    JOIN content_types ct
+      ON ct.content_type_id = uect.content_type_id
+    WHERE uect.user_id = ?
+  `,
+  [user.user_id]
+);
+
     return NextResponse.json({
       user,
       answers: {
@@ -80,6 +91,10 @@ const [preferenceRows] = await pool.execute<RowDataPacket[]>(
         streamingServices: serviceRows.map((row) => row.service_name),
         contentTypes: contentRows.map((row) => row.content_type),
         preferences: preferenceRows.map((row) => row.preference_name),
+         excludedContentTypes: excludedContentRows.map(
+      (row) => row.content_type
+    ),
+
       },
     });
   } catch (error) {

@@ -25,6 +25,7 @@ type User = {
 type Answers = {
   genres: string[];
   streamingServices: string[];
+  excludedContentTypes: string[];
   contentTypes: string[];
   preferences: string[];
 };
@@ -55,6 +56,7 @@ function OnboardingCompleteContent() {
     genres: [],
     streamingServices: [],
     contentTypes: [],
+    excludedContentTypes: [],
     preferences: [],
   });
  
@@ -90,6 +92,9 @@ function OnboardingCompleteContent() {
           profileAnswers.streamingServices || []
         ),
         contentTypes: unique(profileAnswers.contentTypes || []),
+        excludedContentTypes: unique(
+          profileAnswers.excludedContentTypes || []
+        ),
         preferences: unique(profileAnswers.preferences || []),
       });
 
@@ -146,9 +151,28 @@ function OnboardingCompleteContent() {
       );
         }
 
-  function editProfile() {
-    router.push("/profile");
+  function editRegisterSection(step: number) {
+  const query = new URLSearchParams();
+
+  query.set("editStep", String(step));
+
+  if (email) {
+    query.set("email", email);
   }
+
+  if (isSocialNewUser) {
+    query.set("socialNewUser", "true");
+  }
+
+  if (user?.user_id) {
+    query.set(
+      "userId",
+      String(user.user_id)
+    );
+  }
+
+  router.push(`/register?${query.toString()}`);
+}
 
  return (
   <main className="complete-page">
@@ -160,16 +184,14 @@ function OnboardingCompleteContent() {
       />
 
       <section className="complete-card">
-        <div className="complete-badge">✓ Setup Complete</div>
+        {/* <div className="complete-badge">✓ Setup Complete</div> */}
 
         <h1 className="complete-title">
-          Your profile,
-          <span>ready to go.</span>
+          Your profile is ready to go.
         </h1>
 
         <p className="complete-subtitle">
-          Everything looks great! Review your choices below — tap any section to
-          edit before we launch your personalised Cineri.
+          Review your choices below. Tap any section to edit before we launch your personalized Cineri account.
         </p>
 
         <div className="complete-sections">
@@ -178,7 +200,7 @@ function OnboardingCompleteContent() {
             title="Favourite genres"
             countText={`${answers.genres.length} selected`}
             items={answers.genres}
-            onEdit={editProfile}
+            onEdit={() => editRegisterSection(1)}
           />
 
           <CompleteOpenRow
@@ -190,20 +212,26 @@ function OnboardingCompleteContent() {
             />
 
           <CompleteOpenRow
-  color="content"
-  title="Content preference"
-  countText={`${answers.contentTypes.length} selected`}
-  items={answers.contentTypes}
-  onEdit={editProfile}
-/>
+              color="content"
+              title="Content preference"
+              countText={`${answers.contentTypes.length} selected`}
+              items={answers.contentTypes}
+              onEdit={() => editRegisterSection(2)}
+            />
 
-
+          <CompleteOpenRow
+              color="content"
+              title="Don't want to see"
+              countText={`${answers.excludedContentTypes.length} selected`}
+              items={answers.excludedContentTypes}
+              onEdit={() => editRegisterSection(2)}
+            />
 
           <CompleteRow
             color="account"
             title="Account details"
             text={user?.email || "Loading account..."}
-            onEdit={editProfile}
+            onEdit={() => editRegisterSection(5)}
           />
 
          <CompleteOpenRow
@@ -211,35 +239,31 @@ function OnboardingCompleteContent() {
   title="What matters most"
   countText={`${answers.preferences.length} selected`}
   items={answers.preferences}
-  onEdit={editProfile}
+  onEdit={() => editRegisterSection(3)}
 />
         </div>
 
-        <div className="complete-ready-bar">
+        {/* <div className="complete-ready-bar">
           <div>
             <FaBolt />
             <span>Your personalized picks are ready!</span>
           </div>
 
           <strong>247 matches found</strong>
-        </div>
+        </div> */}
 
         <button
           type="button"
           className="complete-launch-btn"
-          onClick={() =>
-            router.push(
-              isSocialNewUser ? "/profile?socialNewUser=true" : "/profile"
-            )
-          }
+          onClick={() => router.push("/")}
         >
           <FaPlay />
           Launch Cineri
         </button>
 
         <p className="complete-footer-text">
-          <FaLock /> Your data is encrypted ·{" "}
-          <a href="/privacy">Privacy Policy</a> · <a href="/terms">Terms</a>
+          By continuing you agree to Cineri&apos;s
+          <a href="/privacy"> Privacy Policy</a> and <a href="/terms">Terms</a>
         </p>
       </section>
       </div>

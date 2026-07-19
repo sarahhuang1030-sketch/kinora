@@ -47,6 +47,7 @@ type Answers = {
   genres: string[];
   streamingServices: string[];
   contentTypes: string[];
+  excludedContentTypes: string[];
   preferences: string[];
 };
 
@@ -96,6 +97,7 @@ const emptyAnswers: Answers = {
   genres: [],
   streamingServices: [],
   contentTypes: [],
+  excludedContentTypes: [],
   preferences: [],
 };
 
@@ -400,6 +402,7 @@ const [factors, setFactors] =
         genres: selectedGenres,
         streamingServices: answers.streamingServices,
         contentTypes: selectedContentTypes,
+        excludedContentTypes: answers.excludedContentTypes,
         preferences: selectedFactors,
       };
 
@@ -695,6 +698,15 @@ function PreferencesSummary({
 
           <div className="preferences-choice-divider" />
 
+            <PreferenceBlock
+              icon={<MonitorPlay size={18} />}
+              title="Don't want to see"
+              values={answers.excludedContentTypes}
+              variant="excluded"
+            />
+
+          <div className="preferences-choice-divider" />
+
           <PreferenceBlock
             icon={<Clapperboard size={18} />}
             title="What matters the most"
@@ -966,7 +978,7 @@ function PreferenceBlock({
   icon: React.ReactNode;
   title: string;
   values: string[];
-  variant: "genres" | "content" | "factors";
+  variant: "genres" | "content" | "factors" | "excluded";
 }) {
   const visibleValues = values.slice(0, 5);
   const remaining = Math.max(
@@ -992,11 +1004,14 @@ function PreferenceBlock({
               {visibleValues.map((value, index) => (
                 <span
                   key={value}
-                  className={`preferences-chip ${
-                    variant === "genres"
-                      ? `genre-${index % 3}`
-                      : ""
-                  }`}
+                  className={`preferences-chip
+                    ${
+                      variant === "genres"
+                        ? `genre-${index % 3}`
+                        : variant === "excluded"
+                        ? "excluded-chip"
+                        : ""
+                    }`}
                 >
                   {variant === "genres" && (
                     <SlidersHorizontal size={9} />

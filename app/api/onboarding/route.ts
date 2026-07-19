@@ -8,6 +8,7 @@ export async function POST(req: Request) {
       genres,
       streamingServices,
       contentTypes,
+      excludedContentTypes = [],
       preferences,
     } = await req.json();
 
@@ -22,6 +23,11 @@ export async function POST(req: Request) {
     await pool.execute("DELETE FROM user_connected_services WHERE user_id = ?", [userId]);
     await pool.execute("DELETE FROM user_content_types WHERE user_id = ?", [userId]);
     await pool.execute("DELETE FROM user_preferences WHERE user_id = ?", [userId]);
+    await pool.execute(
+  "DELETE FROM user_excluded_content_types WHERE user_id = ?",
+  [userId]
+);
+
 
     for (const genre of genres || []) {
       await pool.execute(
@@ -51,6 +57,23 @@ export async function POST(req: Request) {
       );
     }
 
+    for (const typeName of excludedContentTypes) {
+    if (typeName === "No Preference") continue;
+
+      await pool.execute(
+        `
+          INSERT INTO user_excluded_content_types (
+            user_id,
+            content_type_id
+          )
+          SELECT ?, content_type_id
+          FROM content_types
+          WHERE type_name = ?
+        `,
+        [userId, typeName]
+      );
+    }
+
     console.log("ONBOARDING / PREFERENCES UPDATED", {
       userId,
       genres,
@@ -63,6 +86,15 @@ export async function POST(req: Request) {
     return NextResponse.json({ message: "Onboarding saved successfully" });
   } catch (error) {
     console.error("ONBOARDING ERROR:", error);
+    if (error instanceof Error) {
+  return NextResponse.json(
+    {
+      message: error.message,
+      stack: error.stack,
+    },
+    { status: 500 }
+  );
+}
     return NextResponse.json({ message: "Server error" }, { status: 500 });
   }
 }
