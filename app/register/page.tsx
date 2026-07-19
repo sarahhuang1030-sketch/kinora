@@ -1,6 +1,10 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import {
+  Suspense,
+  useEffect,
+  useState,
+} from "react";
 import {
   useRouter,
   useSearchParams,
@@ -33,6 +37,28 @@ type PreferenceOption = {
 };
 
 export default function RegisterPage() {
+  return (
+    <Suspense fallback={<RegisterPageLoading />}>
+      <RegisterPageContent />
+    </Suspense>
+  );
+}
+
+function RegisterPageLoading() {
+  return (
+    <main className="register-page">
+      <div className="register-shell">
+        <section className="register-card">
+          <p className="register-subtitle">
+            Loading registration page...
+          </p>
+        </section>
+      </div>
+    </main>
+  );
+}
+
+function RegisterPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
 const editStepFromUrl = Number(
@@ -46,17 +72,14 @@ const isEditMode =
   [1, 2, 3, 5].includes(editStepFromUrl) &&
   Boolean(editUserId);
 
-  const [step, setStep] = useState(() => {
-  const editStep = Number(
-    searchParams.get("editStep")
-  );
-
+ const [step, setStep] = useState(() => {
   const allowedSteps = [1, 2, 3, 5];
 
-  return allowedSteps.includes(editStep)
-    ? editStep
+  return allowedSteps.includes(editStepFromUrl)
+    ? editStepFromUrl
     : 0;
 });
+
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
