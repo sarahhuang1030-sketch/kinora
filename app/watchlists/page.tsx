@@ -6,10 +6,8 @@ import {signOut, useSession } from 'next-auth/react';
 import {
   Bookmark,
   Check,
-  ChevronRight,
   CircleUserRound,
   Copy,
-  Ellipsis,
   Film,
   Link2,
   ListVideo,
@@ -90,10 +88,7 @@ const userId = user?.user_id;
   const [newListName, setNewListName] = useState('');
   const [creating, setCreating] = useState(false);
 
-  const [openMenuId, setOpenMenuId] =
-    useState<number | null>(null);
-
-  const [copied, setCopied] = useState(false);
+ 
 
   const loadWatchlists = useCallback(async () => {
    if (!user?.user_id) {
@@ -231,11 +226,11 @@ const userId = user?.user_id;
       setError('');
 
       const response = await fetch(
-        `/api/watchlists?watchlistId=${watchlistId}&userId=${userId}`,
-        {
-          method: 'DELETE',
-        }
-      );
+  `/api/watchlists?watchlistId=${watchlistId}`,
+  {
+    method: 'DELETE',
+  }
+);
 
       const data = await response.json();
 
@@ -244,8 +239,6 @@ const userId = user?.user_id;
           data.error || 'Unable to delete watchlist.'
         );
       }
-
-      setOpenMenuId(null);
 
       await loadWatchlists();
     } catch (deleteError) {
@@ -257,21 +250,7 @@ const userId = user?.user_id;
     }
   }
 
-  async function handleCopyShareLink() {
-    try {
-      await navigator.clipboard.writeText(
-        window.location.href
-      );
-
-      setCopied(true);
-
-      window.setTimeout(() => {
-        setCopied(false);
-      }, 1800);
-    } catch {
-      setError('Unable to copy the share link.');
-    }
-  }
+  
 
   if (status === 'loading' || loading) {
     return (
@@ -408,7 +387,7 @@ const userId = user?.user_id;
             </button>
           </div>
 
-          <div className="watchlists-filter-tabs">
+          {/* <div className="watchlists-filter-tabs">
             <button
               type="button"
               className={
@@ -438,7 +417,7 @@ const userId = user?.user_id;
             >
               TV Shows
             </button>
-          </div>
+          </div> */}
 
           {error && (
             <div className="watchlists-error">
@@ -517,54 +496,27 @@ const userId = user?.user_id;
                   </Link>
 
                   <div className="watchlists-list-actions">
-                    <div className="watchlists-menu-wrapper">
-                      <button
-                        type="button"
-                        className="watchlists-more-button"
-                        aria-label={`Options for ${watchlist.name}`}
-                        onClick={() =>
-                          setOpenMenuId((current) =>
-                            current ===
-                            watchlist.watchlist_id
-                              ? null
-                              : watchlist.watchlist_id
-                          )
-                        }
-                      >
-                        <Ellipsis size={20} />
-                      </button>
-
-                      {openMenuId ===
-                        watchlist.watchlist_id && (
-                        <div className="watchlists-dropdown">
-                          <Link
-                            href={`/watchlists/${watchlist.watchlist_id}`}
-                          >
-                            <ListVideo size={15} />
-                            View List
-                          </Link>
-
-                          <button
-                            type="button"
-                            onClick={() =>
-                              void handleDeleteWatchlist(
-                                watchlist.watchlist_id
-                              )
-                            }
-                          >
-                            <Trash2 size={15} />
-                            Delete
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    <button
+                      type="button"
+                      className="watchlists-delete-button"
+                      aria-label={`Delete ${watchlist.name}`}
+                      title="Delete watchlist"
+                      onClick={() =>
+                        void handleDeleteWatchlist(
+                          watchlist.watchlist_id
+                        )
+                      }
+                    >
+                      <Trash2 size={18} />
+                    </button>
 
                     <Link
                       href={`/watchlists/${watchlist.watchlist_id}`}
-                      className="watchlists-open-button"
-                      aria-label={`Open ${watchlist.name}`}
+                      className="watchlists-view-button"
+                      aria-label={`View ${watchlist.name}`}
+                      title="View list"
                     >
-                      <ChevronRight size={21} />
+                      <ListVideo size={19} />
                     </Link>
                   </div>
                 </article>
@@ -574,7 +526,7 @@ const userId = user?.user_id;
         </section>
 
         <aside className="watchlists-right-sidebar">
-          <section className="watchlists-info-card">
+          {/* <section className="watchlists-info-card">
             <div className="watchlists-info-title">
               <Share2 size={18} />
               <h2>Share Watchlist</h2>
@@ -613,7 +565,7 @@ const userId = user?.user_id;
               <Copy size={15} />
               Share to Social Media
             </button>
-          </section>
+          </section> */}
 
           <section className="watchlists-info-card">
             <h2 className="watchlists-stats-title">

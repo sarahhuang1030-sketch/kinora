@@ -39,6 +39,11 @@ interface UserRow extends RowDataPacket {
 async function getLoggedInUserId() {
   const session = await getServerSession(authOptions);
 
+  console.log(
+    'WATCHLIST SESSION EMAIL:',
+    session?.user?.email
+  );
+
   if (!session?.user?.email) {
     return null;
   }
@@ -51,6 +56,11 @@ async function getLoggedInUserId() {
       LIMIT 1
     `,
     [session.user.email]
+  );
+
+   console.log(
+    'WATCHLIST DATABASE USER ID:',
+    users[0]?.user_id
   );
 
   return users[0]?.user_id ?? null;
@@ -171,6 +181,15 @@ export async function GET(req: Request) {
         `,
         [movieId, userId]
       );
+
+      console.log(
+  'WATCHLIST ROWS:',
+  watchlistRows.map((row) => ({
+    watchlist_id: row.watchlist_id,
+    name: row.name,
+    total_titles: row.total_titles,
+  }))
+);
 
     const [previewRows] =
       await pool.execute<PreviewRow[]>(
@@ -486,19 +505,34 @@ export async function DELETE(req: Request) {
   const connection = await pool.getConnection();
 
   try {
-    const { searchParams } = new URL(req.url);
+    const loggedInUserId =
+      await getLoggedInUserId();
 
-    const watchlistId =
-      searchParams.get('watchlistId');
-
-    const userId =
-      searchParams.get('userId');
-
-    if (!watchlistId || !userId) {
+    if (!loggedInUserId) {
       return NextResponse.json(
         {
-          error:
-            'Missing watchlistId or userId',
+          error: 'You must be logged in.',
+        },
+        { status: 401 }
+      );
+    }
+
+    const { searchParams } = new URL(req.url);
+
+    const watchlistIdParam =
+      searchParams.get('watchlistId');
+
+    const watchlistId = Number(
+      watchlistIdParam
+    );
+
+    if (
+      !Number.isInteger(watchlistId) ||
+      watchlistId <= 0
+    ) {
+      return NextResponse.json(
+        {
+          error: 'Invalid watchlist ID.',
         },
         { status: 400 }
       );
@@ -515,14 +549,16 @@ export async function DELETE(req: Request) {
             AND user_id = ?
           LIMIT 1
         `,
-        [watchlistId, userId]
+        [watchlistId, loggedInUserId]
       );
 
     if (ownershipRows.length === 0) {
       await connection.rollback();
 
       return NextResponse.json(
-        { error: 'Watchlist not found' },
+        {
+          error: 'Watchlist not found.',
+        },
         { status: 404 }
       );
     }
@@ -541,13 +577,14 @@ export async function DELETE(req: Request) {
         WHERE watchlist_id = ?
           AND user_id = ?
       `,
-      [watchlistId, userId]
+      [watchlistId, loggedInUserId]
     );
 
     await connection.commit();
 
     return NextResponse.json({
       success: true,
+      message: 'Watchlist deleted successfully.',
     });
   } catch (error) {
     await connection.rollback();
@@ -557,15 +594,13 @@ export async function DELETE(req: Request) {
       error
     );
 
-    const message =
-      error instanceof Error
-        ? error.message
-        : 'Unknown database error';
-
     return NextResponse.json(
       {
-        error: 'Failed to delete watchlist',
-        details: message,
+        error: 'Failed to delete watchlist.',
+        details:
+          error instanceof Error
+            ? error.message
+            : 'Unknown database error',
       },
       { status: 500 }
     );
