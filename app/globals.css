@@ -3272,6 +3272,24 @@ border-color: #f97316;
   text-decoration: none;
 }
 
+.movie-detail-stat-stars {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  color: #f59e0b;
+}
+
+@media (max-width: 760px) {
+  .movie-detail-statistics-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .movie-detail-stat-item:not(:last-child) {
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  }
+}
+
 /* =========================================================
    MOVIE DETAIL — CREATORS, CAST AND TRAILER
    ========================================================= */

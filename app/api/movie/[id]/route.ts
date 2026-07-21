@@ -17,6 +17,7 @@ type MovieRow = RowDataPacket & {
   performers: string | null;
   broadcaster: string | null;
   logo_url: string | null;
+   worldwide_gross: number | string | null;
 };
 
 type GenreRow = RowDataPacket & {
@@ -36,6 +37,13 @@ type Creator ={
   name: string;
   role: string;
 }
+
+type AwardRow = RowDataPacket & {
+  award_name: string;
+  category: string | null;
+  award_year: number | null;
+  is_featured: number | boolean;
+};
 
 function parseCreator(value: string): Creator {
   const match = value.match(/^(.*?)\s*\((.*?)\)\s*$/);
@@ -113,6 +121,7 @@ export async function GET(
             m.source,
             m.author,
             m.performers,
+            m.worldwide_gross,
 
             COALESCE(
               sp.platform_name,
@@ -187,6 +196,28 @@ export async function GET(
         [movieId]
       );
 
+const [awards] = await pool.query<AwardRow[]>(
+  `
+    SELECT
+      award_name,
+      category,
+      award_year,
+      is_featured
+    FROM movie_awards
+    WHERE movie_id = ?
+      AND is_winner = TRUE
+    ORDER BY
+      is_featured DESC,
+      award_year DESC
+  `,
+  [movieId]
+);
+
+const featuredAward =
+  awards.find((award) => Boolean(award.is_featured)) ||
+  awards[0] ||
+  null;
+
     const performers = movie.performers
       ? movie.performers
           .split(",")
@@ -246,6 +277,19 @@ if (peopleNames.length > 0) {
       content_type: getContentTypeName(
         movie.content_type_id
       ),
+        worldwide_gross: movie.worldwide_gross
+    ? Number(movie.worldwide_gross)
+    : null,
+
+  award_count: awards.length,
+  
+  award_name: featuredAward?.award_name ?? null,
+
+featured_award:
+  featuredAward?.category ?? null,
+
+featured_award_year:
+  featuredAward?.award_year ?? null,
 
       source: movie.source,
       author: movie.author,

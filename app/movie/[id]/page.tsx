@@ -36,10 +36,8 @@ type Movie = {
   content_type_id: number | null;
   content_type: string | null;
   source: string | null;
-
  author: string | null;
-
-creators: {
+ creators: {
   name: string;
   role: string;
   photo_url: string | null;
@@ -54,6 +52,11 @@ creators: {
   genres: string[];
   moods: string[];
   logo_url: string | null;
+
+  worldwide_gross: number | null;
+  award_count: number;
+  featured_award: string | null;
+  featured_award_year: number | null;
 };
 
 
@@ -224,6 +227,39 @@ function getYouTubeEmbedUrl(url: string | null) {
   }
 
   return null;
+}
+
+
+function formatWorldwideGross(
+  amount: number | string | null | undefined
+) {
+  const numericAmount = Number(amount);
+
+  if (!numericAmount || numericAmount <= 0) {
+    return "N/A";
+  }
+
+  if (numericAmount >= 1_000_000_000) {
+    const billions = numericAmount / 1_000_000_000;
+
+    return `$${billions.toFixed(
+      billions >= 10 ? 0 : 1
+    )}B`;
+  }
+
+  if (numericAmount >= 1_000_000) {
+    const millions = numericAmount / 1_000_000;
+
+    return `$${millions.toFixed(
+      millions >= 10 ? 0 : 1
+    )}M`;
+  }
+
+  if (numericAmount >= 1_000) {
+    return `$${Math.round(numericAmount / 1_000)}K`;
+  }
+
+  return `$${numericAmount.toLocaleString()}`;
 }
 
 export default function MovieDetailPage() {
@@ -752,6 +788,26 @@ if (!id) {
 
   const currentMovie = movie;
 
+  const reviewCount = reviews.length;
+
+const averageReviewRating =
+  reviewCount > 0
+    ? reviews.reduce(
+        (total, review) =>
+          total + Number(review.rating || 0),
+        0
+      ) / reviewCount
+    : 0;
+
+const roundedReviewRating = Math.round(
+  averageReviewRating
+);
+
+const formattedReviewRating =
+  averageReviewRating > 0
+    ? averageReviewRating.toFixed(1)
+    : "New";
+
 const trailerEmbedUrl = getYouTubeEmbedUrl(
   currentMovie.trailer_url
 );
@@ -1004,47 +1060,82 @@ async function handleDownloadCard() {
               </p>
 
               <div className="movie-detail-statistics-grid">
-                <div>
-                  <span className="movie-detail-stat-label">
-                    Rating
-                  </span>
+  <div className="movie-detail-stat-item">
+    <span className="movie-detail-stat-label">
+      Audience score
+    </span>
 
-                  <strong>
-                    <Star size={17} fill="currentColor" />
-                    New
-                  </strong>
+    <div className="movie-detail-stat-rating-row">
+      {reviewCount > 0 ? (
+        <>
+          <div className="movie-detail-stat-stars">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <Star
+                key={star}
+                size={15}
+                fill={
+                  roundedReviewRating >= star
+                    ? "currentColor"
+                    : "none"
+                }
+              />
+            ))}
+          </div>
 
-                  <small>User reviews</small>
-                </div>
+          
+        </>
+      ) : (
+        <strong className="movie-detail-no-rating">
+          New
+        </strong>
+      )}
+    </div>
+      
+    <small>
+      {formattedReviewRating} 
+       {" • "}
+      {reviewCount > 0
+        ? `${reviewCount.toLocaleString()} ${
+            reviewCount === 1 ? "rating" : "ratings"
+          }`
+        : "No ratings yet"}
+    </small>
+  </div>
 
-                <div>
-                  <span className="movie-detail-stat-label">
-                    Runtime
-                  </span>
+  <div className="movie-detail-stat-item">
+    <span className="movie-detail-stat-label">
+      Box office
+    </span>
 
-                  <strong>
-                    {movie.duration_minutes
-                      ? `${movie.duration_minutes} min`
-                      : "N/A"}
-                  </strong>
+    <strong>
+      {formatWorldwideGross(
+        movie.worldwide_gross
+      )}
+    </strong>
 
-                  <small>Feature length</small>
-                </div>
+    <small>Worldwide gross</small>
+  </div>
 
-                <div>
-                  <span className="movie-detail-stat-label">
-                    Released
-                  </span>
+  <div className="movie-detail-stat-item">
+    <span className="movie-detail-stat-label">
+      Awards
+    </span>
 
-                  <strong>
-                    {movie.release_year || "N/A"}
-                  </strong>
+    <strong>
+  {movie.award_name || "No awards"}
+</strong>
 
-                  <small>
-                    {movie.content_type || "Movie"}
-                  </small>
-                </div>
-              </div>
+<small>
+  {movie.featured_award
+    ? `${movie.featured_award}${
+        movie.featured_award_year
+          ? ` • ${movie.featured_award_year}`
+          : ""
+      }`
+    : "Award information unavailable"}
+</small>
+  </div>
+</div>
 
               {movie.broadcaster && (
                 <div className="movie-detail-streaming-section">
