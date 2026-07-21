@@ -52,7 +52,7 @@ type Movie = {
   genres: string[];
   moods: string[];
   logo_url: string | null;
-
+  award_name: string | null;
   worldwide_gross: number | null;
   award_count: number;
   featured_award: string | null;
