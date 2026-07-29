@@ -73,6 +73,7 @@ type SimilarMovie = {
   broadcaster: string | null;
   genres: string[];
   match_score: number;
+  moods: string[];
 };
 
 type MovieReview = {
@@ -971,12 +972,12 @@ async function handleDownloadCard() {
                 />
               </div>
 
-             {session?.user && (
+             {/* {session?.user && (
                   <MovieWatchlistButton
                     movieId={movie.movie_id}
                     movieTitle={movie.title}
                   />
-                )}
+                )} */}
 
               <div className="movie-detail-poster-actions">
                 <button
@@ -1609,105 +1610,108 @@ async function handleDownloadCard() {
         More like this
       </h2>
 
-      <Link
+      {/* <Link
         href="/discover"
         className="movie-detail-similar-see-all"
       >
         See all
         <ChevronRight size={15} />
-      </Link>
+      </Link> */}
     </div>
   </div>
 </div>
 </div>
 
           {similarMovies.length > 0 ? (
-            <div className="movie-detail-similar-grid">
-              {similarMovies.map((similarMovie) => {
-                // const similarImage =
-                //   similarMovie.poster_url ||
-                //   similarMovie.portrait_url ||
-                //   "/placeholder.jpg";
+  <div className="discover-browse-grid">
+    {similarMovies.map((similarMovie) => (
+      <article
+        className="discover-browse-card"
+        key={similarMovie.movie_id}
+      >
+        <Link
+          href={`/movie/${similarMovie.movie_id}`}
+          className="discover-browse-card-image-link"
+          aria-label={`View details for ${similarMovie.title}`}
+        >
+          <div className="discover-browse-card-image-wrap">
+            <img
+              src={
+                similarMovie.poster_url ||
+                similarMovie.portrait_url ||
+                "/placeholder.jpg"
+              }
+              alt={similarMovie.title}
+              className="discover-browse-card-image"
+            />
+          </div>
+        </Link>
 
-                const matchPercentage = Math.min(
-                  99,
-                  75 +
-                    Number(similarMovie.match_score || 0) *
-                      3
-                );
+        <div className="discover-browse-card-body">
 
-                return (
-                 <article
-  className="movie-detail-movie-card"
-  key={similarMovie.movie_id}
->
-  <Link
-    href={`/movie/${similarMovie.movie_id}`}
-    className="movie-detail-movie-image-wrapper"
-  >
-    <img
-      src={
-        similarMovie.poster_url ||
-        similarMovie.portrait_url ||
-        "/placeholder.jpg"
-      }
-      alt={`${similarMovie.title} poster`}
-      className="movie-detail-movie-image"
-    />
+          <div className="discover-browse-card-top">
+            <div className="discover-browse-card-copy">
+              <h3>{similarMovie.title}</h3>
 
-    <div className="movie-detail-movie-image-overlay" />
+              <p className="discover-browse-card-meta">
+                <span>
+                  {similarMovie.broadcaster ||
+                    "Platform unavailable"}
+                </span>
 
-    <span className="movie-detail-movie-match">
-      {matchPercentage}% match
-    </span>
-  </Link>
+                <span>•</span>
 
-  <div className="movie-detail-movie-card-content">
-    <p className="movie-detail-movie-meta">
-      {similarMovie.broadcaster || "Platform unavailable"}
-      {" · "}
-      {similarMovie.content_type || "Movie"}
-      {" · "}
-      {formatRuntime(similarMovie.duration_minutes)}
-    </p>
+                <span>
+                  {similarMovie.content_type || "Movie"}
+                </span>
 
-    <h3>{similarMovie.title}</h3>
+                <span>•</span>
 
-    <p className="movie-detail-movie-description">
-      {similarMovie.description ||
-        "Open this title to learn more about the story."}
-    </p>
-
-    <div
-  className={`movie-detail-movie-actions ${
-    !session?.user ? "details-only" : ""
-  }`}
->
-{session?.user && (
-  <MovieWatchlistButton
-    movieId={similarMovie.movie_id}
-    movieTitle={similarMovie.title}
-  />
-)}
-
-  <Link
-    href={`/movie/${similarMovie.movie_id}`}
-    className="movie-detail-watchlist-button"
-  >
-    <Play size={11} />
-    Show details
-  </Link>
-</div>
-  </div>
-</article>
-                );
-              })}
+                <span>
+                  {formatRuntime(
+                    similarMovie.duration_minutes
+                  )}
+                </span>
+              </p>
             </div>
-          ) : (
-            <p className="movie-detail-empty-copy">
-              No similar movies were found.
-            </p>
-          )}
+
+            {similarMovie.moods?.length > 0 && (
+              <div className="discover-browse-card-moods">
+                {similarMovie.moods.map((mood) => (
+                  <span
+                    key={mood}
+                    className={`discover-browse-card-mood mood-${mood
+                      .toLowerCase()
+                      .replace(/\s*\/\s*/g, "-")
+                      .replace(/\s+/g, "-")}`}
+                  >
+                    {mood}
+                  </span>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <p className="discover-browse-card-description">
+            {similarMovie.description ||
+              "Open this title to learn more about the story."}
+          </p>
+
+          <Link
+            href={`/movie/${similarMovie.movie_id}`}
+            className="discover-browse-card-details"
+          >
+            Show more details
+          </Link>
+        </div>
+      </article>
+    ))}
+  </div>
+) : (
+  <p className="movie-detail-empty-copy">
+    No similar movies were found.
+  </p>
+)}
         </div>
       </section>
 

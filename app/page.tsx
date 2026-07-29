@@ -87,11 +87,27 @@ function mapDbMovie(movie: DbMovie, fallbackPoster: string, index: number): Card
     year: movie.release_year,
     poster: movie.poster_url || fallbackPoster,
     genre: movie.genre || 'Thrilling',
-    mood: movie.mood || movie.genre || ['Thrilling', 'Mind-bending', 'Feel Good'][index % 3],
+    mood:
+  movie.mood ||
+  movie.genre ||
+  [
+    "Adventurous / Thrilling",
+    "Mind-Bending",
+    "Relaxing / Feel Good",
+  ][index % 3],
     contentType: movie.content_type || 'Movie',
     duration: movie.duration || (movie.content_type === 'TV Series' ? '2 seasons' : '2h 15m'),
     platforms,
   };
+}
+
+function splitValues(value: string | null | undefined) {
+  if (!value) return [];
+
+  return value
+    .split(',')
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function MovieCard({
@@ -103,39 +119,71 @@ function MovieCard({
   movie: CardMovie;
   isLoggedIn: boolean;
   onWatchlistClick: (movie: CardMovie) => void;
-  isSaved:boolean;
+  isSaved: boolean;
 }) {
-  const platform = movie.platforms[0] || 'Prime';
-
+  const platform = movie.platforms[0] || "Platform unavailable";
+  const moods = splitValues(movie.mood);
   return (
-    <article className="home-movie-card">
-      <div className="home-movie-poster">
-        <img src={movie.poster} alt={movie.title} />
-        <span className="home-movie-badge">{movie.mood}</span>
-      </div>
+    <article className="discover-browse-card">
+      <Link
+        href={`/movie/${movie.movie_id}`}
+        className="discover-browse-card-image-link"
+        aria-label={`View details for ${movie.title}`}
+      >
+        <div className="discover-browse-card-image-wrap">
+          <img
+            src={movie.poster}
+            alt={movie.title}
+            className="discover-browse-card-image"
+          />
+        </div>
+      </Link>
 
-      <div className="home-movie-body">
-        <p className="home-movie-meta">
-          <span className="home-dot" /> {platform} · {movie.contentType} · {movie.duration}
+      <div className="discover-browse-card-body">
+        <div className="discover-browse-card-top">
+          <div className="discover-browse-card-copy">
+            <h3>{movie.title}</h3>
+
+            <p className="discover-browse-card-meta">
+              <span>{platform}</span>
+              <span>•</span>
+              <span>{movie.contentType}</span>
+              <span>•</span>
+              <span>{movie.duration}</span>
+            </p>
+          </div>
+
+      <div className="discover-browse-card-moods">
+  {moods.length > 0 ? (
+    moods.map((mood) => (
+      <span
+        key={mood}
+        className={`discover-browse-card-mood mood-${mood
+          .toLowerCase()
+          .replace(/\s*\/\s*/g, "-")
+          .replace(/\s+/g, "-")}`}
+      >
+        {mood}
+      </span>
+    ))
+  ) : (
+    <span className="discover-browse-card-mood mood-default">
+      {movie.genre || "Featured"}
+    </span>
+  )}
+</div>
+        </div>
+
+        <p className="discover-browse-card-description">
+          {movie.description}
         </p>
 
-        <h3>{movie.title}</h3>
-        <p className="home-movie-desc">{movie.description}</p>
-
-        <div className="home-movie-actions">
-          <Link href={`/movie/${movie.movie_id}`} className="discover-browse-card-details">
-            Show details
-          </Link>
-
-          {/* {isLoggedIn && (
-              <button
-                className={isSaved ? 'home-save-btn saved' : 'home-save-btn'}
-                onClick={() => onWatchlistClick(movie)}
-              >
-                {isSaved ? 'Saved' : 'Watchlist'}
-              </button>
-          )} */}
-        </div>
+        <Link
+          href={`/movie/${movie.movie_id}`}
+          className="discover-browse-card-details"
+        >
+          Show more details
+        </Link>
       </div>
     </article>
   );
@@ -927,7 +975,7 @@ const currentMood = moods.find(
         </div>
         </div>
 
-        <div className="home-movie-grid">
+        <div className="discover-browse-grid">
             {recommendedMovies.length === 0 ? (
               <div className="home-empty-state">
                 No recommendations found for this mood.

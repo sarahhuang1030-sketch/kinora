@@ -15,6 +15,7 @@ type SimilarMovieRow = RowDataPacket & {
   genres: string | null;
   matching_genre_count: number;
   matching_mood_count: number;
+  moods: string | null;
 };
 
 export async function GET(
@@ -54,6 +55,12 @@ export async function GET(
             SEPARATOR ', '
           ) AS genres,
 
+          GROUP_CONCAT(
+            DISTINCT mo.mood_name
+            ORDER BY mo.mood_name
+            SEPARATOR ', '
+          ) AS moods,
+
           COUNT(
             DISTINCT matching_genres.genre_id
           ) AS matching_genre_count,
@@ -72,6 +79,12 @@ export async function GET(
 
         LEFT JOIN genres g
           ON mg.genre_id = g.genre_id
+
+        LEFT JOIN movie_moods mm
+          ON m.movie_id = mm.movie_id
+
+        LEFT JOIN moods mo
+          ON mm.mood_id = mo.mood_id
 
         LEFT JOIN movie_genres matching_genres
           ON matching_genres.movie_id = m.movie_id
@@ -142,6 +155,12 @@ export async function GET(
             : [],
 
           match_score: matchScore,
+          moods: movie.moods
+            ? movie.moods
+                .split(",")
+                .map((mood) => mood.trim())
+                .filter(Boolean)
+            : [],
         };
       })
     );

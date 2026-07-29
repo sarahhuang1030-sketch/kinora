@@ -122,9 +122,19 @@ function BrowseMovieCard({
             </p>
           </div>
 
-          <span className="discover-browse-card-mood">
-            {moods[0] || genres[0] || 'Featured'}
-          </span>
+          <div className="discover-browse-card-moods">
+  {(moods.length > 0 ? moods : [genres[0] || "Featured"]).map((mood) => (
+    <span
+      key={mood}
+      className={`discover-browse-card-mood mood-${mood
+        .toLowerCase()
+        .replace(/\s*\/\s*/g, "-")
+        .replace(/\s+/g, "-")}`}
+    >
+      {mood}
+    </span>
+  ))}
+</div>
         </div>
 
         <p className="discover-browse-card-description">
