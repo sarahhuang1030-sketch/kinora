@@ -254,8 +254,8 @@ const moodBackgrounds: Record<
     position: string;
   }
 > = {
-  "Adventurous / Thrilling": {
-    image: "/backgrounds/Adventurous.png",
+  "Thrilling": {
+    image: "/backgrounds/Thrilling.png",
     size: "cover",
     position: "center right",
   },
@@ -266,8 +266,8 @@ const moodBackgrounds: Record<
     position: "center right",
   },
 
-  "Relaxing / Feel Good": {
-    image: "/backgrounds/Relaxing.png",
+  "Feel Good": {
+    image: "/backgrounds/Feel.png",
      size: "cover",
     position: "center right",
   },
