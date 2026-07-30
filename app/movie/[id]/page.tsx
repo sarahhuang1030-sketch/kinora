@@ -19,6 +19,7 @@ import {
   Share2,
   Star,
   X,
+  Eye,
 } from "lucide-react";
 import MovieWatchlistButton from "../../components/MovieWatchlistButton";
 import { FaFacebookF, FaInstagram } from "react-icons/fa6";
@@ -85,6 +86,8 @@ type MovieReview = {
   created_at: string;
   updated_at: string;
   reviewer_name?: string | null;
+  tags?: string[];
+  would_recommend?: boolean | null;
 };
 
 type UserProfileAnswers = {
@@ -297,6 +300,85 @@ const [reviewError, setReviewError] = useState("");
 const [reviewMessage, setReviewMessage] = useState("");
 const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
+// review after add to watchlist
+const [isWatchedReviewOpen, setIsWatchedReviewOpen] = useState(false);
+const [watchedRating, setWatchedRating] = useState(0);
+const [watchedTags, setWatchedTags] = useState<string[]>([]);
+const [watchedReviewText, setWatchedReviewText] =  useState("");
+const [wouldRecommend, setWouldRecommend] = useState(true);
+const [isSubmittingWatchedReview, setIsSubmittingWatchedReview] =  useState(false);
+const [watchedReviewError, setWatchedReviewError] =  useState("");
+
+const watchedTagGroups = [
+  {
+    label: "INTENSITY",
+    tags: [
+      "Relaxing",
+      "Engaging",
+      "Suspenseful",
+      "Unsettling",
+      "Gripping",
+      "Intense",
+      "Edge-of-Your-Seat",
+    ],
+  },
+  {
+    label: "COMPLEXITY",
+    tags: [
+      "Easy Watch",
+      "Straightforward",
+      "Thought-Provoking",
+      "Complex",
+      "Mind-Bending",
+      "Challenging",
+    ],
+  },
+  {
+    label: "EMOTIONAL IMPACT",
+    tags: [
+      "Feel-Good",
+      "Heartwarming",
+      "Hopeful",
+      "Emotional",
+      "Bittersweet",
+      "Heavy",
+      "Heartbreaking",
+    ],
+  },
+  {
+    label: "VISUAL IMPACT",
+    tags: [
+      "Classic Style",
+      "Atmospheric",
+      "Stylish",
+      "Cinematic",
+      "Immersive",
+      "Breathtaking",
+    ],
+  },
+  {
+    label: "PACING",
+    tags: [
+      "Slow Burn",
+      "Steady Pace",
+      "Fast-Paced",
+      "Action-Packed",
+      "Nonstop Action",
+    ],
+  },
+  {
+    label: "WATCH CONTEXT",
+    tags: [
+      "Solo Watch",
+      "Date Night",
+      "Family Friendly",
+      "Great for Groups",
+      "Party Movie",
+    ],
+  },
+];
+  // end
+
 const [movieMatch, setMovieMatch] =  useState<MovieMatch>(emptyMovieMatch);
 
 const [isMatchLoading, setIsMatchLoading] =  useState(false);
@@ -304,6 +386,7 @@ const [isMatchLoading, setIsMatchLoading] =  useState(false);
 const [isWatched, setIsWatched] = useState(false);
 const [isUpdatingWatched, setIsUpdatingWatched] = useState(false);
 const [watchedMessage, setWatchedMessage] = useState("");
+
 
 useEffect(() => {
   if (!watchedMessage) {
@@ -732,15 +815,15 @@ async function handleSubmitReview(
     return;
   }
 
-  if (!reviewText.trim()) {
-    setReviewError("Please write something about the movie.");
-    return;
-  }
+  // if (!reviewText.trim()) {
+  //   setReviewError("Please write something about the movie.");
+  //   return;
+  // }
 
-  if (reviewText.trim().length < 5) {
-    setReviewError("Your review must contain at least 5 characters.");
-    return;
-  }
+  // if (reviewText.trim().length < 5) {
+  //   setReviewError("Your review must contain at least 5 characters.");
+  //   return;
+  // }
 
   try {
     setIsSubmittingReview(true);
@@ -980,26 +1063,26 @@ async function handleInstagramShare() {
 
 
 
-async function handleNativeShare() {
-  const url =
-    `${window.location.origin}/movie/${currentMovie.movie_id}`;
+// async function handleNativeShare() {
+//   const url =
+//     `${window.location.origin}/movie/${currentMovie.movie_id}`;
 
-  try {
-    if (navigator.share) {
-      await navigator.share({
-        title: currentMovie.title,
-        text: `Check out ${currentMovie.title} on Cineri!`,
-        url,
-      });
+//   try {
+//     if (navigator.share) {
+//       await navigator.share({
+//         title: currentMovie.title,
+//         text: `Check out ${currentMovie.title} on Cineri!`,
+//         url,
+//       });
 
-      return;
-    }
+//       return;
+//     }
 
-    await handleCopyLink();
-  } catch (error) {
-    console.error("Native share error:", error);
-  }
-}
+//     await handleCopyLink();
+//   } catch (error) {
+//     console.error("Native share error:", error);
+//   }
+// }
 
 async function handleDownloadCard() {
   if (!shareCardRef.current) {
@@ -1113,6 +1196,121 @@ async function handleMarkAsWatched() {
   }
 }
 
+function toggleWatchedTag(tag: string) {
+  setWatchedTags((current) =>
+    current.includes(tag)
+      ? current.filter((item) => item !== tag)
+      : [...current, tag]
+  );
+}
+
+async function handleSubmitWatchedReview(
+  event: React.FormEvent<HTMLFormElement>
+) {
+  event.preventDefault();
+
+  if (!movie || !currentUserId) {
+    return;
+  }
+
+  if (watchedRating === 0) {
+    setWatchedReviewError(
+      "Please choose a rating before submitting."
+    );
+    return;
+  }
+
+  try {
+    setIsSubmittingWatchedReview(true);
+    setWatchedReviewError("");
+
+    // 1. Mark movie as watched
+    const watchedResponse = await fetch(
+      "/api/watchlist-movies/status",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          movieId: movie.movie_id,
+          status: "completed",
+        }),
+      }
+    );
+
+    const watchedResult = await watchedResponse
+      .json()
+      .catch(() => null);
+
+    if (!watchedResponse.ok) {
+      throw new Error(
+        watchedResult?.error ||
+          "Unable to mark this title as watched."
+      );
+    }
+
+    // 2. Save rating/review/tags
+    const reviewResponse = await fetch(
+      `/api/movie/${movie.movie_id}/reviews`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+
+        body: JSON.stringify({
+          userId: currentUserId,
+          rating: watchedRating,
+          commentText: watchedReviewText.trim(),
+          tags: watchedTags,
+          wouldRecommend,
+        }),
+      }
+    );
+
+    const reviewResult = await reviewResponse
+      .json()
+      .catch(() => null);
+
+    if (!reviewResponse.ok) {
+      throw new Error(
+        reviewResult?.error ||
+          "Unable to save your review."
+      );
+    }
+
+    setIsWatched(true);
+
+    setIsWatchedReviewOpen(false);
+
+    setWatchedRating(0);
+    setWatchedTags([]);
+    setWatchedReviewText("");
+    setWouldRecommend(true);
+
+    setWatchedMessage(
+      "Marked as watched and your review was posted."
+    );
+
+    await refreshReviews();
+  } catch (error) {
+    console.error(
+      "Submit watched review error:",
+      error
+    );
+
+    setWatchedReviewError(
+      error instanceof Error
+        ? error.message
+        : "Unable to submit your review."
+    );
+  } finally {
+    setIsSubmittingWatchedReview(false);
+  }
+}
+
   return (
     <main className="movie-detail-page">
       <section
@@ -1166,15 +1364,36 @@ async function handleMarkAsWatched() {
                   isWatched ? "watched" : ""
                 }`}
                 disabled={isUpdatingWatched}
-                onClick={handleMarkAsWatched}
-              >
-                <Check size={15} />
+                onClick={() => {
+                  if (!session?.user || !currentUserId) {
+                    window.location.href = "/login";
+                    return;
+                  }
 
-                  {isUpdatingWatched
-                    ? "Saving..."
-                    : isWatched
-                      ? "Watched"
-                      : "Mark as watched"}
+                  if (isWatched) {
+                    void handleMarkAsWatched();
+                    return;
+                  }
+
+                  setWatchedReviewError("");
+                  setIsWatchedReviewOpen(true);
+                }}
+              >
+                {/* <Check size={15} /> */}
+
+                {isUpdatingWatched ? (
+                    "Saving..."
+                  ) : isWatched ? (
+                    <>
+                      <Check size={15} />
+                      Watched
+                    </>
+                  ) : (
+                     <>
+                      <Eye size={15} />
+                      Mark as watched
+                    </>
+                  )}
                
               </button>
               </div>
@@ -1670,9 +1889,27 @@ async function handleMarkAsWatched() {
             </div> */}
           </div>
 
-          <p className="movie-detail-review-comment">
-            “{review.comment_text}”
-          </p>
+          {review.tags && review.tags.length > 0 && (
+  <div className="movie-detail-review-tags">
+    {review.tags
+      .filter(
+        (tag) =>
+          tag.toLowerCase() !== "visual impact" &&
+          tag.toLowerCase() !== "pacing"
+      )
+      .map((tag) => (
+        <span key={tag}>
+          {tag}
+        </span>
+      ))}
+  </div>
+)}
+{review.comment_text && (
+  <p className="movie-detail-review-comment">
+    “{review.comment_text}”
+  </p>
+)}
+          
 {/* 
           <div className="movie-detail-review-footer">
             <span>
@@ -1914,6 +2151,194 @@ async function handleMarkAsWatched() {
 )}
         </div>
       </section>
+
+{isWatchedReviewOpen && (
+  <div
+    className="movie-watched-review-overlay"
+    onClick={() => setIsWatchedReviewOpen(false)}
+  >
+    <form
+      className="movie-watched-review-modal"
+      onSubmit={handleSubmitWatchedReview}
+      onClick={(event) => event.stopPropagation()}
+    >
+      <button
+        type="button"
+        className="movie-watched-review-close"
+        onClick={() => setIsWatchedReviewOpen(false)}
+        aria-label="Close"
+      >
+        <X size={18} />
+      </button>
+
+      <div className="movie-watched-review-heading">
+        <span>YOU WATCHED IT</span>
+
+        <h2>
+          How did you like{" "}
+          <strong>{movie.title}?</strong>
+        </h2>
+
+        <p>
+          Share your thoughts to get better
+          recommendations and help others decide
+          what to watch.
+        </p>
+      </div>
+
+      <section className="movie-watched-review-section">
+        <h3>Your rating</h3>
+
+        <p>
+          How much did you enjoy {movie.title}?
+        </p>
+
+        <div className="movie-watched-review-stars">
+          {[1, 2, 3, 4, 5].map((rating) => (
+            <button
+              key={rating}
+              type="button"
+              onClick={() =>
+                setWatchedRating(rating)
+              }
+              className={
+                watchedRating >= rating
+                  ? "active"
+                  : ""
+              }
+            >
+              <Star
+                size={32}
+                fill={
+                  watchedRating >= rating
+                    ? "currentColor"
+                    : "none"
+                }
+              />
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="movie-watched-review-section">
+  <h3>How did it make you feel?</h3>
+
+  <p>
+    Select all mood tags that match your viewing experience.
+    Your choices help Cineri personalize your recommendations.
+  </p>
+
+  <div className="movie-watched-review-tag-groups">
+    {watchedTagGroups.map((group) => (
+      <div
+        className="movie-watched-review-tag-group"
+        key={group.label}
+      >
+        <span className="movie-watched-review-tag-label">
+          {group.label}
+        </span>
+
+        <div className="movie-watched-review-tags">
+          {group.tags.map((tag) => (
+            <button
+              key={tag}
+              type="button"
+              className={
+                watchedTags.includes(tag)
+                  ? "selected"
+                  : ""
+              }
+              onClick={() =>
+                toggleWatchedTag(tag)
+              }
+            >
+              {tag}
+            </button>
+          ))}
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
+
+      <section className="movie-watched-review-section">
+        <h3>Your review</h3>
+
+        <p>
+          What did you love? What surprised you? You don&apos;t need to write a formal review - just be honest.
+        </p>
+
+        <textarea
+          value={watchedReviewText}
+          onChange={(event) =>
+            setWatchedReviewText(event.target.value)
+          }
+          placeholder="Start typing here..."
+          maxLength={1000}
+          rows={5}
+        />
+
+        <small>
+          {watchedReviewText.length}/1000 characters
+        </small>
+      </section>
+
+      <section className="movie-watched-review-recommend">
+        <div>
+          <h3>
+            Would you recommend this?
+          </h3>
+
+          <p>
+            Let others know if you think they
+            should watch it.
+          </p>
+        </div>
+
+        <button
+          type="button"
+          className={`movie-watched-review-toggle ${
+            wouldRecommend ? "active" : ""
+          }`}
+          onClick={() =>
+            setWouldRecommend((current) => !current)
+          }
+          aria-pressed={wouldRecommend}
+        >
+          <span />
+        </button>
+      </section>
+
+      {watchedReviewError && (
+        <p className="movie-detail-review-error">
+          {watchedReviewError}
+        </p>
+      )}
+
+      <div className="movie-watched-review-actions">
+        <button
+          type="button"
+          onClick={() =>
+            setIsWatchedReviewOpen(false)
+          }
+        >
+          Cancel
+        </button>
+
+        <button
+          type="submit"
+          disabled={isSubmittingWatchedReview}
+        >
+          <Check size={15} />
+
+          {isSubmittingWatchedReview
+            ? "Submitting..."
+            : "Submit review"}
+        </button>
+      </div>
+    </form>
+  </div>
+)}
 
       {isShareOpen && (
   <div
