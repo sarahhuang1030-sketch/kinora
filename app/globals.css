@@ -9757,7 +9757,20 @@ grid-template-columns: 1fr;
    ========================================================================== */
 
 nav {
-position: fixed; top: 0; left: 0; right: 0; z-index: 99999; display: flex; align-items: center; justify-content: space-between; padding: 0 48px; height: 64px; background: rgba(8, 16, 35, 1); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.08); border-bottom: 1px solid var(--border);
+position: fixed; 
+top: 0; 
+left: 0; 
+right: 0; 
+z-index: 99999; 
+display: flex; 
+align-items: center; 
+justify-content: space-between; 
+padding: 0 48px; 
+height: 80px; 
+background: rgba(8, 16, 35, 1); 
+backdrop-filter: blur(8px); 
+border: 1px solid rgba(255,255,255,0.08); 
+border-bottom: 1px solid var(--border);
 }
 
 .social-divider {
@@ -10031,6 +10044,7 @@ margin: 0;
   letter-spacing: 0.12em;
   font-size: 11px;
   font-weight: 800;
+  margin-bottom:15px;
 }
 
 
@@ -10073,6 +10087,18 @@ margin: 0;
   font-size: 12px;
   font-weight: 700;
   text-align: left;
+}
+
+.home-overlay-pill-icon {
+  width: 15px;
+  height: 15px;
+
+  display: block;
+  flex-shrink: 0;
+
+  margin-right: 7px;
+
+  object-fit: contain;
 }
 
 .home-mood-pill span {
@@ -10254,7 +10280,7 @@ margin: 0;
   justify-content: center;
   text-decoration: none;
   text-transform: uppercase;
-  font-size: 10px;
+  font-size: 13px;
   font-weight: 900;
 }
 
@@ -10591,19 +10617,6 @@ margin: 0;
   line-height: 1;
 }
 
-.home-overlay-title {
-  width: min(1120px, 100%);
-  margin-bottom: 18px;
-
-  font-size: 32px;
-  font-weight: 800;
-  color: white;
-}
-
-.home-overlay-title span {
-  color: #ff6b3d;
-}
-
 .home-overlay-carousel {
   position: relative;
   width: min(1120px, 100%);
@@ -10646,7 +10659,32 @@ margin: 0;
   max-width: 680px;
 }
 
+.home-overlay-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 22px;
+  margin: 0 0 19px;
+  color: #657486;
+  font-size: 15px;
+}
+
+.home-overlay-meta span {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+}
+
+.home-overlay-meta svg {
+  width: 18px;
+  height: 18px;
+
+  color: #657486;
+}
+
 .home-overlay-mood-pill {
+  --mood-color: #28c8ff;
+
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -10656,25 +10694,32 @@ margin: 0;
   padding: 0 18px;
 
   border-radius: 10px;
-  border: 1px solid rgba(29, 180, 255, 0.6);
+  border: 1px solid color-mix(
+    in srgb,
+    var(--mood-color) 70%,
+    transparent
+  );
 
-  color: #28c8ff;
+  background: color-mix(
+    in srgb,
+    var(--mood-color) 8%,
+    transparent
+  );
+
+  color: var(--mood-color);
+
   font-size: 13px;
   font-weight: 700;
 }
-
 .home-overlay-info h2 {
-  margin: 24px 0 12px;
+  margin: 12px 0 12px;
   color: white;
   font-size: clamp(38px, 4vw, 56px);
   line-height: 1.05;
+  font-family: var(--font-dongle);
 }
 
-.home-overlay-meta {
-  color: rgba(255,255,255,0.45);
-  font-size: 15px;
-  margin-bottom: 26px;
-}
+
 
 .home-overlay-label {
   margin: 18px 0 8px;
@@ -10691,13 +10736,7 @@ margin: 0;
   max-width: 620px;
 }
 
-.home-overlay-platforms {
-  display: flex;
-  gap: 14px;
-  flex-wrap: wrap;
-}
-
-.home-overlay-platforms span {
+.home-overlay-platform {
   min-width: 130px;
   height: 46px;
 
@@ -10705,11 +10744,30 @@ margin: 0;
   align-items: center;
   justify-content: center;
 
-  border-radius: 12px;
-  border: 1px solid rgba(255,255,255,0.18);
+  gap: 10px;
+  padding: 0 16px;
 
-  background: rgba(255,255,255,0.06);
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+
+  background: rgba(255, 255, 255, 0.06);
+
   color: white;
+  font-weight: 700;
+}
+
+.home-overlay-platform-logo {
+  width: 23px;
+  height: 23px;
+
+  flex-shrink: 0;
+
+  object-fit: contain;
+}
+
+.home-overlay-platform-name {
+  color: white;
+  font-size: 13px;
   font-weight: 700;
 }
 
@@ -10734,13 +10792,26 @@ margin: 0;
 
   width: 44px;
   height: 44px;
-  border-radius: 50%;
+  padding: 0;
 
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border-radius: 50%;
   border: none;
-  background: rgba(255,255,255,0.14);
+
+  background: rgba(255, 255, 255, 0.14);
   color: white;
 
   font-size: 34px;
+  font-family: Arial, sans-serif;
+  font-weight: 300;
+  line-height: 1;
+
+  cursor: pointer;
+   padding-bottom: 5px;
+   padding-left:2px;
 }
 
 .home-carousel-arrow.left {
@@ -10770,18 +10841,250 @@ margin: 0;
   background: #ff6b3d;
 }
 
-.home-overlay-pill-icon{
-    width:18px;
-    height:18px;
-    object-fit:contain;
-    display:block;
-    flex-shrink:0;
-    margin-right:5px;
+.home-overlay-pill-icon {
+  width: 18px;
+  height: 18px;
+
+  display: block;
+  flex-shrink: 0;
+
+  margin-right: 7px;
+
+  background-color: currentColor;
+
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+
+  -webkit-mask-position: center;
+  mask-position: center;
+
+  -webkit-mask-size: contain;
+  mask-size: contain;
+}
+
+.home-overlay-mood-pill.mood-relaxing-feel-good {
+  --mood-color: #00b8f0;
+}
+
+.home-overlay-mood-pill.mood-adventurous-thrilling {
+  --mood-color: #f59e0b;
+}
+
+.home-overlay-mood-pill.mood-romantic {
+  --mood-color: #f472b6;
+}
+
+.home-overlay-mood-pill.mood-spooky {
+  --mood-color: #22c55e;
+}
+
+.home-overlay-mood-pill.mood-mind-bending {
+  --mood-color: #8b5cf6;
+}
+
+.home-overlay-mood-pill.mood-surprise-me {
+  --mood-color: #2dd4bf;
+}
+
+.home-overlay-title {
+    color: #fff;
+    width: min(1120px, 100%);
+    /* margin-bottom: 18px; */
+    font-size: 65px;
+    font-weight: 800;
+    font-family: var(--font-dongle);
+}
+
+.home-overlay-title span {
+    color: #ff6b3d;
+    font-family: var(--font-dongle);
 }
 
 /* ================================
   HOMEPAGE WATCHLIST VIEW POPUP
 ================================ */
+.watchlist-modal-options {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.watchlist-create-inline-btn {
+  width: 100%;
+  min-height: 44px;
+
+  margin-top: 14px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  border: 1px dashed rgba(255, 111, 77, 0.5);
+  border-radius: 999px;
+
+  background: rgba(255, 111, 77, 0.06);
+  color: #ff826b;
+
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.watchlist-create-inline-btn:hover {
+  border-color: #ff6f4d;
+  background: rgba(255, 111, 77, 0.12);
+  color: white;
+}
+
+.watchlist-create-inline {
+  margin-top: 16px;
+}
+
+.watchlist-create-inline input {
+  width: 100%;
+  height: 44px;
+
+  padding: 0 14px;
+
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-radius: 10px;
+
+  outline: none;
+
+  background: #182a3d;
+  color: white;
+
+  font-family: inherit;
+}
+
+.watchlist-create-inline input:focus {
+  border-color: #ff6f4d;
+}
+
+.watchlist-create-inline-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.watchlist-create-inline-actions button {
+  height: 40px;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.watchlist-create-cancel {
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background: rgba(255, 255, 255, 0.05);
+  color: #a7b3c1;
+}
+
+.watchlist-create-confirm {
+  border: 0;
+  background: #ff6257;
+  color: white;
+}
+
+.watchlist-create-confirm:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.watchlist-create-confirm.full {
+  width: 100%;
+  height: 42px;
+  margin-top: 10px;
+
+  border: 0;
+  border-radius: 999px;
+
+  background: #ff6257;
+  color: white;
+
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.watchlist-create-confirm.full:hover:not(:disabled) {
+  background: #ff756b;
+}
+
+.watchlist-create-confirm.full:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.home-inline-watchlist-create {
+  width: 50%;
+  height: 48px;
+
+  display: flex;
+  align-items: center;
+
+  overflow: hidden;
+
+  border: 1px solid rgba(255, 111, 77, 0.55);
+  border-radius: 999px;
+
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.home-inline-watchlist-create input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+
+  padding: 0 8px 0 18px;
+
+  border: 0;
+  outline: none;
+
+  background: transparent;
+  color: white;
+
+  font-family: inherit;
+  font-size: 12px;
+}
+
+.home-inline-watchlist-create input::placeholder {
+  color: #7d8997;
+}
+
+.home-inline-watchlist-add {
+  width: 43px;
+  height: 43px;
+
+  flex-shrink: 0;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  margin-right: 2px;
+
+  border: 0;
+  border-radius: 50%;
+
+  background: #ff6257;
+  color: white;
+
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 1;
+}
+
+.home-inline-watchlist-add:hover:not(:disabled) {
+  background: #ff746b;
+}
+
+.home-inline-watchlist-add:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
 .watchlist-view-backdrop {
   position: fixed;

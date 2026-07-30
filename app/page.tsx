@@ -3,6 +3,13 @@
 import { useEffect, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import Link from 'next/link';
+import {
+  Clapperboard,
+  Clock3,
+  CalendarDays,
+  ShieldCheck,
+  Bookmark,
+} from "lucide-react";
 
 type DbMovie = {
   movie_id: number;
@@ -10,6 +17,7 @@ type DbMovie = {
   description?: string | null;
   release_year: number;
   poster_url: string | null;
+  portrait_url: string | null;
   genre: string | null;
   mood?: string | null;
   content_type?: string | null;
@@ -42,6 +50,7 @@ type CardMovie = {
   duration: string;
   platforms: string[];
   saved?: boolean;
+  portrait: string;
 };
 
 type Watchlist = {
@@ -66,6 +75,7 @@ type DbGenre = {
 type DbPlatform = {
   platform_id: number;
   platform_name: string;
+  logo_url: string | null;
 };
 
 
@@ -86,6 +96,7 @@ function mapDbMovie(movie: DbMovie, fallbackPoster: string, index: number): Card
       'A personalized pick selected from your preferences, watch history, and streaming subscriptions.',
     year: movie.release_year,
     poster: movie.poster_url || fallbackPoster,
+    portrait: movie.portrait_url || movie.poster_url || fallbackPoster,
     genre: movie.genre || 'Thrilling',
     mood:
   movie.mood ||
@@ -310,6 +321,124 @@ const heroBackgroundPosition =
 const [isMoodPopupOpen, setIsMoodPopupOpen] = useState(false);
 const [selectedWatchlist, setSelectedWatchlist] =
   useState<Watchlist | null>(null);
+
+  const [isCreatingWatchlist, setIsCreatingWatchlist] = useState(false);
+const [newWatchlistName, setNewWatchlistName] = useState("");
+const [creatingWatchlist, setCreatingWatchlist] = useState(false);
+const [inlineWatchlistMovie, setInlineWatchlistMovie] =
+  useState<CardMovie | null>(null);
+
+async function handleCreateWatchlist() {
+  const movieToSave =
+    inlineWatchlistMovie || selectedMovie;
+
+  if (
+    !user?.user_id ||
+    !movieToSave ||
+    !newWatchlistName.trim()
+  ) {
+    return;
+  }
+
+  try {
+    setCreatingWatchlist(true);
+
+    // 1. Create the watchlist
+    const createRes = await fetch("/api/watchlists", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        userId: user.user_id,
+        name: newWatchlistName.trim(),
+      }),
+    });
+
+    if (!createRes.ok) {
+      const errorData = await createRes.json().catch(() => null);
+
+      console.error(
+        "Failed to create watchlist:",
+        errorData?.error || createRes.statusText
+      );
+
+      return;
+    }
+
+    const createData = await createRes.json();
+
+    const newWatchlistId =
+      createData.watchlist_id ||
+      createData.watchlistId ||
+      createData.watchlist?.watchlist_id;
+
+    if (!newWatchlistId) {
+      console.error(
+        "Watchlist was created but no watchlist ID was returned."
+      );
+      return;
+    }
+
+    // 2. Immediately add the selected movie
+    const addRes = await fetch("/api/watchlist-movies", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        watchlistId: newWatchlistId,
+        movieId: movieToSave.movie_id,
+      }),
+    });
+
+    if (!addRes.ok) {
+      const errorData = await addRes.json().catch(() => null);
+
+      console.error(
+        "Watchlist created, but movie could not be added:",
+        errorData?.error || addRes.statusText
+      );
+
+      return;
+    }
+
+    // 3. Refresh watchlists
+    const updatedRes = await fetch(
+      `/api/watchlists?userId=${user.user_id}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    if (updatedRes.ok) {
+      const updatedData = await updatedRes.json();
+
+      setWatchlists(
+        Array.isArray(updatedData.watchlists)
+          ? updatedData.watchlists
+          : []
+      );
+    }
+
+    // 4. Mark movie saved
+    setSavedMovieIds((current) =>
+  current.includes(movieToSave.movie_id)
+    ? current
+    : [...current, movieToSave.movie_id]
+);
+
+    // 5. Reset/close
+    setNewWatchlistName("");
+    setIsCreatingWatchlist(false);
+    setSelectedMovie(null);
+    setInlineWatchlistMovie(null);
+  } catch (error) {
+    console.error("Error creating watchlist:", error);
+  } finally {
+    setCreatingWatchlist(false);
+  }
+}
 
   async function handleSaveToWatchlist(watchlistId: number) {
   if (!selectedMovie || !user?.user_id) return;
@@ -680,36 +809,134 @@ setWatchlists(
     return;
   }
 
-  setSelectedMovie(movie);
+  if (watchlists.length === 0) {
+  setInlineWatchlistMovie(movie);
+  setNewWatchlistName("");
+  return;
+}
+
+setSelectedMovie(movie);
 }
 
   function handleRecommendationsClick() {
   if (!selectedMood) return;
 
+  // Surprise Me movies have already been generated
+  if (selectedMood === "Surprise Me") {
+    setIsMoodPopupOpen(true);
+    return;
+  }
+
   setAppliedMood(selectedMood);
   setIsMoodPopupOpen(true);
 }
 
-  function handleSurpriseMe() {
+async function handleSurpriseMe() {
   const availableMoods = moods.filter(
     (mood) => mood.mood_name !== "Surprise Me"
   );
 
-  if (!availableMoods.length) return;
+  if (availableMoods.length < 3 || genres.length < 3) {
+    return;
+  }
 
-  const randomIndex =
-    crypto.getRandomValues(new Uint32Array(1))[0] %
-    availableMoods.length;
+  // Shuffle moods
+  const shuffledMoods = [...availableMoods].sort(
+    () => Math.random() - 0.5
+  );
 
-  const randomMood = availableMoods[randomIndex];
+  // Shuffle genres
+  const shuffledGenres = [...genres].sort(
+    () => Math.random() - 0.5
+  );
 
-  // Select the random mood, but do not apply it yet
-  setSelectedMood(randomMood.mood_name);
-  setIsMoodPopupOpen(false);
+  // Create 3 different mood + genre combinations
+  const surpriseChoices = [0, 1, 2].map((index) => ({
+    mood: shuffledMoods[index].mood_name,
+    genre: shuffledGenres[index].genre_name,
+  }));
+
+  try {
+    const surpriseMovies: CardMovie[] = [];
+
+    for (let index = 0; index < surpriseChoices.length; index++) {
+      const { mood, genre } = surpriseChoices[index];
+
+      const params = new URLSearchParams();
+
+      if (user?.user_id) {
+        params.set("userId", String(user.user_id));
+      }
+
+      params.set("mood", mood);
+      params.set("genre", genre);
+
+      const res = await fetch(
+        `/api/home?${params.toString()}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      if (!res.ok) {
+        continue;
+      }
+
+      const data = await res.json();
+
+      const movies = (data.recommended || []).map(
+        (movie: DbMovie, movieIndex: number) =>
+          mapDbMovie(
+            movie,
+            `/recommended/r${((index + movieIndex) % 8) + 1}.webp`,
+            movieIndex
+          )
+      );
+
+      // Find a movie that has NOT already been selected
+      const uniqueMovie = movies.find(
+        (movie: CardMovie) =>
+          !surpriseMovies.some(
+            (selected) =>
+              selected.movie_id === movie.movie_id
+          )
+      );
+
+      if (uniqueMovie) {
+        surpriseMovies.push(uniqueMovie);
+      }
+    }
+
+    if (surpriseMovies.length === 0) {
+      return;
+    }
+
+    setSelectedMood("Surprise Me");
+    setAppliedMood("");
+    setMoodCarouselMovies(surpriseMovies);
+    setMoodSlideIndex(0);
+
+    // Don't open until user clicks Show my recommendations
+    setIsMoodPopupOpen(false);
+  } catch (error) {
+    console.error(
+      "Failed to load surprise recommendations:",
+      error
+    );
+  }
 }
 
 const currentMood = moods.find(
   (mood) => mood.mood_name === appliedMood
+);
+
+const displayedMovie = moodCarouselMovies[moodSlideIndex];
+
+const displayedMood = moods.find(
+  (mood) =>
+    splitValues(displayedMovie?.mood).includes(
+      mood.mood_name
+    )
 );
 
 
@@ -734,20 +961,27 @@ const currentMood = moods.find(
   }}
 >
      {/* carousel for mood-based recommendations */}
-    {isMoodPopupOpen && appliedMood && moodCarouselMovies.length > 0 && (
+    {isMoodPopupOpen && moodCarouselMovies.length > 0 && (
   <div className="home-mood-overlay">
-    <button
+    {/* <button
   className="home-mood-overlay-close"
   onClick={() => setIsMoodPopupOpen(false)}
 >
   ×
-</button>
+</button> */}
 
     <p className="home-overlay-title">
       Based on your <span>Mood</span>
     </p>
 
     <div className="home-overlay-carousel">
+
+       <button
+  className="home-mood-overlay-close"
+  onClick={() => setIsMoodPopupOpen(false)}
+>
+  ×
+</button>
       <button
         className="home-carousel-arrow left"
         onClick={() =>
@@ -760,51 +994,165 @@ const currentMood = moods.find(
       </button>
 
       <div className="home-overlay-card">
-        <div className="home-overlay-poster">
-          <img
-            src={moodCarouselMovies[moodSlideIndex].poster}
-            alt={moodCarouselMovies[moodSlideIndex].title}
-          />
-        </div>
+  {/* LEFT: portrait poster */}
+  <div className="home-overlay-poster">
+    <img
+      src={moodCarouselMovies[moodSlideIndex].portrait}
+      alt={moodCarouselMovies[moodSlideIndex].title}
+    />
+  </div>
 
-        <div className="home-overlay-info">
-          <span className="home-overlay-mood-pill">
-              {currentMood?.icon_url && (
-                <img
-                  src={currentMood.icon_url}
-                  alt={currentMood.mood_name}
-                  className="home-overlay-pill-icon"
-                />
-              )}
+  {/* RIGHT: movie information */}
+  <div className="home-overlay-info">
+    <span
+  className={`home-overlay-mood-pill mood-${(
+    displayedMood?.mood_name || ""
+  )
+    .toLowerCase()
+    .replace(/\s*\/\s*/g, "-")
+    .replace(/\s+/g, "-")}`}
+>
+      {displayedMood?.icon_url && (
+  <span
+    className="home-overlay-pill-icon"
+    style={{
+      WebkitMaskImage: `url("${displayedMood.icon_url}")`,
+      maskImage: `url("${displayedMood.icon_url}")`,
+    }}
+  />
+)}
 
-              <span>{currentMood?.mood_name}</span>
-            </span>
+      <span>
+        {displayedMood?.mood_name ||
+          moodCarouselMovies[moodSlideIndex].mood}
+      </span>
+    </span>
 
-          <h2>{moodCarouselMovies[moodSlideIndex].title}</h2>
+    <h2>
+      {moodCarouselMovies[moodSlideIndex].title}
+    </h2>
 
-          <p className="home-overlay-meta">
-            {moodCarouselMovies[moodSlideIndex].genre} ·{" "}
-            {moodCarouselMovies[moodSlideIndex].duration} ·{" "}
-            {moodCarouselMovies[moodSlideIndex].year}
-          </p>
+    <div className="home-overlay-meta">
+      <span>
+        <Clapperboard size={16} />
+        {moodCarouselMovies[moodSlideIndex].genre}
+      </span>
 
-          <p className="home-overlay-label">About</p>
+      <span>
+        <Clock3 size={16} />
+        {moodCarouselMovies[moodSlideIndex].duration}
+      </span>
 
-          <p className="home-overlay-desc">
-            {moodCarouselMovies[moodSlideIndex].description}
-          </p>
+      <span>
+        <CalendarDays size={16} />
+        {moodCarouselMovies[moodSlideIndex].year}
+      </span>
 
-          <p className="home-overlay-label">Available on</p>
+      <span>
+        <ShieldCheck size={16} />
+        PG-rated
+      </span>
+    </div>
 
-          <div className="home-overlay-platforms">
-            {moodCarouselMovies[moodSlideIndex].platforms.map((platform) => (
-              <span key={platform}>{platform}</span>
-            ))}
-          </div>
+    <div className="home-overlay-section">
+      <p className="home-overlay-label">ABOUT</p>
 
-          <div className="home-overlay-actions">
-  {user?.user_id && (
+      <p className="home-overlay-desc">
+        {moodCarouselMovies[moodSlideIndex].description}
+      </p>
+    </div>
+
+    <div className="home-overlay-section">
+      <p className="home-overlay-label">AVAILABLE ON</p>
+
+      <div className="home-overlay-platforms">
+  {moodCarouselMovies[moodSlideIndex].platforms.map(
+    (platformName) => {
+      const normalizedMoviePlatform = platformName
+        .toLowerCase()
+        .replace("prime video", "prime")
+        .replace("disney plus", "disney+")
+        .trim();
+
+      const platformInfo = platforms.find((platform) => {
+        const normalizedDbPlatform = platform.platform_name
+          .toLowerCase()
+          .replace("prime video", "prime")
+          .replace("disney plus", "disney+")
+          .trim();
+
+        return normalizedDbPlatform === normalizedMoviePlatform;
+      });
+
+      return (
+        <span
+          key={platformName}
+          className="home-overlay-platform"
+        >
+          {platformInfo?.logo_url && (
+            <img
+              src={platformInfo.logo_url}
+              alt=""
+              className="home-overlay-platform-logo"
+            />
+          )}
+
+          <span className="home-overlay-platform-name">
+            {platformName}
+          </span>
+        </span>
+      );
+    }
+  )}
+</div>
+    </div>
+
+    <div className="home-overlay-actions">
+      {user?.user_id && (
+  inlineWatchlistMovie?.movie_id ===
+    moodCarouselMovies[moodSlideIndex].movie_id ? (
+    
+    <div className="home-inline-watchlist-create">
+      <input
+        type="text"
+        placeholder="Watchlist name..."
+        value={newWatchlistName}
+        onChange={(e) =>
+          setNewWatchlistName(e.target.value)
+        }
+        onKeyDown={(e) => {
+          if (
+            e.key === "Enter" &&
+            newWatchlistName.trim() &&
+            !creatingWatchlist
+          ) {
+            handleCreateWatchlist();
+          }
+
+          if (e.key === "Escape") {
+            setInlineWatchlistMovie(null);
+            setNewWatchlistName("");
+          }
+        }}
+        autoFocus
+      />
+
+      <button
+        type="button"
+        className="home-inline-watchlist-add"
+        disabled={
+          !newWatchlistName.trim() ||
+          creatingWatchlist
+        }
+        onClick={handleCreateWatchlist}
+      >
+        {creatingWatchlist ? "..." : "+"}
+      </button>
+    </div>
+
+  ) : (
     <button
+      type="button"
       className={
         savedMovieIds.includes(
           moodCarouselMovies[moodSlideIndex].movie_id
@@ -813,26 +1161,33 @@ const currentMood = moods.find(
           : "home-save-btn"
       }
       onClick={() =>
-        handleToggleSaved(moodCarouselMovies[moodSlideIndex])
+        handleToggleSaved(
+          moodCarouselMovies[moodSlideIndex]
+        )
       }
     >
+      <Bookmark size={17} />
+
       {savedMovieIds.includes(
         moodCarouselMovies[moodSlideIndex].movie_id
       )
-        ? "Saved"
-        : "Add to wishlist"}
+        ? "SAVED"
+        : "ADD TO WATCHLIST"}
     </button>
-  )}
+  )
+)}
 
-  <Link
-    href={`/movie/${moodCarouselMovies[moodSlideIndex].movie_id}`}
-    className="home-show-btn"
-  >
-    Show details
-  </Link>
+      <Link
+        href={`/movie/${
+          moodCarouselMovies[moodSlideIndex].movie_id
+        }`}
+        className="home-show-btn"
+      >
+        SHOW DETAILS
+      </Link>
+    </div>
+  </div>
 </div>
-        </div>
-      </div>
 
       <button
         className="home-carousel-arrow right"
@@ -907,9 +1262,9 @@ const currentMood = moods.find(
           </button>
         </div>
 
-        <button className="home-explore-btn" onClick={handleRecommendationsClick}>
+        {/* <button className="home-explore-btn" onClick={handleRecommendationsClick}>
           Explore all ˅
-        </button>
+        </button> */}
       </section>
 
 
@@ -1003,35 +1358,52 @@ const currentMood = moods.find(
         </div>
 
         <div className="home-watch-grid">
-          {!user?.user_id ? (
-            <div className="home-watch-empty">
-            <div>
-              <h3>Sign in to create your watchlists</h3>
-              <p>Save movies into lists like Date Night, My Faves, and Weekend Binge.</p>
-            </div>
+  {!user?.user_id ? (
+    // NOT LOGGED IN
+    <div className="home-watch-empty">
+      <div>
+        <h3>Sign in to create your watchlists</h3>
+        <p>
+          Save movies into lists like Date Night, My Faves, and Weekend Binge.
+        </p>
+      </div>
 
-            <Link href="/login" className="home-watch-login-btn">
-              Login
-            </Link>
-          </div>
-          ) : (
-            <>
-             {watchlists.map((list) => (
-                <WatchlistBox
-                  key={list.watchlist_id}
-                  watchlist={list}
-                  onViewList={setSelectedWatchlist}
-                />
-              ))}
-              <Link href="/watchlists" className="home-create-list">
-                {/* <div className="home-create-list"> */}
-                  <span>＋</span>
-                  <p>Create new list</p>
-                {/* </div> */}
-              </Link>
-            </>
-          )}
-        </div>
+      <Link href="/login" className="home-watch-login-btn">
+        Login
+      </Link>
+    </div>
+  ) : watchlists.length === 0 ? (
+    // LOGGED IN, BUT NO WATCHLISTS
+    <div className="home-watch-empty">
+      <div>
+        <h3>Create your first watchlist</h3>
+        <p>
+          Save movies into lists like Date Night, My Faves, and Weekend Binge.
+        </p>
+      </div>
+
+      <Link href="/watchlists" className="home-watch-login-btn">
+        Create watchlist
+      </Link>
+    </div>
+  ) : (
+    // LOGGED IN AND HAS WATCHLISTS
+    <>
+      {watchlists.map((list) => (
+        <WatchlistBox
+          key={list.watchlist_id}
+          watchlist={list}
+          onViewList={setSelectedWatchlist}
+        />
+      ))}
+
+      <Link href="/watchlists" className="home-create-list">
+        <span>＋</span>
+        <p>Create new list</p>
+      </Link>
+    </>
+  )}
+</div>
 
         {/* <section className="home-more-section">
           <p className="home-eyebrow">More like this</p>
@@ -1053,7 +1425,7 @@ const currentMood = moods.find(
           </div>
         </section> */}
 
-        <section className="home-more-section">
+        {/* <section className="home-more-section">
   <p className="home-eyebrow">More to explore</p>
 
    <h2 className="dongle-font" style={{ fontSize: "54px", marginBottom: "-18px" }}>
@@ -1071,31 +1443,154 @@ const currentMood = moods.find(
       />
     ))}
   </div>
-</section>
+</section> */}
 
       </section>
 {selectedMovie && (
   <div className="watchlist-modal-backdrop">
     <div className="watchlist-modal">
-      <button className="watchlist-modal-close" onClick={() => setSelectedMovie(null)}>
+      <button
+        className="watchlist-modal-close"
+        onClick={() => {
+          setSelectedMovie(null);
+          setIsCreatingWatchlist(false);
+          setNewWatchlistName("");
+        }}
+      >
         ×
       </button>
 
-      <h3>Add to watchlist</h3>
-      <p>{selectedMovie.title}</p>
+     <h3>
+  {watchlists.length === 0
+    ? "Create your first watchlist"
+    : "Add to watchlist"}
+</h3>
 
+<p>
+  {watchlists.length === 0
+    ? `Create a list and we'll add ${selectedMovie.title} to it.`
+    : selectedMovie.title}
+</p>
+
+      {watchlists.length === 0 ? (
+  // USER HAS NO WATCHLISTS YET
+  <div className="watchlist-create-inline">
+    <input
+      type="text"
+      placeholder="Enter your first watchlist name..."
+      value={newWatchlistName}
+      onChange={(e) =>
+        setNewWatchlistName(e.target.value)
+      }
+      onKeyDown={(e) => {
+        if (
+          e.key === "Enter" &&
+          newWatchlistName.trim() &&
+          !creatingWatchlist
+        ) {
+          handleCreateWatchlist();
+        }
+      }}
+      autoFocus
+    />
+
+    <button
+      type="button"
+      className="watchlist-create-confirm full"
+      disabled={
+        !newWatchlistName.trim() ||
+        creatingWatchlist
+      }
+      onClick={handleCreateWatchlist}
+    >
+      {creatingWatchlist
+        ? "Creating..."
+        : "Create & Add"}
+    </button>
+  </div>
+) : (
+  // USER ALREADY HAS WATCHLISTS
+  <>
+    <div className="watchlist-modal-options">
       {watchlists.map((list) => (
         <button
           key={list.watchlist_id}
           className="watchlist-choice-btn"
-          onClick={() => handleSaveToWatchlist(list.watchlist_id)}
+          onClick={() =>
+            handleSaveToWatchlist(list.watchlist_id)
+          }
         >
           {list.name}
         </button>
       ))}
     </div>
+
+    {!isCreatingWatchlist ? (
+      <button
+        type="button"
+        className="watchlist-create-inline-btn"
+        onClick={() =>
+          setIsCreatingWatchlist(true)
+        }
+      >
+        <span>＋</span>
+        Create new watchlist
+      </button>
+    ) : (
+      <div className="watchlist-create-inline">
+        <input
+          type="text"
+          placeholder="Watchlist name"
+          value={newWatchlistName}
+          onChange={(e) =>
+            setNewWatchlistName(e.target.value)
+          }
+          onKeyDown={(e) => {
+            if (
+              e.key === "Enter" &&
+              newWatchlistName.trim() &&
+              !creatingWatchlist
+            ) {
+              handleCreateWatchlist();
+            }
+          }}
+          autoFocus
+        />
+
+        <div className="watchlist-create-inline-actions">
+          <button
+            type="button"
+            className="watchlist-create-cancel"
+            onClick={() => {
+              setIsCreatingWatchlist(false);
+              setNewWatchlistName("");
+            }}
+          >
+            Cancel
+          </button>
+
+          <button
+            type="button"
+            className="watchlist-create-confirm"
+            disabled={
+              !newWatchlistName.trim() ||
+              creatingWatchlist
+            }
+            onClick={handleCreateWatchlist}
+          >
+            {creatingWatchlist
+              ? "Creating..."
+              : "Create & Add"}
+          </button>
+        </div>
+      </div>
+    )}
+  </>
+)}
+    </div>
   </div>
 )}
+
 {selectedWatchlist && (
   <div
     className="watchlist-view-backdrop"
