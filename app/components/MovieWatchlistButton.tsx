@@ -206,6 +206,7 @@ async function handleCreateWatchlist() {
   setMessage("");
 
   try {
+    // 1. Create watchlist
     const response = await fetch("/api/watchlists", {
       method: "POST",
       headers: {
@@ -220,16 +221,54 @@ async function handleCreateWatchlist() {
 
     if (!response.ok) {
       throw new Error(
-        result.error ||
-          "Unable to create watchlist."
+        result.error || "Unable to create watchlist."
+      );
+    }
+
+    const newWatchlistId =
+      result.watchlist_id ||
+      result.watchlistId ||
+      result.watchlist?.watchlist_id;
+
+    if (!newWatchlistId) {
+      throw new Error(
+        "Watchlist was created, but its ID was not returned."
+      );
+    }
+
+    // 2. Immediately add current movie
+    const addResponse = await fetch(
+      `/api/movie/${movieId}/watchlist`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          watchlistId: newWatchlistId,
+        }),
+      }
+    );
+
+    const addResult = await addResponse
+      .json()
+      .catch(() => null);
+
+    if (!addResponse.ok) {
+      throw new Error(
+        addResult?.error ||
+          "Watchlist created, but the movie could not be added."
       );
     }
 
     setNewWatchlistName("");
 
+    // 3. Refresh list so new list shows as selected/saved
     await loadWatchlists();
 
-    setMessage("Watchlist created!");
+    setMessage(
+      `${movieTitle} was added to your new watchlist.`
+    );
   } catch (error) {
     setMessage(
       error instanceof Error
@@ -375,10 +414,10 @@ async function handleOpen() {
                         Creating...
                     </>
                     ) : (
-                    <>
-                        <Plus size={16} />
-                        Create watchlist
-                    </>
+                                      <>
+                    <Plus size={16} />
+                    Create & Add
+                  </>
                     )}
                 </button>
                 </div>

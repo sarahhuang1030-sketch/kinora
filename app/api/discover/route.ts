@@ -67,6 +67,18 @@ type DiscoverCollection = {
   movies: DiscoverMovie[];
 };
 
+type DbMood = {
+  mood_id: number;
+  mood_name: string;
+  icon_url: string | null;
+};
+
+type DbPlatform = {
+  platform_id: number;
+  platform_name: string;
+  logo_url: string | null;
+};
+
 export async function GET() {
   try {
     /*

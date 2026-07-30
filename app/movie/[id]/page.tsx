@@ -263,6 +263,7 @@ function formatWorldwideGross(
   return `$${numericAmount.toLocaleString()}`;
 }
 
+
 export default function MovieDetailPage() {
   const params = useParams<{ id: string }>();
   const id = Array.isArray(params?.id) ? params.id[0] : params?.id;
@@ -277,6 +278,16 @@ export default function MovieDetailPage() {
   const shareCardRef = useRef<HTMLDivElement | null>(null);
   
 const { data: session } = useSession();
+const sessionUser = session?.user as
+  | {
+      id?: string | number;
+      user_id?: string | number;
+    }
+  | undefined;
+
+const currentUserId = Number(
+  sessionUser?.id || sessionUser?.user_id
+);
 
 const [reviews, setReviews] = useState<MovieReview[]>([]);
 const [isReviewFormOpen, setIsReviewFormOpen] = useState(false);
@@ -286,11 +297,61 @@ const [reviewError, setReviewError] = useState("");
 const [reviewMessage, setReviewMessage] = useState("");
 const [isSubmittingReview, setIsSubmittingReview] = useState(false);
 
-const [movieMatch, setMovieMatch] =
-  useState<MovieMatch>(emptyMovieMatch);
+const [movieMatch, setMovieMatch] =  useState<MovieMatch>(emptyMovieMatch);
 
-const [isMatchLoading, setIsMatchLoading] =
-  useState(false);
+const [isMatchLoading, setIsMatchLoading] =  useState(false);
+
+const [isWatched, setIsWatched] = useState(false);
+const [isUpdatingWatched, setIsUpdatingWatched] = useState(false);
+const [watchedMessage, setWatchedMessage] = useState("");
+
+useEffect(() => {
+  if (!watchedMessage) {
+    return;
+  }
+
+  const timer = setTimeout(() => {
+    setWatchedMessage("");
+  }, 3000);
+
+  return () => clearTimeout(timer);
+}, [watchedMessage]);
+
+useEffect(() => {
+  if (!currentUserId || !movie?.movie_id) {
+    return;
+  }
+
+  const movieId = movie.movie_id;
+
+  async function loadWatchedStatus() {
+    try {
+      const response = await fetch(
+        `/api/watchlist-movies/status?movieId=${movieId}`,
+        {
+          cache: "no-store",
+        }
+      );
+
+      const result = await response
+        .json()
+        .catch(() => null);
+
+      if (!response.ok) {
+        return;
+      }
+
+      setIsWatched(result?.isWatched === true);
+    } catch (error) {
+      console.error(
+        "Unable to load watched status:",
+        error
+      );
+    }
+  }
+
+  void loadWatchedStatus();
+}, [currentUserId, movie?.movie_id]);
 
 useEffect(() => {
   if (!id) {
@@ -661,18 +722,6 @@ async function handleSubmitReview(
     return;
   }
 
-
- const sessionUser = session?.user as
-  | {
-      id?: string | number;
-      user_id?: string | number;
-    }
-  | undefined;
-
-const currentUserId = Number(
-  sessionUser?.id || sessionUser?.user_id
-);
-
   if (!session?.user) {
     setReviewError("Please sign in before writing a review.");
     return;
@@ -937,7 +986,78 @@ async function handleDownloadCard() {
   }
 }
 
+async function handleMarkAsWatched() {
+  if (!session?.user || !currentUserId) {
+    window.location.href = "/login";
+    return;
+  }
 
+  if (!movie) {
+    return;
+  }
+
+  const movieId = movie.movie_id;
+
+  try {
+    setIsUpdatingWatched(true);
+    setWatchedMessage("");
+
+    const response = await fetch(
+      "/api/watchlist-movies/status",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          movieId,
+          status: isWatched
+            ? "Want to Watch"
+            : "completed",
+        }),
+      }
+    );
+
+    const result = await response
+      .json()
+      .catch(() => null);
+
+    if (!response.ok) {
+      setWatchedMessage(
+        result?.error ||
+          "Unable to update watched status."
+      );
+
+      return;
+    }
+
+    setIsWatched(
+      result?.isWatched === true
+    );
+
+    setWatchedMessage(
+      result?.isWatched
+        ? "Marked as watched."
+        : "Moved back to Want to Watch."
+    );
+
+    setTimeout(() => {
+      setWatchedMessage("");
+    }, 3000);
+  } catch (error) {
+    console.error(
+      "Mark as watched error:",
+      error
+    );
+
+    setWatchedMessage(
+      "Unable to update watched status."
+    );
+  } finally {
+    setIsUpdatingWatched(false);
+  }
+}
 
   return (
     <main className="movie-detail-page">
@@ -960,6 +1080,8 @@ async function handleDownloadCard() {
 
         <div className="movie-detail-container">
           <div className="movie-detail-hero-grid">
+
+            
             <aside className="movie-detail-poster-column">
               <div className="movie-detail-poster-wrapper">
                 <Image
@@ -972,12 +1094,7 @@ async function handleDownloadCard() {
                 />
               </div>
 
-             {/* {session?.user && (
-                  <MovieWatchlistButton
-                    movieId={movie.movie_id}
-                    movieTitle={movie.title}
-                  />
-                )} */}
+        
 
               <div className="movie-detail-poster-actions">
                 <button
@@ -986,17 +1103,44 @@ async function handleDownloadCard() {
                   onClick={handleShare}
                 >
                   <Share2 size={15} />
-                  Share
+                  {/* Share */}
                 </button>
 
-                <button
-                  type="button"
-                  className="movie-detail-more-button"
-                >
-                  <span className="movie-detail-more-dots">•••</span>
-                  <span>More</span>
-                </button>
+               <button
+                type="button"
+                className={`movie-detail-watched-button ${
+                  isWatched ? "watched" : ""
+                }`}
+                disabled={isUpdatingWatched}
+                onClick={handleMarkAsWatched}
+              >
+                <Check size={15} />
+
+                  {isUpdatingWatched
+                    ? "Saving..."
+                    : isWatched
+                      ? "Watched"
+                      : "Mark as watched"}
+               
+              </button>
               </div>
+             
+
+     {session?.user && (
+  <div className="movie-detail-watchlist-action">
+    <MovieWatchlistButton
+      movieId={movie.movie_id}
+      movieTitle={movie.title}
+    />
+  </div>
+)}
+
+ {watchedMessage && (
+                <p className="movie-detail-watched-message">
+                  {watchedMessage}
+                </p>
+              )}
+
             </aside>
 
             <div className="movie-detail-hero-content">
@@ -1054,11 +1198,13 @@ async function handleDownloadCard() {
                   ))}
                 </div>
               )}
-
+             
+                <div>
+                  <p className="home-overlay-label" style={{marginTop: "25px"}}>ABOUT</p>
               <p className="movie-detail-description">
                 {movie.description ||
                   "No description is currently available."}
-              </p>
+              </p></div>
 
               <div className="movie-detail-statistics-grid">
   <div className="movie-detail-stat-item">

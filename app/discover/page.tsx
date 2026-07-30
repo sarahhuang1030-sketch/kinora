@@ -3,6 +3,12 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
+import {
+  Clapperboard,
+  Clock3,
+  CalendarDays,
+  Bookmark,
+} from "lucide-react";
 
 type SessionUser = {
   user_id?: number;
@@ -50,6 +56,20 @@ type Watchlist = {
   total_titles?: number;
   watched_count?: number;
 };
+
+type DbMood = {
+  mood_id: number;
+  mood_name: string;
+  icon_url: string | null;
+};
+
+type DbPlatform = {
+  platform_id: number;
+  platform_name: string;
+  logo_url: string | null;
+};
+
+
 
 function splitValues(value: string | null | undefined) {
   if (!value) return [];
@@ -217,7 +237,8 @@ function CompactCollectionRow({
 export default function DiscoverPage() {
   const { data: session } = useSession();
   const user = session?.user as SessionUser | undefined;
-
+  const [moodOptions, setMoodOptions] = useState<DbMood[]>([]);
+  const [platformOptions, setPlatformOptions] = useState<DbPlatform[]>([]);
   const [data, setData] = useState<DiscoverResponse>({
     featured: null,
     collections: [],
@@ -244,53 +265,92 @@ export default function DiscoverPage() {
   const [currentTrending, setCurrentTrending] = useState(0);
   const featured = trendingMovies[currentTrending] || null;
 
+// LOAD MOOD ICONS + PLATFORM LOGOS
+useEffect(() => {
+  async function loadDisplayData() {
+    try {
+      const [moodsRes, platformsRes] = await Promise.all([
+        fetch("/api/moods"),
+        fetch("/api/streaming-services"),
+      ]);
 
-  
-  useEffect(() => {
-    async function loadDiscoverPage() {
-      try {
-        setLoading(true);
-        setError('');
-
-        const response = await fetch('/api/discover', {
-          cache: 'no-store',
-        });
-
-        if (!response.ok) {
-          const result = await response.json().catch(() => null);
-          throw new Error(result?.error || 'Unable to load Discover.');
-        }
-
-        const result: DiscoverResponse = await response.json();
-
-        setData(result);
-
-        const shuffledMovies = [...result.movies];
-
-        for (let i = shuffledMovies.length - 1; i > 0; i--) {
-          const randomIndex = Math.floor(Math.random() * (i + 1));
-
-          [shuffledMovies[i], shuffledMovies[randomIndex]] = [
-              shuffledMovies[randomIndex],
-              shuffledMovies[i],
-          ];
-        }
-
-        setTrendingMovies(shuffledMovies.slice(0, 3));
-        setCurrentTrending(0);
-      } catch (err) {
-        setError(
-          err instanceof Error
-            ? err.message
-            : 'Something went wrong while loading Discover.'
-        );
-      } finally {
-        setLoading(false);
+      if (moodsRes.ok) {
+        const moodsData = await moodsRes.json();
+        setMoodOptions(moodsData);
       }
-    }
 
-    loadDiscoverPage();
-  }, []);
+      if (platformsRes.ok) {
+        const platformsData = await platformsRes.json();
+        setPlatformOptions(platformsData);
+      }
+    } catch (error) {
+      console.error(
+        "Unable to load mood/platform icons:",
+        error
+      );
+    }
+  }
+
+  loadDisplayData();
+}, []);
+
+// LOAD DISCOVER PAGE
+useEffect(() => {
+  async function loadDiscoverPage() {
+    try {
+      setLoading(true);
+      setError("");
+
+      const response = await fetch("/api/discover", {
+        cache: "no-store",
+      });
+
+      if (!response.ok) {
+        const result = await response.json().catch(() => null);
+
+        throw new Error(
+          result?.error || "Unable to load Discover."
+        );
+      }
+
+      const result: DiscoverResponse =
+        await response.json();
+
+      setData(result);
+
+      const shuffledMovies = [...result.movies];
+
+      for (
+        let i = shuffledMovies.length - 1;
+        i > 0;
+        i--
+      ) {
+        const randomIndex = Math.floor(
+          Math.random() * (i + 1)
+        );
+
+        [shuffledMovies[i], shuffledMovies[randomIndex]] = [
+          shuffledMovies[randomIndex],
+          shuffledMovies[i],
+        ];
+      }
+
+      setTrendingMovies(shuffledMovies.slice(0, 3));
+      setCurrentTrending(0);
+    } catch (err) {
+      setError(
+        err instanceof Error
+          ? err.message
+          : "Something went wrong while loading Discover."
+      );
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  loadDiscoverPage();
+}, []);
+
 
   useEffect(() => {
     async function loadWatchlists() {
@@ -493,7 +553,14 @@ useEffect(() => {
   }
 
     const featuredGenres = splitValues(featured?.genres);
+    const featuredMoods = splitValues(featured?.moods);
     const featuredPlatforms = splitValues(featured?.platforms);
+
+    const displayedMood = moodOptions.find(
+  (mood) =>
+    mood.mood_name.toLowerCase() ===
+    featuredMoods[0]?.toLowerCase()
+);
   return (
     <main className="discover-page">
       {loading && (
@@ -522,142 +589,223 @@ useEffect(() => {
     backgroundImage: `
       linear-gradient(
         90deg,
-        rgba(3,10,22,.96) 0%,
-        rgba(3,10,22,.82) 35%,
-        rgba(3,10,22,.35) 70%,
-        rgba(3,10,22,.15) 100%
-      ),
-      linear-gradient(
-        0deg,
-        rgba(3,12,24,.95) 0%,
-        rgba(3,12,24,.15) 45%,
-        rgba(3,12,24,.05) 100%
+        rgba(4, 15, 30, 0.98) 0%,
+        rgba(4, 15, 30, 0.9) 34%,
+        rgba(4, 15, 30, 0.42) 62%,
+        rgba(4, 15, 30, 0.08) 100%
       ),
       url('/backgrounds/default.png')
     `,
     backgroundSize: "cover",
-    backgroundPosition: "center",
+    backgroundPosition: "center right",
+    backgroundRepeat: "no-repeat",
   }}
 >
-            <div className="discover-showcase-shell">
-              <h1 className="discover-showcase-heading">
-                Trending <span>Today</span>
-              </h1>
+  <div className="home-mood-overlay">
+    <p className="home-overlay-title">
+      Trending <span>Today</span>
+    </p>
 
+    <div className="home-overlay-carousel">
+      <button
+        type="button"
+        className="home-carousel-arrow left"
+        aria-label="Previous trending title"
+        onClick={() =>
+          setCurrentTrending((current) =>
+            current === 0
+              ? trendingMovies.length - 1
+              : current - 1
+          )
+        }
+      >
+        ‹
+      </button>
+
+      <div className="home-overlay-card">
+        {/* POSTER */}
+        <div className="home-overlay-poster">
+          <img
+            src={getMovieImage(featured, "portrait")}
+            alt={featured.title}
+          />
+        </div>
+
+        {/* MOVIE INFO */}
+        <div className="home-overlay-info">
+         <span
+  className={`home-overlay-mood-pill mood-${(
+    displayedMood?.mood_name ||
+    featuredMoods[0] ||
+    ""
+  )
+    .toLowerCase()
+    .replace(/\s*\/\s*/g, "-")
+    .replace(/\s+/g, "-")}`}
+>
+  {displayedMood?.icon_url && (
+    <span
+      className="home-overlay-pill-icon"
+      style={{
+        WebkitMaskImage: `url("${displayedMood.icon_url}")`,
+        maskImage: `url("${displayedMood.icon_url}")`,
+      }}
+    />
+  )}
+
+  <span>
+    {displayedMood?.mood_name ||
+      featuredMoods[0] ||
+      featuredGenres[0] ||
+      "Featured"}
+  </span>
+</span>
+
+          <h2>{featured.title}</h2>
+
+          <div className="home-overlay-meta">
+            <span>
+              <Clapperboard size={16} />
+              {featured.content_type || "Movie"}
+            </span>
+
+            <span>
+              <Clock3 size={16} />
+              {formatDuration(featured.duration_minutes)}
+            </span>
+
+            <span>
+              <CalendarDays size={16} />
+              {featured.release_year || "Year unavailable"}
+            </span>
+          </div>
+
+          <div className="home-overlay-section">
+            <p className="home-overlay-label">ABOUT</p>
+
+            <p className="home-overlay-desc">
+              {featured.description ||
+                "Open this title to learn more about the story, cast, and where it is available."}
+            </p>
+          </div>
+
+          <div className="home-overlay-section">
+            <p className="home-overlay-label">
+              AVAILABLE ON
+            </p>
+
+            <div className="home-overlay-platforms">
+  {featuredPlatforms.length > 0 ? (
+    featuredPlatforms.slice(0, 3).map((platformName) => {
+      const normalizedMoviePlatform = platformName
+        .toLowerCase()
+        .replace("prime video", "prime")
+        .replace("disney plus", "disney+")
+        .trim();
+
+      const platformInfo = platformOptions.find((platform) => {
+        const normalizedDbPlatform = platform.platform_name
+          .toLowerCase()
+          .replace("prime video", "prime")
+          .replace("disney plus", "disney+")
+          .trim();
+
+        return (
+          normalizedDbPlatform === normalizedMoviePlatform
+        );
+      });
+
+      return (
+        <span
+          key={platformName}
+          className="home-overlay-platform"
+        >
+          {platformInfo?.logo_url && (
+            <img
+              src={platformInfo.logo_url}
+              alt=""
+              className="home-overlay-platform-logo"
+            />
+          )}
+
+          <span className="home-overlay-platform-name">
+            {platformName}
+          </span>
+        </span>
+      );
+    })
+  ) : (
+    <span className="home-overlay-platform">
+      <span className="home-overlay-platform-name">
+        Platform unavailable
+      </span>
+    </span>
+  )}
+</div>
+          </div>
+
+          <div className="home-overlay-actions">
+            {user?.user_id && (
               <button
-                    type="button"
-                    className="discover-showcase-arrow left"
-                    onClick={() =>
-                        setCurrentTrending((prev) =>
-                        prev === 0
-                            ? trendingMovies.length - 1
-                            : prev - 1
-                        )
-                    }
-                    >
-                    ‹
-                    </button>
+                type="button"
+                className={
+                  savedMovieIds.includes(featured.movie_id)
+                    ? "home-save-btn saved"
+                    : "home-save-btn"
+                }
+                onClick={() =>
+                  handleWatchlistClick(featured)
+                }
+              >
+                <Bookmark size={17} />
 
-              <article className="discover-showcase-card">
-                <div className="discover-showcase-portrait">
-                  <img
-                    src={getMovieImage(featured, 'portrait')}
-                    alt={featured.title}
-                  />
-                </div>
+                {savedMovieIds.includes(featured.movie_id)
+                  ? "SAVED"
+                  : "ADD TO WATCHLIST"}
+              </button>
+            )}
 
-                <div className="discover-showcase-info">
-                  <div className="discover-showcase-tags">
-                    {featuredGenres[0] && (
-                      <span className="discover-showcase-genre">
-                        {featuredGenres[0]}
-                      </span>
-                    )}
-                  </div>
+            <Link
+              href={`/movie/${featured.movie_id}`}
+              className="home-show-btn"
+            >
+              SHOW DETAILS
+            </Link>
+          </div>
+        </div>
+      </div>
 
-                  <h2>{featured.title}</h2>
+      <button
+        type="button"
+        className="home-carousel-arrow right"
+        aria-label="Next trending title"
+        onClick={() =>
+          setCurrentTrending((current) =>
+            current === trendingMovies.length - 1
+              ? 0
+              : current + 1
+          )
+        }
+      >
+        ›
+      </button>
+    </div>
 
-                  <p className="discover-showcase-meta">
-                    <span>{featured.content_type || 'Movie'}</span>
-                    <span>•</span>
-                    <span>{formatDuration(featured.duration_minutes)}</span>
-                    <span>•</span>
-                    <span>{featured.release_year || 'Year unavailable'}</span>
-                  </p>
-
-                  <p className="discover-showcase-label">About</p>
-
-                  <p className="discover-showcase-description">
-                    {featured.description ||
-                      'Open this title to learn more about the story, cast, and where it is available.'}
-                  </p>
-
-                  <p className="discover-showcase-label">Available on</p>
-
-                  <div className="discover-showcase-platforms">
-                    {featuredPlatforms.length > 0 ? (
-                      featuredPlatforms.slice(0, 3).map((platform) => (
-                        <span key={platform}>{platform}</span>
-                      ))
-                    ) : (
-                      <span>Platform unavailable</span>
-                    )}
-                  </div>
-
-                  <div className="discover-showcase-actions">
-                    {user?.user_id && (
-                      <button
-                        type="button"
-                        className={
-                          savedMovieIds.includes(featured.movie_id)
-                            ? 'discover-showcase-watchlist saved'
-                            : 'discover-showcase-watchlist'
-                        }
-                        onClick={() => handleWatchlistClick(featured)}
-                      >
-                        {savedMovieIds.includes(featured.movie_id)
-                          ? 'Saved'
-                          : 'Add to watchlist'}
-                      </button>
-                    )}
-
-                    <Link
-                      href={`/movie/${featured.movie_id}`}
-                      className="discover-showcase-details"
-                    >
-                      Show details
-                    </Link>
-                  </div>
-                </div>
-              </article>
-
-              <button
-                    type="button"
-                    className="discover-showcase-arrow right"
-                    onClick={() =>
-                        setCurrentTrending((prev) =>
-                        (prev + 1) % trendingMovies.length
-                        )
-                    }
-                    >
-                    ›
-                    </button>
-
-              <div className="discover-showcase-dots">
-                    {trendingMovies.map((_, index) => (
-                        <button
-                        key={index}
-                        className={
-                            index === currentTrending
-                            ? "active"
-                            : ""
-                        }
-                        onClick={() => setCurrentTrending(index)}
-                        />
-                    ))}
-                    </div>
-            </div>
-          </section>
+    <div className="home-carousel-dots">
+      {trendingMovies.map((movie, index) => (
+        <button
+          key={movie.movie_id}
+          type="button"
+          aria-label={`Show trending title ${index + 1}`}
+          className={
+            index === currentTrending ? "active" : ""
+          }
+          onClick={() => setCurrentTrending(index)}
+        />
+      ))}
+    </div>
+  </div>
+</section>
 
           <div className="discover-page-inner discover-page-content">
             <section

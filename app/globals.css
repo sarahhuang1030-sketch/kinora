@@ -2344,9 +2344,23 @@ border-color: #f97316;
 
 .movie-detail-poster-actions {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  margin-top: 10px;
-  gap: 9px;
+  grid-template-columns: 50px 1fr;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.movie-detail-watched-message {
+  position: static;
+
+  width: 100%;
+  margin: 10px 0 0;
+  padding: 0 4px;
+
+  color: #ff9b7a;
+
+  font-size: 11px;
+  line-height: 1.45;
+  text-align: left;
 }
 
 .movie-detail-poster-actions button {
@@ -2362,6 +2376,10 @@ border-color: #f97316;
   border: 1px solid rgba(148, 163, 184, 0.15);
   border-radius: 999px;
   gap: 7px;
+}
+
+.movie-detail-share-button{
+width:50px;
 }
 
 .movie-detail-hero-content {
@@ -2439,6 +2457,20 @@ border-color: #f97316;
   color: #fdba74;
 }
 
+/* Feel Good - Blue */
+.movie-detail-mood-badge.feel-good {
+  color: #00b8f0;
+  border-color: rgba(0, 184, 240, 0.55);
+  background: rgba(0, 184, 240, 0.1);
+}
+
+/* Thrilling - Orange */
+.movie-detail-mood-badge.thrilling {
+  color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.55);
+  background: rgba(245, 158, 11, 0.1);
+}
+
 .movie-detail-hero-content h1 {
   margin: 0;
   color: #fff;
@@ -2483,10 +2515,10 @@ border-color: #f97316;
 
 .movie-detail-description {
   max-width: 720px;
-  margin: 24px 0 0;
+  margin: 12px 0 0;
   color: #aeb8c3;
   font-size: 0.9rem;
-  line-height: 1.82;
+  /* line-height: 1.82; */
 }
 
 .movie-detail-statistics-grid {
@@ -3114,6 +3146,46 @@ border-color: #f97316;
   border-radius: 999px;
   text-transform: uppercase;
   gap: 5px;
+}
+
+.movie-detail-watched-button {
+  min-height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+
+  border: 1px solid rgba(255,255,255,0.12);
+  border-radius: 10px;
+
+  background: rgba(255,255,255,0.04);
+  color: #dbe4ec;
+
+  font-size: 12px;
+  font-weight: 700;
+
+  transition: 0.2s ease;
+}
+
+.movie-detail-watched-button:hover {
+  background: rgba(255,255,255,0.09);
+  color: white;
+}
+
+.movie-detail-watched-button.watched {
+  border-color: rgba(65, 211, 141, 0.4);
+  background: rgba(65, 211, 141, 0.12);
+  color: #8ff0bc;
+}
+
+.movie-detail-watchlist-action {
+  width: 100%;
+}
+
+.movie-detail-watchlist-action .movie-detail-watchlist-button {
+  width: 100%;
+  margin-top: 10px;
 }
 
 .movie-detail-card-details {
