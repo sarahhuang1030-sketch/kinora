@@ -4095,7 +4095,7 @@ width:50px;
 }
 
 .movie-share-heading > span {
-  color: #ff7167;
+  color: #FC8135;
   font-size: 12px;
   font-weight: 800;
   letter-spacing: 0.12em;
@@ -4103,9 +4103,10 @@ width:50px;
 }
 
 .movie-share-heading h2 {
-  margin: 7px 0 0;
-  font-size: clamp(2rem, 4vw, 3rem);
+  margin: 7px 0 -20px;
+  font-size: 65px;
   line-height: 1;
+  font-family:var(--font-dongle);
 }
 
 .movie-share-heading p {
@@ -4159,16 +4160,17 @@ width:50px;
 }
 
 .movie-share-card-brand {
-  color: #ff7167;
+  color: #FC8135;
   font-size: 13px;
   font-weight: 900;
   letter-spacing: 0.3em;
 }
 
 .movie-share-card-content h3 {
-  margin: 14px 0;
-  font-size: clamp(2rem, 5vw, 3.6rem);
+  margin: 14px 0 -5px;
+  font-size: 65px;
   line-height: 0.95;
+  font-family:var(--font-dongle);
 }
 
 .movie-share-card-metadata {
@@ -4185,6 +4187,17 @@ width:50px;
   gap: 6px;
 }
 
+.movie-share-card-moods {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 8px;
+
+  width: 100%;
+  margin-top: 12px;
+}
+
 .movie-share-card-genres,
 .movie-share-card-moods {
   display: flex;
@@ -4197,10 +4210,10 @@ width:50px;
 .movie-share-card-moods span {
   padding: 6px 11px;
   border: 1px solid rgba(148, 163, 184, 0.22);
-  border-radius: 999px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.05);
   color: #d8e2ee;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .movie-share-card-moods span {

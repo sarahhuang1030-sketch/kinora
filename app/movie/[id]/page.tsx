@@ -21,7 +21,7 @@ import {
   X,
 } from "lucide-react";
 import MovieWatchlistButton from "../../components/MovieWatchlistButton";
-import { FaFacebookF } from "react-icons/fa6";
+import { FaFacebookF, FaInstagram } from "react-icons/fa6";
 import { useSession } from "next-auth/react";
 
 type Movie = {
@@ -925,6 +925,60 @@ function handleFacebookShare() {
     "noopener,noreferrer"
   );
 }
+
+async function handleInstagramShare() {
+  if (!shareCardRef.current) {
+    setShareMessage(
+      "Unable to prepare the Instagram card."
+    );
+    return;
+  }
+
+  try {
+    const { toPng } = await import("html-to-image");
+
+    const dataUrl = await toPng(
+      shareCardRef.current,
+      {
+        cacheBust: true,
+        pixelRatio: 2,
+      }
+    );
+
+    const link = document.createElement("a");
+
+    link.download = `${currentMovie.title
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-|-$/g, "")}-instagram.png`;
+
+    link.href = dataUrl;
+    link.click();
+
+    setShareMessage(
+      "Instagram card downloaded. Upload it to your Instagram post or story."
+    );
+
+    setTimeout(() => {
+      window.open(
+        "https://www.instagram.com/",
+        "_blank",
+        "noopener,noreferrer"
+      );
+    }, 500);
+  } catch (error) {
+    console.error(
+      "Instagram share error:",
+      error
+    );
+
+    setShareMessage(
+      "Unable to prepare the Instagram card."
+    );
+  }
+}
+
+
 
 async function handleNativeShare() {
   const url =
@@ -1938,13 +1992,21 @@ async function handleMarkAsWatched() {
             </div>
           )}
 
-          {movie.moods.length > 0 && (
-            <div className="movie-share-card-moods">
-              {movie.moods.slice(0, 2).map((mood) => (
-                <span key={mood}>{mood}</span>
-              ))}
-            </div>
-          )}
+         {movie.moods.length > 0 && (
+  <div className="movie-share-card-moods">
+    {movie.moods.slice(0, 2).map((mood) => (
+      <span
+        key={mood}
+        className={`discover-browse-card-mood mood-${mood
+          .toLowerCase()
+          .replace(/\s*\/\s*/g, "-")
+          .replace(/\s+/g, "-")}`}
+      >
+        {mood}
+      </span>
+    ))}
+  </div>
+)}
 
           {movie.broadcaster && (
             <p className="movie-share-card-streaming">
@@ -1975,12 +2037,12 @@ async function handleMarkAsWatched() {
         </button>
 
         <button
-          type="button"
-          onClick={handleNativeShare}
-        >
-          <Share2 size={17} />
-          Share
-        </button>
+  type="button"
+  onClick={handleInstagramShare}
+>
+  <FaInstagram size={18} />
+  Instagram
+</button>
 
         <button
           type="button"
