@@ -1312,20 +1312,22 @@ const displayedMood = moods.find(
     ))}
   </select> */}
 
-          <select
-  value={selectedGenre}
-  onChange={(e) => setSelectedGenre(e.target.value)}
+        <select
+  value={appliedMood}
+  onChange={(e) => setAppliedMood(e.target.value)}
 >
-  <option value="">Genre</option>
+  <option value="">Mood</option>
 
-  {genres.map((genre) => (
-    <option
-      key={genre.genre_id}
-      value={genre.genre_name}
-    >
-      {genre.genre_name}
-    </option>
-  ))}
+  {moods
+    .filter((mood) => mood.mood_name !== "Surprise Me")
+    .map((mood) => (
+      <option
+        key={mood.mood_id}
+        value={mood.mood_name}
+      >
+        {mood.mood_name}
+      </option>
+    ))}
 </select>
         </div>
         </div>
