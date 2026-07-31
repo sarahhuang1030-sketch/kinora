@@ -21,6 +21,7 @@ import {
   Settings,
   SlidersHorizontal,
   UserRound,
+  SquarePlay,
 } from "lucide-react";
 
 type SessionUser = {
@@ -541,34 +542,31 @@ const [factors, setFactors] =
 
                 <Link href="/watchlists">
                   <Bookmark size={17} />
-                  <span>Watchlist</span>
+                  <span>My Watchlists</span>
                 </Link>
-              </div>
-
-              <div className="watchlists-sidebar-divider" />
-
-              <p className="watchlists-sidebar-heading">
-                Settings
-              </p>
-
-              <div className="watchlists-sidebar-links">
+            
                 <Link
                   href="/profile/preferences"
                   className="watchlists-sidebar-active"
                 >
-                  <Settings
+                  <SlidersHorizontal 
                     size={17}
                     fill="currentColor"
                   />
                   <span>Preferences</span>
                 </Link>
 
-                <Link href="/privacy">
-                  <UserRound size={17} />
-                  <span>Privacy</span>
+                <Link href="/profile/activity">
+                  <SquarePlay size={17} />
+                  <span>Activity</span>
                 </Link>
-              </div>
-            </div>
+
+              <Link href="/profile/settings">
+                  <Settings  size={17} />
+                  <span>Settings</span>
+                </Link>
+
+                <div className="watchlists-sidebar-divider" />
 
             <button
               type="button"
@@ -577,7 +575,9 @@ const [factors, setFactors] =
             >
               <LogOut size={17} />
               <span>Log out</span>
-            </button>
+            </button> 
+             </div>
+            </div>
           </aside>
 
           <section className="preferences-card">

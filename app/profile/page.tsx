@@ -29,6 +29,8 @@ import {
   Save,
   Settings,
   UserRound,
+  SlidersHorizontal,
+  SquarePlay,
 } from "lucide-react";
 
 type SessionUser = {
@@ -442,43 +444,48 @@ const loadUser = useCallback(async () => {
         </h1>
 
         <div className="profile-edit-layout">
-          <aside className="watchlists-account-sidebar profile-edit-sidebar">
-            <p className="watchlists-sidebar-heading">Account</p>
+         <aside className="watchlists-account-sidebar">
+          <p className="watchlists-sidebar-heading">
+            Account
+          </p>
 
-            <div className="watchlists-sidebar-links">
-              <Link href="/profile" className="watchlists-sidebar-active">
-                <CircleUserRound size={17} fill="currentColor" />
-                <span>Profile</span>
-              </Link>
+         <div className="watchlists-sidebar-links" >
+                <Link href="/profile" className="watchlists-sidebar-active">
+                  <CircleUserRound size={17} fill="currentColor" />
+                  <span>Profile</span>
+                </Link>
 
-              <Link href="/profile/streaming-services">
-                <MonitorPlay size={17} />
-                <span>Streaming Services</span>
-              </Link>
+                <Link href="/profile/streaming-services" >
+                  <MonitorPlay size={17}/>
+                  <span>Streaming Services</span>
+                </Link>
 
-              <Link href="/watchlists">
-                <Bookmark size={17} />
-                <span>Watchlist</span>
-              </Link>
-            </div>
+                <Link href="/watchlists"  >
+                  <Bookmark size={17} />
+                  <span>My Watchlists</span>
+                </Link>
+            
+                <Link
+                  href="/profile/preferences"
+                >
+                  <SlidersHorizontal 
+                    size={17}
+                    
+                  />
+                  <span>Preferences</span>
+                </Link>
 
-            <div className="watchlists-sidebar-divider" />
+                <Link href="/profile/activity">
+                  <SquarePlay size={17} />
+                  <span>Activity</span>
+                </Link>
 
-            <p className="watchlists-sidebar-heading">Settings</p>
+              <Link href="/profile/settings">
+                  <Settings  size={17} />
+                  <span>Settings</span>
+                </Link>
 
-            <div className="watchlists-sidebar-links">
-              <Link href="/profile/preferences">
-                <Settings size={17} />
-                <span>Preferences</span>
-              </Link>
-
-              <Link href="/privacy">
-                <UserRound size={17} />
-                <span>Privacy</span>
-              </Link>
-            </div>
-
-            <div className="watchlists-sidebar-space" />
+                <div className="watchlists-sidebar-divider" />
 
             <button
               type="button"
@@ -487,8 +494,10 @@ const loadUser = useCallback(async () => {
             >
               <LogOut size={17} />
               <span>Log out</span>
-            </button>
-          </aside>
+            </button> 
+             </div>
+        </aside>
+
 
           <section className="profile-edit-content">
             <section className="profile-edit-hero-card">

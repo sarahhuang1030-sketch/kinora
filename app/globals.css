@@ -444,13 +444,19 @@ filter: brightness(0.72);
 }
 
 .discover-browse-select select {
-min-width: 0;
+  field-sizing: content;
+
+  width: auto;
+  min-width: 0;
+
   border: 0;
   outline: 0;
   background: transparent;
+
   color: #7f8a98;
   font-family: inherit;
   font-size: 11px;
+
   cursor: pointer;
 }
 
@@ -1119,8 +1125,6 @@ width: 40px;
 }
 
 .watchlists-logout {
-margin-top: 28px;
-
   color: #ff756b;
 width: 100%;
   border: none;
@@ -1784,7 +1788,7 @@ display: -webkit-box;
   overflow: hidden;
   margin: 0;
   color: #f8fafc;
-  font-size: 15px;
+  font-size: 20px;
   font-weight: 750;
   line-height: 1.17;
   letter-spacing: -0.025em;
@@ -1931,14 +1935,14 @@ display: flex;
 }
 
 .discover-browse-filter-group {
-display: flex;
+  display: flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px;
 }
 
 .discover-browse-filter-label {
-margin-right: 7px;
+  margin-right: 7px;
   color: #596576;
   font-size: 10px;
   font-weight: 800;
@@ -1947,19 +1951,27 @@ margin-right: 7px;
 }
 
 .discover-browse-select {
-display: inline-flex;
+  display: inline-flex;
   align-items: center;
   gap: 7px;
+
+  width: fit-content;
   height: 37px;
+
   padding: 0 13px;
+
   border: 1px solid rgba(148, 163, 184, 0.1);
   border-radius: 999px;
+
   background: #192635;
   color: #6f7b8b;
+
+  white-space: nowrap;
 }
 
 .discover-browse-select > span {
-font-size: 12px;
+  flex-shrink: 0;
+  font-size: 12px;
 }
 
 .discover-content-type-tabs {
@@ -8198,7 +8210,7 @@ min-height: calc(100vh - 64px);
 .watchlists-layout {
 width: 100%;
   max-width: 1500px;
-  margin: 0 auto;
+  margin: 24px auto;
 
   display: grid;
   grid-template-columns: 230px minmax(0, 1fr) 230px;
@@ -10801,6 +10813,8 @@ margin: 0;
   font-size: 10px;
 }
 
+
+
 .home-library-head button {
   color: #ff9a35;
   border: 0;
@@ -11113,33 +11127,28 @@ margin: 0;
 }
 
 /* filter section in homepage */
-.home-filters select {
-  appearance: none;
-  -webkit-appearance: none;
+.home-filter-select {
+  display: inline-flex;
+  align-items: center;
 
-  background-color: rgba(13, 30, 48, 0.85);
-
-  /* Custom dropdown arrow */
-  background-image:
-    linear-gradient(45deg, transparent 50%, #9aabba 50%),
-    linear-gradient(135deg, #9aabba 50%, transparent 50%);
-
-  background-position:
-    calc(100% - 18px) 50%,
-    calc(100% - 13px) 50%;
-
-  background-size: 5px 5px, 5px 5px;
-  background-repeat: no-repeat;
-
-  color: #c9d7e5;
+  height: 37px;
+  padding: 0 13px;
 
   border: 1px solid rgba(255, 255, 255, 0.14);
   border-radius: 999px;
+  background: rgba(13, 30, 48, 0.85);
+}
 
-  padding: 10px 30px 10px 20px;
+.home-filter-select select {
+  appearance: auto;
+  -webkit-appearance: auto;
+
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #c9d7e5;
 
   font-size: 13px;
-  outline: none;
   cursor: pointer;
 }
 
@@ -11185,6 +11194,11 @@ margin: 0;
 
   font-size: 30px;
   line-height: 1;
+}
+
+.home-filters select option {
+  background: #172331;
+  color: #c9d7e5;
 }
 
 .home-overlay-carousel {

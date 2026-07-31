@@ -8,6 +8,8 @@ import {
   Clock3,
   CalendarDays,
   Bookmark,
+  Tv,
+  Calendar,
 } from "lucide-react";
 
 type SessionUser = {
@@ -887,7 +889,7 @@ useEffect(() => {
                   </span>
 
                   <label className="discover-browse-select">
-                    <span aria-hidden="true">▣</span>
+                     <Tv size={13} aria-hidden="true" />
                     <select
                       value={selectedPlatform}
                       onChange={(event) =>
@@ -949,6 +951,7 @@ useEffect(() => {
                   </label>
 
                   <label className="discover-browse-select">
+                    <Calendar size={13} aria-hidden="true" />
                     <select
                       value={selectedYear}
                       onChange={(event) => setSelectedYear(event.target.value)}

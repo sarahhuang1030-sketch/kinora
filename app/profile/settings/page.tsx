@@ -615,7 +615,7 @@ try {
                   <span>Profile</span>
                 </Link>
 
-                <Link href="/profile/streaming-services" className="watchlists-sidebar-active">
+                <Link href="/profile/streaming-services">
                   <MonitorPlay size={17} fill="currentColor"/>
                   <span>Streaming Services</span>
                 </Link>
@@ -640,8 +640,8 @@ try {
                   <span>Activity</span>
                 </Link>
 
-              <Link href="/profile/settings">
-                  <Settings  size={17} />
+              <Link href="/profile/settings" className="watchlists-sidebar-active">
+                  <Settings  size={17} fill="currentColor"/>
                   <span>Settings</span>
                 </Link>
 
@@ -659,183 +659,11 @@ try {
         </aside>
 
           <section className="profile-streaming-card">
-            <h2 className="profile-streaming-title">
-              Streaming Services
-            </h2>
+           
 
-            {error && (
-              <div className="profile-streaming-alert error">
-                {error}
-              </div>
-            )}
+           
 
-            {success && (
-              <div className="profile-streaming-alert success">
-                <Check size={16} />
-
-                <span>{success}</span>
-              </div>
-            )}
-
-            {connectedServices.length > 0 ? (
-              <div className="profile-streaming-connected-grid">
-               {connectedServices.map(
-                  (service) => {
-                    const isConnected =
-                      isServiceSelected(
-                        service.platform_name
-                      );
-
-                    return (
-                      <article
-                        key={
-                          service.platform_id
-                        }
-                        className={`profile-streaming-connected-card ${
-                          isConnected
-                            ? "connected"
-                            : "not-connected"
-                        }`}
-                      >
-                        <div className="profile-streaming-connected-top">
-                          <div className="profile-streaming-service-logo">
-                            {service.logo_url ? (
-                              <img
-                                src={
-                                  service.logo_url
-                                }
-                                alt={`${getDisplayName(
-                                  service.platform_name
-                                )} logo`}
-                              />
-                            ) : (
-                              <span className="profile-streaming-logo-fallback">
-                                {getDisplayName(
-                                  service.platform_name
-                                ).charAt(0)}
-                              </span>
-                            )}
-                          </div>
-
-                          <strong>
-                            {getDisplayName(
-                              service.platform_name
-                            )}
-                          </strong>
-
-                          <button
-                            type="button"
-                            className="profile-streaming-small-edit"
-                            onClick={
-                              handleStartEdit
-                            }
-                          >
-                            Edit
-                          </button>
-                        </div>
-
-                        <button
-                          type="button"
-                          className={`profile-streaming-connected-button ${
-                            isConnected
-                              ? "connected"
-                              : "not-connected"
-                          }`}
-                          onClick={() =>
-                            handleServiceClick(
-                              service.platform_name
-                            )
-                          }
-                        >
-                          <Link2 size={14} />
-
-                          <span>
-                            {isConnected
-                              ? "Connected"
-                              : "Connect"}
-                          </span>
-                        </button>
-                      </article>
-                    );
-                  }
-                )}
-              </div>
-            ) : (
-              <div className="profile-streaming-empty">
-                No streaming platforms were
-                found.
-              </div>
-            )}
-
-            <div className="profile-streaming-add-divider">
-              <span />
-
-              <p>
-                Add other streaming platforms
-              </p>
-
-              <span />
-            </div>
-
-            <div className="profile-streaming-other-platforms">
-              {otherServices.map(
-                (service) => {
-                  const isSelected =
-                    isServiceSelected(
-                      service.platform_name
-                    );
-
-                  return (
-                    <button
-                      key={
-                        service.platform_id
-                      }
-                      type="button"
-                      className={
-                        isSelected
-                          ? "active"
-                          : ""
-                      }
-                      onClick={() =>
-                        handleServiceClick(
-                          service.platform_name
-                        )
-                      }
-                    >
-                      {getDisplayName(
-                        service.platform_name
-                      )}
-                    </button>
-                  );
-                }
-              )}
-            </div>
-
-            {isEditing && (
-              <div className="profile-streaming-actions">
-                <button
-                  type="button"
-                  className="profile-streaming-cancel-button"
-                  onClick={handleCancel}
-                  disabled={saving}
-                >
-                  Cancel
-                </button>
-
-                <button
-                  type="button"
-                  className="profile-streaming-save-button"
-                  onClick={() =>
-                    void handleSave()
-                  }
-                  disabled={saving}
-                >
-                  {saving
-                    ? "Saving..."
-                    : "Save Changes"}
-                </button>
-              </div>
-            )}
+           
           </section>
         </div>
       </div>

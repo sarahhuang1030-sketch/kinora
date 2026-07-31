@@ -1280,7 +1280,7 @@ const displayedMood = moods.find(
           </div>
 
           <div className="home-filters">
-  <select
+  {/* <select
   value={selectedPlatform}
   onChange={(e) => setSelectedPlatform(e.target.value)}
 >
@@ -1303,15 +1303,6 @@ const displayedMood = moods.find(
     <option value="long">Over 120 min</option>
   </select>
 
-  {/* <select value={appliedMood} onChange={(e) => setAppliedMood(e.target.value)}>
-    <option value="">Mood</option>
-    {moods.map((mood) => (
-      <option key={mood.mood_id} value={mood.mood_name}>
-        {mood.mood_name}
-      </option>
-    ))}
-  </select> */}
-
         <select
   value={appliedMood}
   onChange={(e) => setAppliedMood(e.target.value)}
@@ -1328,7 +1319,58 @@ const displayedMood = moods.find(
         {mood.mood_name}
       </option>
     ))}
-</select>
+</select> */}
+
+
+<label className="home-filter-select">
+  <select
+    value={selectedPlatform}
+    onChange={(e) => setSelectedPlatform(e.target.value)}
+  >
+    <option value="">Streaming Service</option>
+
+    {platforms.map((platform) => (
+      <option
+        key={platform.platform_id}
+        value={platform.platform_name}
+      >
+        {platform.platform_name}
+      </option>
+    ))}
+  </select>
+</label>
+
+<label className="home-filter-select">
+  <select
+    value={selectedDuration}
+    onChange={(e) => setSelectedDuration(e.target.value)}
+  >
+        <option value="">Duration</option>
+    <option value="short">Under 90 min</option>
+    <option value="medium">90–120 min</option>
+    <option value="long">Over 120 min</option>
+  </select>
+</label>
+
+<label className="home-filter-select">
+  <select
+    value={appliedMood}
+    onChange={(e) => setAppliedMood(e.target.value)}
+  >
+        <option value="">Mood</option>
+     {moods
+    .filter((mood) => mood.mood_name !== "Surprise Me")
+    .map((mood) => (
+      <option
+        key={mood.mood_id}
+        value={mood.mood_name}
+      >
+        {mood.mood_name}
+      </option>
+    ))}
+  </select>
+</label>
+
         </div>
         </div>
 
