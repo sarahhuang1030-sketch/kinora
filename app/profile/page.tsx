@@ -32,6 +32,7 @@ import {
   SlidersHorizontal,
   SquarePlay,
 } from "lucide-react";
+import AccountSidebar from "../components/AccountSidebar";
 
 type SessionUser = {
   user_id?: number;
@@ -444,59 +445,7 @@ const loadUser = useCallback(async () => {
         </h1>
 
         <div className="profile-edit-layout">
-         <aside className="watchlists-account-sidebar">
-          <p className="watchlists-sidebar-heading">
-            Account
-          </p>
-
-         <div className="watchlists-sidebar-links" >
-                <Link href="/profile" className="watchlists-sidebar-active">
-                  <CircleUserRound size={17} fill="currentColor" />
-                  <span>Profile</span>
-                </Link>
-
-                <Link href="/profile/streaming-services" >
-                  <MonitorPlay size={17}/>
-                  <span>Streaming Services</span>
-                </Link>
-
-                <Link href="/watchlists"  >
-                  <Bookmark size={17} />
-                  <span>My Watchlists</span>
-                </Link>
-            
-                <Link
-                  href="/profile/preferences"
-                >
-                  <SlidersHorizontal 
-                    size={17}
-                    
-                  />
-                  <span>Preferences</span>
-                </Link>
-
-                <Link href="/profile/activity">
-                  <SquarePlay size={17} />
-                  <span>Activity</span>
-                </Link>
-
-              <Link href="/profile/settings">
-                  <Settings  size={17} />
-                  <span>Settings</span>
-                </Link>
-
-                <div className="watchlists-sidebar-divider" />
-
-            <button
-              type="button"
-              className="watchlists-logout"
-              onClick={() => void handleLogout()}
-            >
-              <LogOut size={17} />
-              <span>Log out</span>
-            </button> 
-             </div>
-        </aside>
+         <AccountSidebar active="profile" />
 
 
           <section className="profile-edit-content">

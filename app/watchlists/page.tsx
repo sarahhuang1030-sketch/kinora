@@ -23,6 +23,7 @@ import {
   SlidersHorizontal,
   X,
 } from 'lucide-react';
+import AccountSidebar from '../components/AccountSidebar';
 
 type WatchlistMovie = {
   movie_id: number;
@@ -311,59 +312,7 @@ const userId = user?.user_id;
   return (
     <main className="watchlists-page">
       <div className="watchlists-layout">
-        <aside className="watchlists-account-sidebar">
-          <p className="watchlists-sidebar-heading">
-            Account
-          </p>
-
-         <div className="watchlists-sidebar-links">
-                <Link href="/profile">
-                  <CircleUserRound size={17} />
-                  <span>Profile</span>
-                </Link>
-
-                <Link href="/profile/streaming-services">
-                  <MonitorPlay size={17} />
-                  <span>Streaming Services</span>
-                </Link>
-
-                <Link href="/watchlists"  className="watchlists-sidebar-active">
-                  <Bookmark size={17} fill="currentColor"/>
-                  <span>My Watchlists</span>
-                </Link>
-            
-                <Link
-                  href="/profile/preferences"
-                >
-                  <SlidersHorizontal 
-                    size={17}
-                    
-                  />
-                  <span>Preferences</span>
-                </Link>
-
-                <Link href="/profile/activity">
-                  <SquarePlay size={17} />
-                  <span>Activity</span>
-                </Link>
-
-              <Link href="/profile/settings">
-                  <Settings  size={17} />
-                  <span>Settings</span>
-                </Link>
-
-                <div className="watchlists-sidebar-divider" />
-
-            <button
-              type="button"
-              className="watchlists-logout"
-              onClick={() => void handleLogout()}
-            >
-              <LogOut size={17} />
-              <span>Log out</span>
-            </button> 
-             </div>
-        </aside>
+        <AccountSidebar active="watchlists" />
 
         <section className="watchlists-content">
           <div className="watchlists-title-row">

@@ -4,24 +4,22 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Suspense,
-  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { signOut, useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import {
-  Bookmark,
-  Check,
+  Accessibility,
+  AlertTriangle,
   CircleUserRound,
-  Link2,
-  LogOut,
-  MonitorPlay,
-  Settings,
-  UserRound,
-  SlidersHorizontal,
-  SquarePlay,
+  Download,
+  Globe2,
+  RotateCcw,
+  Shield,
 } from "lucide-react";
+
+import AccountSidebar from "@/app/components/AccountSidebar";
 
 type SessionUser = {
   user_id?: number;
@@ -43,43 +41,25 @@ type User = {
   created_at?: string;
 };
 
-type Answers = {
-  genres: string[];
-  streamingServices: string[];
-  contentTypes: string[];
-  preferences: string[];
-};
+type TextSize = "S" | "M" | "L" | "XL";
 
-type StreamingService = {
-  platform_id: number;
-  platform_name: string;
-  logo_url: string | null;
-};
-
-const emptyAnswers: Answers = {
-  genres: [],
-  streamingServices: [],
-  contentTypes: [],
-  preferences: [],
-};
-
-export default function StreamingServicesPage() {
+export default function SettingsPage() {
   return (
     <Suspense
       fallback={
         <main className="profile-streaming-page">
           <div className="profile-streaming-loading">
-            Loading your streaming services...
+            Loading your settings...
           </div>
         </main>
       }
     >
-      <StreamingServicesContent />
+      <SettingsContent />
     </Suspense>
   );
 }
 
-function StreamingServicesContent() {
+function SettingsContent() {
   const { data: session, status } = useSession();
   const searchParams = useSearchParams();
 
@@ -91,443 +71,260 @@ function StreamingServicesContent() {
     sessionUser?.email ||
     "";
 
-  const [user, setUser] = useState<User | null>(null);
+  /* ------------------------------------------------------------------------
+     USER
+     ------------------------------------------------------------------------ */
 
-  const [answers, setAnswers] =
-    useState<Answers>(emptyAnswers);
+  const [user, setUser] =
+    useState<User | null>(null);
 
-  const [streamingServices, setStreamingServices] =
-    useState<StreamingService[]>([]);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [selectedServices, setSelectedServices] =
-    useState<string[]>([]);
+  const [error, setError] =
+    useState("");
 
-  const [savedServices, setSavedServices] =
-    useState<string[]>([]);
+const [deletingAccount, setDeletingAccount] =
+  useState(false);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+const [deleteError, setDeleteError] =
+  useState("");
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+const [showDeleteConfirm, setShowDeleteConfirm] =
+  useState(false);
 
-  /*
-   * This normalizes service names only for comparison.
-   * The original database name is still used when saving.
-   */
-  function normalizeServiceName(name: string) {
-    const normalized = name.trim().toLowerCase();
+  /* ------------------------------------------------------------------------
+     LANGUAGE & REGION
+     ------------------------------------------------------------------------ */
 
-    if (
-      normalized === "neflix" ||
-      normalized === "netflix"
-    ) {
-      return "netflix";
+  const [appLanguage, setAppLanguage] =
+    useState("English");
+
+  const [
+    contentLanguage,
+    setContentLanguage,
+  ] = useState("All languages");
+
+  const [region, setRegion] =
+    useState("Canada");
+
+  const [dateFormat, setDateFormat] =
+    useState("DD MM YYYY");
+
+  /* ------------------------------------------------------------------------
+     PRIVACY & DATA
+     ------------------------------------------------------------------------ */
+
+  const [watchHistory, setWatchHistory] =
+    useState(true);
+
+  const [moodData, setMoodData] =
+    useState(true);
+
+  const [analytics, setAnalytics] =
+    useState(true);
+
+  /* ------------------------------------------------------------------------
+     ACCESSIBILITY
+     ------------------------------------------------------------------------ */
+
+  const [reduceMotion, setReduceMotion] =
+    useState(false);
+
+  const [highContrast, setHighContrast] =
+    useState(false);
+
+ const [textSize, setTextSize] =
+  useState<TextSize>(() => {
+    if (typeof window === "undefined") {
+      return "M";
     }
 
-    if (
-      normalized === "prime video" ||
-      normalized === "amazon prime" ||
-      normalized === "amazon prime video"
-    ) {
-      return "prime-video";
-    }
+    const savedTextSize =
+      localStorage.getItem(
+        "cineri-text-size"
+      ) as TextSize | null;
 
-    if (
-      normalized === "disney+" ||
-      normalized === "disney plus"
-    ) {
-      return "disney-plus";
-    }
+    return savedTextSize || "M";
+  });
 
-    return normalized;
+useEffect(() => {
+  const root = document.documentElement;
+
+  root.classList.remove(
+    "text-size-s",
+    "text-size-m",
+    "text-size-l",
+    "text-size-xl"
+  );
+
+  root.classList.add(
+    `text-size-${textSize.toLowerCase()}`
+  );
+
+  localStorage.setItem(
+    "cineri-text-size",
+    textSize
+  );
+}, [textSize]);
+
+
+  /* ------------------------------------------------------------------------
+     LOAD USER PROFILE
+     ------------------------------------------------------------------------ */
+useEffect(() => {
+  if (
+    status === "loading" ||
+    !email
+  ) {
+    return;
   }
 
-  function isServiceSelected(serviceName: string) {
-    const serviceKey =
-      normalizeServiceName(serviceName);
+  let cancelled = false;
 
-    return selectedServices.some(
-      (selectedName) =>
-        normalizeServiceName(selectedName) ===
-        serviceKey
-    );
-  }
-
-  function getDisplayName(platformName: string) {
-    const key = normalizeServiceName(platformName);
-
-    if (key === "netflix") {
-      return "Netflix";
+  fetch(
+    `/api/profile?email=${encodeURIComponent(email)}`,
+    {
+      cache: "no-store",
     }
+  )
+    .then(async (response) => {
+      const data = await response.json();
 
-    if (key === "prime-video") {
-      return "Amazon Prime";
-    }
-
-    if (key === "disney-plus") {
-      return "Disney+";
-    }
-
-    return platformName;
-  }
-
-
-
-  const loadPageData = useCallback(async () => {
-    if (!email) {
-      setLoading(false);
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError("");
-
-      /*
-       * Load the profile and available platform list
-       * at the same time.
-       */
-      const [profileResponse, platformsResponse] =
-        await Promise.all([
-          fetch(
-            `/api/profile?email=${encodeURIComponent(
-              email
-            )}`,
-            {
-              cache: "no-store",
-            }
-          ),
-
-          fetch("/api/streaming-services", {
-            cache: "no-store",
-          }),
-        ]);
-
-      const profileData =
-        await profileResponse.json();
-
-      const platformsData =
-        await platformsResponse.json();
-
-      if (
-        !profileResponse.ok ||
-        !profileData.user
-      ) {
+      if (!response.ok || !data.user) {
         throw new Error(
-          profileData.error ||
+          data.error ||
             "Unable to load your profile."
         );
       }
 
-      if (!platformsResponse.ok) {
-        throw new Error(
-          platformsData.error ||
-            "Unable to load streaming platforms."
-        );
+      return data.user as User;
+    })
+    .then((loadedUser) => {
+      if (cancelled) {
+        return;
       }
-
-      const loadedUser =
-        profileData.user as User;
-
-      const loadedAnswers: Answers = {
-        genres:
-          profileData.answers?.genres ?? [],
-
-        streamingServices:
-          profileData.answers
-            ?.streamingServices ?? [],
-
-        contentTypes:
-          profileData.answers
-            ?.contentTypes ?? [],
-
-        preferences:
-          profileData.answers
-            ?.preferences ?? [],
-      };
-
-      const availablePlatforms =
-        Array.isArray(platformsData)
-          ? (platformsData as StreamingService[])
-          : [];
 
       setUser(loadedUser);
-      setAnswers(loadedAnswers);
-      setStreamingServices(
-        availablePlatforms
-      );
-
-      /*
-       * Connected services are stored in
-       * user_connected_services, so load them
-       * from your existing list route.
-       */
-      const connectedResponse = await fetch(
-         `/api/connect-service?userId=${loadedUser.user_id}`,
-        {
-          cache: "no-store",
-        }
-      );
-
-      const connectedText =
-  await connectedResponse.text();
-
-let connectedData: {
-  services?: string[];
-  error?: string;
-} = {};
-
-try {
-  connectedData = connectedText
-    ? JSON.parse(connectedText)
-    : {};
-} catch {
-  throw new Error(
-    "The connected-services API returned an invalid response."
-  );
-}
-
-      let connectedServices: string[] = [];
-
-      if (
-        connectedResponse.ok &&
-        Array.isArray(connectedData.services)
-      ) {
-        connectedServices =
-          connectedData.services;
-      } else {
-        /*
-         * Fall back to profile answers if the
-         * connected-services route has no data.
-         */
-        connectedServices =
-          loadedAnswers.streamingServices;
+      setError("");
+    })
+    .catch((loadError) => {
+      if (cancelled) {
+        return;
       }
 
-      setSelectedServices(
-        connectedServices
-      );
-
-      setSavedServices(
-        connectedServices
-      );
-
-      setAnswers((current) => ({
-        ...current,
-        streamingServices:
-          connectedServices,
-      }));
-    } catch (loadError) {
       setError(
         loadError instanceof Error
           ? loadError.message
-          : "Unable to load your streaming services."
+          : "Unable to load your profile."
       );
-    } finally {
-      setLoading(false);
-    }
-  }, [email]);
-
-  useEffect(() => {
-    if (status === "loading") {
-      return;
-    }
-
-    const timeoutId =
-      window.setTimeout(() => {
-        void loadPageData();
-      }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [loadPageData, status]);
-
-  const firstName = useMemo(() => {
-    return user?.first_name || "User";
-  }, [user]);
-
-  const connectedServices = useMemo(() => {
-  return streamingServices.filter((service) =>
-    isServiceSelected(service.platform_name)
-  );
-}, [streamingServices, selectedServices]);
-
-  const otherServices = useMemo(() => {
-  return streamingServices.filter(
-    (service) =>
-      !isServiceSelected(service.platform_name)
-  );
-}, [streamingServices, selectedServices]);
-
-  function handleStartEdit() {
-    setSelectedServices([
-      ...savedServices,
-    ]);
-
-    setError("");
-    setSuccess("");
-    setIsEditing(true);
-  }
-
-  function handleCancel() {
-    setSelectedServices([
-      ...savedServices,
-    ]);
-
-    setError("");
-    setSuccess("");
-    setIsEditing(false);
-  }
-
-  function toggleService(
-    serviceName: string
-  ) {
-    const serviceKey =
-      normalizeServiceName(serviceName);
-
-    setSelectedServices((current) => {
-      const alreadySelected =
-        current.some(
-          (selectedName) =>
-            normalizeServiceName(
-              selectedName
-            ) === serviceKey
-        );
-
-      if (alreadySelected) {
-        return current.filter(
-          (selectedName) =>
-            normalizeServiceName(
-              selectedName
-            ) !== serviceKey
-        );
+    })
+    .finally(() => {
+      if (!cancelled) {
+        setLoading(false);
       }
-
-      return [...current, serviceName];
     });
+
+  return () => {
+    cancelled = true;
+  };
+}, [status, email]);
+
+
+async function handleRetry() {
+  if (!email) {
+    return;
   }
 
-  function handleServiceClick(
-    serviceName: string
-  ) {
-    if (!isEditing) {
-      setIsEditing(true);
+  try {
+    setLoading(true);
+    setError("");
+
+    const response = await fetch(
+      `/api/profile?email=${encodeURIComponent(email)}`,
+      {
+        cache: "no-store",
+      }
+    );
+
+    const data = await response.json();
+
+    if (!response.ok || !data.user) {
+      throw new Error(
+        data.error ||
+          "Unable to load your profile."
+      );
     }
 
-    toggleService(serviceName);
+    setUser(data.user as User);
+  } catch (loadError) {
+    setError(
+      loadError instanceof Error
+        ? loadError.message
+        : "Unable to load your profile."
+    );
+  } finally {
+    setLoading(false);
   }
+}
 
- async function handleSave() {
+async function handleDeleteAccount() {
   if (!user) {
     return;
   }
 
   try {
-    setSaving(true);
-    setError("");
-    setSuccess("");
+    setDeletingAccount(true);
+    setDeleteError("");
 
     const response = await fetch(
-      "/api/connect-service",
+      "/api/delete-account",
       {
-        method: "PUT",
+        method: "DELETE",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           userId: user.user_id,
-          services: selectedServices,
+          email: user.email,
         }),
       }
     );
 
-    const responseText =
-      await response.text();
-
-    let data: {
-      success?: boolean;
-      services?: string[];
-      error?: string;
-      details?: string;
-    } = {};
-
-    try {
-      data = responseText
-        ? JSON.parse(responseText)
-        : {};
-    } catch {
-      throw new Error(
-        "The server returned an invalid response while saving."
-      );
-    }
+    const data = await response.json();
 
     if (!response.ok) {
       throw new Error(
         data.error ||
-          data.details ||
-          "Unable to save your streaming services."
+          "Unable to delete your account."
       );
     }
 
-    const saved =
-      Array.isArray(data.services)
-        ? data.services
-        : selectedServices;
-
-    setSelectedServices(saved);
-    setSavedServices(saved);
-
-    setAnswers((current) => ({
-      ...current,
-      streamingServices: saved,
-    }));
-
-    setIsEditing(false);
-
-    setSuccess(
-      "Your streaming services were updated successfully."
+    localStorage.removeItem(
+      "cineri-text-size"
     );
-
-    window.setTimeout(() => {
-      setSuccess("");
-    }, 3000);
-  } catch (saveError) {
-    setError(
-      saveError instanceof Error
-        ? saveError.message
-        : "Unable to save your streaming services."
-    );
-  } finally {
-    setSaving(false);
-  }
-}
-
-  async function handleLogout() {
-    try {
-      await fetch("/api/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          email: sessionUser?.email,
-        }),
-      });
-    } catch (logoutError) {
-      console.error(
-        "Logout tracking failed:",
-        logoutError
-      );
-    }
 
     await signOut({
       callbackUrl: "/",
     });
+  } catch (deleteAccountError) {
+    setDeleteError(
+      deleteAccountError instanceof Error
+        ? deleteAccountError.message
+        : "Unable to delete your account."
+    );
+
+    setDeletingAccount(false);
   }
+}
+
+  const firstName = useMemo(() => {
+    return user?.first_name || "User";
+  }, [user]);
+
+  /* ------------------------------------------------------------------------
+     LOADING
+     ------------------------------------------------------------------------ */
 
   if (
     status === "loading" ||
@@ -536,11 +333,15 @@ try {
     return (
       <main className="profile-streaming-page">
         <div className="profile-streaming-loading">
-          Loading your streaming services...
+          Loading your settings...
         </div>
       </main>
     );
   }
+
+  /* ------------------------------------------------------------------------
+     NOT SIGNED IN
+     ------------------------------------------------------------------------ */
 
   if (!sessionUser?.email) {
     return (
@@ -549,14 +350,12 @@ try {
           <CircleUserRound size={44} />
 
           <h1>
-            Sign in to view your streaming
-            services
+            Sign in to view your settings
           </h1>
 
           <p>
-            Manage the streaming platforms
-            Cineri uses for your
-            recommendations.
+            Manage your account, privacy,
+            accessibility, and display settings.
           </p>
 
           <Link href="/login">
@@ -567,6 +366,10 @@ try {
     );
   }
 
+  /* ------------------------------------------------------------------------
+     PROFILE ERROR
+     ------------------------------------------------------------------------ */
+
   if (!user) {
     return (
       <main className="profile-streaming-page">
@@ -574,7 +377,7 @@ try {
           <CircleUserRound size={44} />
 
           <h1>
-            Streaming services unavailable
+            Settings unavailable
           </h1>
 
           <p>
@@ -583,17 +386,19 @@ try {
           </p>
 
           <button
-            type="button"
-            onClick={() =>
-              void loadPageData()
-            }
-          >
-            Try Again
-          </button>
+                type="button"
+                onClick={() => void handleRetry()}
+                >
+                Try Again
+                </button>
         </section>
       </main>
     );
   }
+
+  /* ------------------------------------------------------------------------
+     SETTINGS PAGE
+     ------------------------------------------------------------------------ */
 
   return (
     <main className="profile-streaming-page">
@@ -604,66 +409,528 @@ try {
         </h1>
 
         <div className="profile-streaming-layout">
-          <aside className="watchlists-account-sidebar">
-          <p className="watchlists-sidebar-heading">
-            Account
-          </p>
+          <AccountSidebar active="settings" />
 
-         <div className="watchlists-sidebar-links">
-                <Link href="/profile">
-                  <CircleUserRound size={17} />
-                  <span>Profile</span>
-                </Link>
+          <section className="settings-card">
+            <div className="settings-card-heading">
+              <h2>Settings</h2>
 
-                <Link href="/profile/streaming-services">
-                  <MonitorPlay size={17} fill="currentColor"/>
-                  <span>Streaming Services</span>
-                </Link>
+              <p>
+                Manage your display, data, and
+                account settings
+              </p>
+            </div>
 
-                <Link href="/watchlists"  >
-                  <Bookmark size={17} />
-                  <span>My Watchlists</span>
-                </Link>
-            
-                <Link
-                  href="/profile/preferences"
-                >
-                  <SlidersHorizontal 
-                    size={17}
-                    
-                  />
-                  <span>Preferences</span>
-                </Link>
+            {/* LANGUAGE & REGION */}
+            <section className="settings-section">
+              <div className="settings-section-heading">
+                <div className="settings-section-icon">
+                  <Globe2 size={18} />
+                </div>
 
-                <Link href="/profile/activity">
-                  <SquarePlay size={17} />
-                  <span>Activity</span>
-                </Link>
+                <div>
+                  <h3>
+                    Language & Region
+                  </h3>
 
-              <Link href="/profile/settings" className="watchlists-sidebar-active">
-                  <Settings  size={17} fill="currentColor"/>
-                  <span>Settings</span>
-                </Link>
+                  <p>
+                    Set your preferred language,
+                    region, and date format
+                  </p>
+                </div>
+              </div>
 
-                <div className="watchlists-sidebar-divider" />
+              <div className="settings-fields-grid">
+                <label className="settings-field">
+                  <span>
+                    APP LANGUAGE
+                  </span>
 
-            <button
-              type="button"
-              className="watchlists-logout"
-              onClick={() => void handleLogout()}
-            >
-              <LogOut size={17} />
-              <span>Log out</span>
-            </button> 
-             </div>
-        </aside>
+                  <select
+                    value={appLanguage}
+                    onChange={(event) =>
+                      setAppLanguage(
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option>
+                      English
+                    </option>
 
-          <section className="profile-streaming-card">
-           
+                    <option>
+                      中文
+                    </option>
 
-           
+                    <option>
+                      French
+                    </option>
 
-           
+                    <option>
+                      Spanish
+                    </option>
+                  </select>
+                </label>
+
+                <label className="settings-field">
+                  <span>
+                    CONTENT LANGUAGE
+                  </span>
+
+                  <select
+                    value={contentLanguage}
+                    onChange={(event) =>
+                      setContentLanguage(
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option>
+                      All languages
+                    </option>
+
+                    <option>
+                      English
+                    </option>
+
+                    <option>
+                      Chinese
+                    </option>
+
+                    <option>
+                      French
+                    </option>
+
+                    <option>
+                      Spanish
+                    </option>
+                  </select>
+                </label>
+
+                <label className="settings-field">
+                  <span>
+                    REGION
+                  </span>
+
+                  <select
+                    value={region}
+                    onChange={(event) =>
+                      setRegion(
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option>
+                      Canada
+                    </option>
+
+                    <option>
+                      United States
+                    </option>
+
+                    <option>
+                      Taiwan
+                    </option>
+
+                    <option>
+                      United Kingdom
+                    </option>
+                  </select>
+                </label>
+
+                <label className="settings-field">
+                  <span>
+                    DATE FORMAT
+                  </span>
+
+                  <select
+                    value={dateFormat}
+                    onChange={(event) =>
+                      setDateFormat(
+                        event.target.value
+                      )
+                    }
+                  >
+                    <option>
+                      DD MM YYYY
+                    </option>
+
+                    <option>
+                      MM DD YYYY
+                    </option>
+
+                    <option>
+                      YYYY MM DD
+                    </option>
+                  </select>
+                </label>
+              </div>
+            </section>
+
+            {/* PRIVACY & DATA */}
+            <section className="settings-section">
+              <div className="settings-section-heading">
+                <div className="settings-section-icon">
+                  <Shield size={18} />
+                </div>
+
+                <div>
+                  <h3>
+                    Privacy & Data
+                  </h3>
+
+                  <p>
+                    Control how your data is
+                    used to improve
+                    recommendations
+                  </p>
+                </div>
+              </div>
+
+              <div className="settings-option-list">
+                <div className="settings-option-row">
+                  <div className="settings-option-copy">
+                    <h4>
+                      Watch history
+                    </h4>
+
+                    <p>
+                      Save what you&apos;ve
+                      watched to improve your
+                      recommendations
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`settings-toggle ${
+                      watchHistory
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setWatchHistory(
+                        (current) =>
+                          !current
+                      )
+                    }
+                    aria-label="Toggle watch history"
+                    aria-pressed={
+                      watchHistory
+                    }
+                  >
+                    <span />
+                  </button>
+                </div>
+
+                <div className="settings-option-row">
+                  <div className="settings-option-copy">
+                    <h4>
+                      Mood data collection
+                    </h4>
+
+                    <p>
+                      Store mood selections to
+                      build a long-term taste
+                      profile
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`settings-toggle ${
+                      moodData
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setMoodData(
+                        (current) =>
+                          !current
+                      )
+                    }
+                    aria-label="Toggle mood data collection"
+                    aria-pressed={
+                      moodData
+                    }
+                  >
+                    <span />
+                  </button>
+                </div>
+
+                <div className="settings-option-row">
+                  <div className="settings-option-copy">
+                    <h4>
+                      Anonymous usage analytics
+                    </h4>
+
+                    <p>
+                      Share anonymised usage
+                      data to help improve
+                      Cineri
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`settings-toggle ${
+                      analytics
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setAnalytics(
+                        (current) =>
+                          !current
+                      )
+                    }
+                    aria-label="Toggle anonymous usage analytics"
+                    aria-pressed={
+                      analytics
+                    }
+                  >
+                    <span />
+                  </button>
+                </div>
+              </div>
+
+              <div className="settings-small-actions">
+                <button type="button">
+                  <Download size={12} />
+
+                  Download my data
+                </button>
+
+                <button type="button">
+                  <RotateCcw size={12} />
+
+                  Clear watch history
+                </button>
+              </div>
+            </section>
+
+            {/* ACCESSIBILITY */}
+            <section className="settings-section">
+              <div className="settings-section-heading">
+                <div className="settings-section-icon">
+                  <Accessibility size={18} />
+                </div>
+
+                <div>
+                  <h3>
+                    Accessibility
+                  </h3>
+
+                  <p>
+                    Motion, contrast, and display
+                    aids
+                  </p>
+                </div>
+              </div>
+
+              <div className="settings-option-list">
+                <div className="settings-option-row">
+                  <div className="settings-option-copy">
+                    <h4>
+                      Reduce motion
+                    </h4>
+
+                    <p>
+                      Minimise animations and
+                      transitions across the app
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`settings-toggle ${
+                      reduceMotion
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setReduceMotion(
+                        (current) =>
+                          !current
+                      )
+                    }
+                    aria-label="Toggle reduced motion"
+                    aria-pressed={
+                      reduceMotion
+                    }
+                  >
+                    <span />
+                  </button>
+                </div>
+
+                <div className="settings-option-row">
+                  <div className="settings-option-copy">
+                    <h4>
+                      High contrast text
+                    </h4>
+
+                    <p>
+                      Increase the contrast of
+                      body text for legibility
+                    </p>
+                  </div>
+
+                  <button
+                    type="button"
+                    className={`settings-toggle ${
+                      highContrast
+                        ? "active"
+                        : ""
+                    }`}
+                    onClick={() =>
+                      setHighContrast(
+                        (current) =>
+                          !current
+                      )
+                    }
+                    aria-label="Toggle high contrast text"
+                    aria-pressed={
+                      highContrast
+                    }
+                  >
+                    <span />
+                  </button>
+                </div>
+
+                <div className="settings-option-row settings-text-size-row">
+                  <div className="settings-option-copy">
+                    <h4>
+                      Text size
+                    </h4>
+
+                    <p>
+                      Scale body text size across
+                      the app
+                    </p>
+                  </div>
+
+                  <div className="settings-text-sizes">
+                    {(
+                      [
+                        "S",
+                        "M",
+                        "L",
+                        "XL",
+                      ] as TextSize[]
+                    ).map((size) => (
+                      <button
+                        type="button"
+                        key={size}
+                        className={
+                          textSize === size
+                            ? "active"
+                            : ""
+                        }
+                        onClick={() =>
+                          setTextSize(size)
+                        }
+                        aria-pressed={
+                          textSize === size
+                        }
+                      >
+                        {size}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            {/* DANGER ZONE */}
+            <section className="settings-danger-section">
+              <div className="settings-danger-heading">
+                <div className="settings-danger-icon">
+                  <AlertTriangle size={15} />
+                </div>
+
+                <div>
+                  <h3>
+                    Danger Zone
+                  </h3>
+
+                  <p>
+                    Irreversible actions —
+                    proceed with caution
+                  </p>
+                </div>
+              </div>
+
+              <div className="settings-delete-box">
+                <div>
+                  <h4>
+                    Delete account
+                  </h4>
+
+                  <p>
+                    Permanently removes your
+                    account, all watchlists,
+                    preferences and data. This
+                    cannot be undone.
+                  </p>
+                </div>
+
+               <button
+                    type="button"
+                    onClick={() =>
+                        setShowDeleteConfirm(true)
+                    }
+                    disabled={deletingAccount}
+                    >
+                    {deletingAccount
+                        ? "DELETING..."
+                        : "DELETE ACCOUNT"}
+                    </button>
+              </div>
+              {showDeleteConfirm && (
+  <div className="settings-delete-confirm">
+    <h4>
+      Are you sure?
+    </h4>
+
+    <p>
+      This will permanently delete your
+      account, watchlists, preferences,
+      reviews, and other saved data.
+      This cannot be undone.
+    </p>
+
+    {deleteError && (
+      <p className="settings-delete-error">
+        {deleteError}
+      </p>
+    )}
+
+    <div className="settings-delete-confirm-actions">
+      <button
+        type="button"
+        onClick={() =>
+          setShowDeleteConfirm(false)
+        }
+        disabled={deletingAccount}
+      >
+        Cancel
+      </button>
+
+      <button
+        type="button"
+        onClick={() =>
+          void handleDeleteAccount()
+        }
+        disabled={deletingAccount}
+      >
+        {deletingAccount
+          ? "Deleting..."
+          : "Yes, delete my account"}
+      </button>
+    </div>
+  </div>
+)}
+            </section>
           </section>
         </div>
       </div>
