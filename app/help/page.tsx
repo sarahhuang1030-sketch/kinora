@@ -145,38 +145,58 @@ export default function HelpPage() {
   };
 
   const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    setIsSubmitting(true);
-    setSubmitMessage("");
+  event.preventDefault();
 
-    const formData = new FormData(event.currentTarget);
-    files.forEach((file) => formData.append("attachments", file));
+  const form = event.currentTarget;
 
-    try {
-      const response = await fetch("/api/contact", {
-        method: "POST",
-        body: formData,
-      });
+  setIsSubmitting(true);
+  setSubmitMessage("");
 
-      const result = (await response.json()) as { message?: string };
+  const formData = new FormData(form);
 
-      if (!response.ok) {
-        throw new Error(result.message || "Unable to send your ticket.");
-      }
+  const name = String(formData.get("name") || "").trim();
+  const email = String(formData.get("email") || "").trim();
+  const topic = String(formData.get("topic") || "").trim();
+  const subject = String(formData.get("subject") || "").trim();
+  const message = String(formData.get("message") || "").trim();
 
-      event.currentTarget.reset();
-      setFiles([]);
-      setSubmitMessage("Your support ticket was sent successfully.");
-    } catch (error) {
-      setSubmitMessage(
-        error instanceof Error
-          ? error.message
-          : "Something went wrong. Please try again.",
+  try {
+    const response = await fetch("/api/contact", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        name,
+        email,
+        message: `Topic: ${topic}\nSubject: ${subject}\n\n${message}`,
+      }),
+    });
+
+    const result = (await response.json()) as {
+      error?: string;
+      message?: string;
+    };
+
+    if (!response.ok) {
+      throw new Error(
+        result.error || result.message || "Unable to send your ticket.",
       );
-    } finally {
-      setIsSubmitting(false);
     }
-  };
+
+    form.reset();
+    setFiles([]);
+    setSubmitMessage("Your support ticket was sent successfully.");
+  } catch (error) {
+    setSubmitMessage(
+      error instanceof Error
+        ? error.message
+        : "Something went wrong. Please try again.",
+    );
+  } finally {
+    setIsSubmitting(false);
+  }
+};
 
   return (
     <div className="help-page">
