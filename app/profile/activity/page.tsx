@@ -4,24 +4,21 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import {
   Suspense,
-  useCallback,
   useEffect,
   useMemo,
   useState,
 } from "react";
-import { signOut, useSession } from "next-auth/react";
+import { useSession } from "next-auth/react";
 import {
-  Bookmark,
-  Check,
+  BookOpen,
   CircleUserRound,
-  Link2,
-  LogOut,
-  MonitorPlay,
-  Settings,
-  UserRound,
-  SlidersHorizontal,
-  SquarePlay,
+  Clock3,
+  Film,
+  History,
+  Smile,
+  Star,
 } from "lucide-react";
+
 import AccountSidebar from "@/app/components/AccountSidebar";
 
 type SessionUser = {
@@ -44,44 +41,187 @@ type User = {
   created_at?: string;
 };
 
-type Answers = {
-  genres: string[];
-  streamingServices: string[];
-  contentTypes: string[];
-  preferences: string[];
+type ActivityFilter =
+  | "All Time"
+  | "30 Days"
+  | "7 Days";
+
+type MoodTrend = {
+  label: string;
+  count: number;
+  className: string;
 };
 
-type StreamingService = {
-  platform_id: number;
-  platform_name: string;
-  logo_url: string | null;
+type WatchHistoryItem = {
+  id: number;
+  title: string;
+  year: string;
+  type: string;
+  mood: string;
+  date: string;
+  image: string;
 };
 
-const emptyAnswers: Answers = {
-  genres: [],
-  streamingServices: [],
-  contentTypes: [],
-  preferences: [],
+type ReviewItem = {
+  id: number;
+  title: string;
+  rating: number;
+  date: string;
+  tags: string[];
+  review: string;
+  image: string;
 };
 
-export default function StreamingServicesPage() {
+ type ActivityStats = {
+  contentItemsWatched: number;
+  watchlistsCreated: number;
+  servicesActive: number;
+  reviewsPending: number;
+  moodSelections: number;
+};
+
+type ActivityApiResponse = {
+  stats: ActivityStats;
+  services: string[];
+  moodTrends: MoodTrend[];
+  weeklyMoodTrends: WeeklyMoodTrend[];
+  mostCommonMood: string | null;
+};
+
+const emptyActivityStats: ActivityStats = {
+  contentItemsWatched: 0,
+  watchlistsCreated: 0,
+  servicesActive: 0,
+  reviewsPending: 0,
+  moodSelections: 0,
+};
+
+type WeeklyMoodTrend = {
+  day: string;
+  fullDay: string;
+  moodId: number | null;
+  moodName: string;
+  iconUrl: string | null;
+  count: number;
+  className: string;
+};
+
+// const moodTrends: MoodTrend[] = [
+//   {
+//     label: "Adventurous",
+//     count: 18,
+//     className: "adventurous",
+//   },
+//   {
+//     label: "Thrilling",
+//     count: 15,
+//     className: "thrilling",
+//   },
+//   {
+//     label: "Mind-Bending",
+//     count: 12,
+//     className: "mind-bending",
+//   },
+//   {
+//     label: "Relaxing",
+//     count: 9,
+//     className: "relaxing",
+//   },
+//   {
+//     label: "Feel Good",
+//     count: 7,
+//     className: "feel-good",
+//   },
+//   {
+//     label: "Romantic",
+//     count: 5,
+//     className: "romantic",
+//   },
+// ];
+
+const watchHistory: WatchHistoryItem[] = [
+  {
+    id: 1,
+    title: "Oppenheimer",
+    year: "2023",
+    type: "Movie",
+    mood: "Mind-Bending",
+    date: "Today",
+    image: "/posters/oppenheimer.jpg",
+  },
+  {
+    id: 2,
+    title: "Severance",
+    year: "2022",
+    type: "TV Series",
+    mood: "Mind-Bending",
+    date: "Jul 29",
+    image: "/posters/severance.jpg",
+  },
+  {
+    id: 3,
+    title: "Dune: Part Two",
+    year: "2024",
+    type: "Movie",
+    mood: "Adventurous",
+    date: "Jul 27",
+    image: "/posters/dune-part-two.jpg",
+  },
+];
+
+const recentReviews: ReviewItem[] = [
+  {
+    id: 1,
+    title: "Everything Everywhere All at Once",
+    rating: 5,
+    date: "May 4, 2026",
+    tags: [
+      "Funny",
+      "Bold",
+      "Mind-Bending",
+      "Moving",
+    ],
+    review:
+      "A wildly creative movie that somehow balances humor, emotion, and action while still feeling personal.",
+    image:
+      "/posters/everything-everywhere-all-at-once.jpg",
+  },
+  {
+    id: 2,
+    title: "Spider-Man: Into the Spider-Verse",
+    rating: 4,
+    date: "May 1, 2026",
+    tags: [
+      "Fun",
+      "Stylish",
+      "Adventurous",
+    ],
+    review:
+      "Beautiful animation and a really fun story. The visual style makes every scene feel unique.",
+    image:
+      "/posters/spider-verse.jpg",
+  },
+];
+
+export default function ActivityPage() {
   return (
     <Suspense
       fallback={
         <main className="profile-streaming-page">
           <div className="profile-streaming-loading">
-            Loading your streaming services...
+            Loading your activity...
           </div>
         </main>
       }
     >
-      <StreamingServicesContent />
+      <ActivityContent />
     </Suspense>
   );
 }
 
-function StreamingServicesContent() {
+function ActivityContent() {
   const { data: session, status } = useSession();
+
   const searchParams = useSearchParams();
 
   const sessionUser =
@@ -92,452 +232,259 @@ function StreamingServicesContent() {
     sessionUser?.email ||
     "";
 
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] =
+    useState<User | null>(null);
 
-  const [answers, setAnswers] =
-    useState<Answers>(emptyAnswers);
+  const [loading, setLoading] =
+    useState(true);
 
-  const [streamingServices, setStreamingServices] =
-    useState<StreamingService[]>([]);
+  const [error, setError] =
+    useState("");
 
-  const [selectedServices, setSelectedServices] =
-    useState<string[]>([]);
+  const [activityFilter, setActivityFilter] =
+    useState<ActivityFilter>("30 Days");
+    
+    const [activityStats, setActivityStats] =
+  useState<ActivityStats>(
+    emptyActivityStats
+  );
 
-  const [savedServices, setSavedServices] =
-    useState<string[]>([]);
+const [moodTrends, setMoodTrends] =
+  useState<MoodTrend[]>([]);
 
-  const [loading, setLoading] = useState(true);
-  const [saving, setSaving] = useState(false);
-  const [isEditing, setIsEditing] = useState(false);
+const [activeServices, setActiveServices] =
+  useState<string[]>([]);
 
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+const [mostCommonMood, setMostCommonMood] =
+  useState<string | null>(null);
 
-  /*
-   * This normalizes service names only for comparison.
-   * The original database name is still used when saving.
-   */
-  function normalizeServiceName(name: string) {
-    const normalized = name.trim().toLowerCase();
+const [activityLoading, setActivityLoading] =
+  useState(true);
 
+  const [weeklyMoodTrends, setWeeklyMoodTrends] =
+  useState<WeeklyMoodTrend[]>([]);
+
+  useEffect(() => {
     if (
-      normalized === "neflix" ||
-      normalized === "netflix"
+      status === "loading" ||
+      !email
     ) {
-      return "netflix";
-    }
-
-    if (
-      normalized === "prime video" ||
-      normalized === "amazon prime" ||
-      normalized === "amazon prime video"
-    ) {
-      return "prime-video";
-    }
-
-    if (
-      normalized === "disney+" ||
-      normalized === "disney plus"
-    ) {
-      return "disney-plus";
-    }
-
-    return normalized;
-  }
-
-  function isServiceSelected(serviceName: string) {
-    const serviceKey =
-      normalizeServiceName(serviceName);
-
-    return selectedServices.some(
-      (selectedName) =>
-        normalizeServiceName(selectedName) ===
-        serviceKey
-    );
-  }
-
-  function getDisplayName(platformName: string) {
-    const key = normalizeServiceName(platformName);
-
-    if (key === "netflix") {
-      return "Netflix";
-    }
-
-    if (key === "prime-video") {
-      return "Amazon Prime";
-    }
-
-    if (key === "disney-plus") {
-      return "Disney+";
-    }
-
-    return platformName;
-  }
-
-
-
-  const loadPageData = useCallback(async () => {
-    if (!email) {
-      setLoading(false);
       return;
     }
 
+    let cancelled = false;
+
+    fetch(
+      `/api/profile?email=${encodeURIComponent(
+        email
+      )}`,
+      {
+        cache: "no-store",
+      }
+    )
+      .then(async (response) => {
+        const data = await response.json();
+
+        if (
+          !response.ok ||
+          !data.user
+        ) {
+          throw new Error(
+            data.error ||
+              "Unable to load your profile."
+          );
+        }
+
+        return data.user as User;
+      })
+      .then((loadedUser) => {
+        if (cancelled) {
+          return;
+        }
+
+        setUser(loadedUser);
+        setError("");
+      })
+      .catch((loadError) => {
+        if (cancelled) {
+          return;
+        }
+
+        setError(
+          loadError instanceof Error
+            ? loadError.message
+            : "Unable to load your profile."
+        );
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [status, email]);
+
+useEffect(() => {
+  if (status !== "authenticated") {
+    return;
+  }
+
+  let cancelled = false;
+
+  async function loadActivity() {
     try {
-      setLoading(true);
-      setError("");
+      setActivityLoading(true);
 
-      /*
-       * Load the profile and available platform list
-       * at the same time.
-       */
-      const [profileResponse, platformsResponse] =
-        await Promise.all([
-          fetch(
-            `/api/profile?email=${encodeURIComponent(
-              email
-            )}`,
-            {
-              cache: "no-store",
-            }
-          ),
-
-          fetch("/api/streaming-services", {
-            cache: "no-store",
-          }),
-        ]);
-
-      const profileData =
-        await profileResponse.json();
-
-      const platformsData =
-        await platformsResponse.json();
-
-      if (
-        !profileResponse.ok ||
-        !profileData.user
-      ) {
-        throw new Error(
-          profileData.error ||
-            "Unable to load your profile."
-        );
-      }
-
-      if (!platformsResponse.ok) {
-        throw new Error(
-          platformsData.error ||
-            "Unable to load streaming platforms."
-        );
-      }
-
-      const loadedUser =
-        profileData.user as User;
-
-      const loadedAnswers: Answers = {
-        genres:
-          profileData.answers?.genres ?? [],
-
-        streamingServices:
-          profileData.answers
-            ?.streamingServices ?? [],
-
-        contentTypes:
-          profileData.answers
-            ?.contentTypes ?? [],
-
-        preferences:
-          profileData.answers
-            ?.preferences ?? [],
-      };
-
-      const availablePlatforms =
-        Array.isArray(platformsData)
-          ? (platformsData as StreamingService[])
-          : [];
-
-      setUser(loadedUser);
-      setAnswers(loadedAnswers);
-      setStreamingServices(
-        availablePlatforms
-      );
-
-      /*
-       * Connected services are stored in
-       * user_connected_services, so load them
-       * from your existing list route.
-       */
-      const connectedResponse = await fetch(
-         `/api/connect-service?userId=${loadedUser.user_id}`,
+      const response = await fetch(
+        "/api/activity",
         {
           cache: "no-store",
         }
       );
 
-      const connectedText =
-  await connectedResponse.text();
+      const data =
+        (await response.json()) as
+          Partial<ActivityApiResponse> & {
+            error?: string;
+          };
 
-let connectedData: {
-  services?: string[];
-  error?: string;
-} = {};
-
-try {
-  connectedData = connectedText
-    ? JSON.parse(connectedText)
-    : {};
-} catch {
-  throw new Error(
-    "The connected-services API returned an invalid response."
-  );
-}
-
-      let connectedServices: string[] = [];
-
-      if (
-        connectedResponse.ok &&
-        Array.isArray(connectedData.services)
-      ) {
-        connectedServices =
-          connectedData.services;
-      } else {
-        /*
-         * Fall back to profile answers if the
-         * connected-services route has no data.
-         */
-        connectedServices =
-          loadedAnswers.streamingServices;
+      if (!response.ok) {
+        throw new Error(
+          data.error ||
+            "Unable to load your activity."
+        );
       }
 
-      setSelectedServices(
-        connectedServices
+      if (cancelled) {
+        return;
+      }
+
+      setActivityStats(
+        data.stats ?? emptyActivityStats
       );
 
-      setSavedServices(
-        connectedServices
+      setMoodTrends(
+        Array.isArray(data.moodTrends)
+          ? data.moodTrends
+          : []
       );
 
-      setAnswers((current) => ({
-        ...current,
-        streamingServices:
-          connectedServices,
-      }));
-    } catch (loadError) {
-      setError(
-        loadError instanceof Error
-          ? loadError.message
-          : "Unable to load your streaming services."
+      setWeeklyMoodTrends(
+        Array.isArray(data.weeklyMoodTrends)
+          ? data.weeklyMoodTrends
+          : []
       );
+
+      setActiveServices(
+        Array.isArray(data.services)
+          ? data.services
+          : []
+      );
+
+      setMostCommonMood(
+        data.mostCommonMood ?? null
+      );
+    } catch (activityError) {
+      if (cancelled) {
+        return;
+      }
+
+      console.error(
+        "Unable to load activity:",
+        activityError
+      );
+
+      setActivityStats(
+        emptyActivityStats
+      );
+
+      setMoodTrends([]);
+      setActiveServices([]);
+      setMostCommonMood(null);
+      setWeeklyMoodTrends([]);
     } finally {
-      setLoading(false);
+      if (!cancelled) {
+        setActivityLoading(false);
+      }
     }
-  }, [email]);
+  }
 
-  useEffect(() => {
-    if (status === "loading") {
-      return;
-    }
+  void loadActivity();
 
-    const timeoutId =
-      window.setTimeout(() => {
-        void loadPageData();
-      }, 0);
-
-    return () => {
-      window.clearTimeout(timeoutId);
-    };
-  }, [loadPageData, status]);
+  return () => {
+    cancelled = true;
+  };
+}, [status]);
 
   const firstName = useMemo(() => {
     return user?.first_name || "User";
   }, [user]);
 
-  const connectedServices = useMemo(() => {
-  return streamingServices.filter((service) =>
-    isServiceSelected(service.platform_name)
-  );
-}, [streamingServices, selectedServices]);
+ 
 
-  const otherServices = useMemo(() => {
-  return streamingServices.filter(
-    (service) =>
-      !isServiceSelected(service.platform_name)
-  );
-}, [streamingServices, selectedServices]);
-
-  function handleStartEdit() {
-    setSelectedServices([
-      ...savedServices,
-    ]);
-
-    setError("");
-    setSuccess("");
-    setIsEditing(true);
-  }
-
-  function handleCancel() {
-    setSelectedServices([
-      ...savedServices,
-    ]);
-
-    setError("");
-    setSuccess("");
-    setIsEditing(false);
-  }
-
-  function toggleService(
-    serviceName: string
-  ) {
-    const serviceKey =
-      normalizeServiceName(serviceName);
-
-    setSelectedServices((current) => {
-      const alreadySelected =
-        current.some(
-          (selectedName) =>
-            normalizeServiceName(
-              selectedName
-            ) === serviceKey
-        );
-
-      if (alreadySelected) {
-        return current.filter(
-          (selectedName) =>
-            normalizeServiceName(
-              selectedName
-            ) !== serviceKey
-        );
-      }
-
-      return [...current, serviceName];
-    });
-  }
-
-  function handleServiceClick(
-    serviceName: string
-  ) {
-    if (!isEditing) {
-      setIsEditing(true);
-    }
-
-    toggleService(serviceName);
-  }
-
- async function handleSave() {
-  if (!user) {
-    return;
-  }
-
-  try {
-    setSaving(true);
-    setError("");
-    setSuccess("");
-
-    const response = await fetch(
-      "/api/connect-service",
-      {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userId: user.user_id,
-          services: selectedServices,
-        }),
-      }
-    );
-
-    const responseText =
-      await response.text();
-
-    let data: {
-      success?: boolean;
-      services?: string[];
-      error?: string;
-      details?: string;
-    } = {};
-
-    try {
-      data = responseText
-        ? JSON.parse(responseText)
-        : {};
-    } catch {
-      throw new Error(
-        "The server returned an invalid response while saving."
-      );
-    }
-
-    if (!response.ok) {
-      throw new Error(
-        data.error ||
-          data.details ||
-          "Unable to save your streaming services."
-      );
-    }
-
-    const saved =
-      Array.isArray(data.services)
-        ? data.services
-        : selectedServices;
-
-    setSelectedServices(saved);
-    setSavedServices(saved);
-
-    setAnswers((current) => ({
-      ...current,
-      streamingServices: saved,
-    }));
-
-    setIsEditing(false);
-
-    setSuccess(
-      "Your streaming services were updated successfully."
-    );
-
-    window.setTimeout(() => {
-      setSuccess("");
-    }, 3000);
-  } catch (saveError) {
-    setError(
-      saveError instanceof Error
-        ? saveError.message
-        : "Unable to save your streaming services."
-    );
-  } finally {
-    setSaving(false);
-  }
-}
-
-  async function handleLogout() {
-    try {
-      await fetch("/api/logout", {
-        method: "POST",
-        headers: {
-          "Content-Type":
-            "application/json",
-        },
-        body: JSON.stringify({
-          email: sessionUser?.email,
-        }),
-      });
-    } catch (logoutError) {
-      console.error(
-        "Logout tracking failed:",
-        logoutError
-      );
-    }
-
-    await signOut({
-      callbackUrl: "/",
-    });
-  }
+  const stats = useMemo(
+  () => [
+    {
+      value:
+        activityStats.contentItemsWatched,
+      label: "Content Items Watched",
+      tag:
+        activityStats.contentItemsWatched === 1
+          ? "1 title marked as watched"
+          : `${activityStats.contentItemsWatched} titles marked as watched`,
+    },
+    {
+      value:
+        activityStats.watchlistsCreated,
+      label: "Watchlists Created",
+      tag:
+        activityStats.watchlistsCreated === 1
+          ? "1 watchlist"
+          : `${activityStats.watchlistsCreated} watchlists`,
+    },
+    {
+      value:
+        activityStats.servicesActive,
+      label: "Services Active",
+      tag:
+        activeServices.length > 0
+          ? activeServices.join(" · ")
+          : "No connected services",
+    },
+    {
+      value:
+        activityStats.reviewsPending,
+      label: "Reviews Pending",
+      tag: "Watched without a review",
+    },
+    {
+      value:
+        activityStats.moodSelections,
+      label: "Mood Selections",
+      tag: mostCommonMood
+        ? `Most common · ${mostCommonMood}`
+        : "No watched moods yet",
+    },
+  ],
+  [
+    activityStats,
+    activeServices,
+    mostCommonMood,
+  ]
+);
 
   if (
     status === "loading" ||
-    loading
+    loading  ||
+  activityLoading
   ) {
     return (
       <main className="profile-streaming-page">
         <div className="profile-streaming-loading">
-          Loading your streaming services...
+          Loading your activity...
         </div>
       </main>
     );
@@ -550,14 +497,12 @@ try {
           <CircleUserRound size={44} />
 
           <h1>
-            Sign in to view your streaming
-            services
+            Sign in to view your activity
           </h1>
 
           <p>
-            Manage the streaming platforms
-            Cineri uses for your
-            recommendations.
+            See your viewing history,
+            reviews, mood trends, and activity.
           </p>
 
           <Link href="/login">
@@ -575,22 +520,13 @@ try {
           <CircleUserRound size={44} />
 
           <h1>
-            Streaming services unavailable
+            Activity unavailable
           </h1>
 
           <p>
             {error ||
               "We could not find your account information."}
           </p>
-
-          <button
-            type="button"
-            onClick={() =>
-              void loadPageData()
-            }
-          >
-            Try Again
-          </button>
         </section>
       </main>
     );
@@ -605,14 +541,307 @@ try {
         </h1>
 
         <div className="profile-streaming-layout">
-         <AccountSidebar active="activity" />
+          <AccountSidebar active="activity" />
 
-          <section className="profile-streaming-card">
-           
+          <section className="activity-card">
+            {/* HEADER */}
+            <div className="activity-header">
+              <div>
+                <h2>Your Activity</h2>
 
-           
+                <p>
+                  A summary of everything
+                  you&apos;ve watched, saved,
+                  and reviewed
+                </p>
+              </div>
 
-           
+              {/* <div className="activity-filter-tabs">
+                {(
+                  [
+                    "7 Days",
+                    "30 Days",
+                    "All Time",
+                  ] as ActivityFilter[]
+                ).map((filter) => (
+                  <button
+                    key={filter}
+                    type="button"
+                    className={
+                      activityFilter ===
+                      filter
+                        ? "active"
+                        : ""
+                    }
+                    onClick={() =>
+                      setActivityFilter(
+                        filter
+                      )
+                    }
+                  >
+                    {filter}
+                  </button>
+                ))}
+              </div> */}
+            </div>
+
+            {/* STATS */}
+            <div className="activity-stats-card">
+              {stats.map((stat) => (
+                <div
+                  className="activity-stat"
+                  key={stat.label}
+                >
+                  <strong>
+                    {stat.value}
+                  </strong>
+
+                  <span>
+                    {stat.label}
+                  </span>
+
+                   <p>
+                    {stat.tag}
+                  </p>
+                </div>
+              ))}
+            </div>
+
+            {/* MOOD TRENDS */}
+            <section className="activity-section">
+  <div className="activity-section-heading">
+    <div className="activity-section-title">
+      <div className="activity-section-icon">
+        <Smile size={17} />
+      </div>
+
+      <div>
+        <h3>Mood Trends</h3>
+        <p>Your most watched mood each day</p>
+      </div>
+    </div>
+  </div>
+
+  <div className="activity-weekly-mood-grid">
+    {weeklyMoodTrends.map((mood) => (
+      <div
+        key={mood.day}
+        className="activity-weekly-mood-column"
+      >
+        <div
+          className={`activity-weekly-mood-card ${mood.className}`}
+        >
+          {mood.iconUrl && (
+              <span className="activity-weekly-mood-icon">
+                <img
+                  src={mood.iconUrl}
+                  alt=""
+                />
+              </span>
+            )}
+
+          <strong>{mood.moodName}</strong>
+        </div>
+
+        <span className="activity-weekly-mood-day">
+          {mood.day}
+        </span>
+      </div>
+    ))}
+  </div>
+
+  <div className="activity-mood-legend">
+    <span>
+      <i className="legend-thrilling" />
+      Thrilling
+    </span>
+
+    <span>
+      <i className="legend-feel-good" />
+      Feel Good
+    </span>
+
+    <span>
+      <i className="legend-spooky" />
+      Spooky
+    </span>
+
+    <span>
+      <i className="legend-mind" />
+      Mind-Bending
+    </span>
+  </div>
+</section>
+
+            {/* WATCH HISTORY */}
+            <section className="activity-section">
+              <div className="activity-section-heading">
+                <div className="activity-section-title">
+                  <div className="activity-section-icon">
+                    <History size={17} />
+                  </div>
+
+                  <div>
+                    <h3>
+                      Recent Watch History
+                    </h3>
+                  </div>
+                </div>
+
+                <button
+                  className="activity-view-all"
+                  type="button"
+                >
+                  View all
+                </button>
+              </div>
+
+              <div className="activity-history-list">
+                {watchHistory.map(
+                  (item) => (
+                    <div
+                      className="activity-history-row"
+                      key={item.id}
+                    >
+                      <div className="activity-history-image">
+                        <img
+                          src={item.image}
+                          alt={item.title}
+                        />
+                      </div>
+
+                      <div className="activity-history-info">
+                        <h4>
+                          {item.title}
+                        </h4>
+
+                        <p>
+                          {item.year}
+                          <span>•</span>
+                          {item.type}
+                        </p>
+
+                        <span className="activity-history-mood">
+                          {item.mood}
+                        </span>
+                      </div>
+
+                      <span className="activity-history-date">
+                        {item.date}
+                      </span>
+
+                      <button
+                        type="button"
+                        className="activity-watch-again"
+                      >
+                        Watch in Recommendations
+                      </button>
+                    </div>
+                  )
+                )}
+              </div>
+            </section>
+
+            {/* RECENT REVIEWS */}
+            <section className="activity-section activity-reviews-section">
+              <div className="activity-section-heading">
+                <div className="activity-section-title">
+                  <div className="activity-section-icon">
+                    <BookOpen
+                      size={17}
+                    />
+                  </div>
+
+                  <div>
+                    <h3>
+                      Recent Reviews
+                    </h3>
+
+                    <p>
+                      Your latest reviews
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="activity-review-list">
+                {recentReviews.map(
+                  (review) => (
+                    <article
+                      className="activity-review-row"
+                      key={review.id}
+                    >
+                      <div className="activity-review-poster">
+                        <img
+                          src={review.image}
+                          alt={review.title}
+                        />
+                      </div>
+
+                      <div className="activity-review-content">
+                        <div className="activity-review-top">
+                          <div>
+                            <h4>
+                              {review.title}
+                            </h4>
+
+                            <div className="activity-review-rating">
+                              {Array.from(
+                                {
+                                  length: 5,
+                                }
+                              ).map(
+                                (
+                                  _,
+                                  index
+                                ) => (
+                                  <Star
+                                    key={
+                                      index
+                                    }
+                                    size={
+                                      10
+                                    }
+                                    fill={
+                                      index <
+                                      review.rating
+                                        ? "currentColor"
+                                        : "none"
+                                    }
+                                  />
+                                )
+                              )}
+                            </div>
+                          </div>
+
+                          <span>
+                            {review.date}
+                          </span>
+                        </div>
+
+                        <div className="activity-review-tags">
+                          {review.tags.map(
+                            (tag) => (
+                              <span
+                                key={
+                                  tag
+                                }
+                              >
+                                {tag}
+                              </span>
+                            )
+                          )}
+                        </div>
+
+                        <p className="activity-review-text">
+                          {review.review}
+                        </p>
+                      </div>
+                    </article>
+                  )
+                )}
+              </div>
+            </section>
           </section>
         </div>
       </div>
