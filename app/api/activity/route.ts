@@ -35,6 +35,28 @@ interface WeeklyMoodTrendRow extends RowDataPacket {
   watched_count: number | string;
 }
 
+interface WatchHistoryRow extends RowDataPacket {
+  movie_id: number;
+  title: string;
+  release_year: number | null;
+  content_type: string | null;
+  image: string | null;
+  watched_at: string | Date | null;
+  has_review: number | string;
+}
+
+interface RecentReviewRow extends RowDataPacket {
+  comment_id: number;
+  movie_id: number;
+  title: string;
+  rating: number | string;
+  comment_text: string | null;
+  review_tags: string | string[] | null;
+  created_at: string | Date;
+  updated_at: string | Date;
+  image: string | null;
+}
+
 async function getLoggedInUserId() {
   const session = await getServerSession(authOptions);
 
@@ -53,6 +75,27 @@ async function getLoggedInUserId() {
   );
 
   return users[0]?.user_id ?? null;
+}
+
+function toIsoDate(
+  value: string | Date | null | undefined
+) {
+  if (!value) {
+    return new Date().toISOString();
+  }
+
+  const date =
+    value instanceof Date
+      ? value
+      : new Date(
+          String(value).replace(" ", "T")
+        );
+
+  if (Number.isNaN(date.getTime())) {
+    return new Date().toISOString();
+  }
+
+  return date.toISOString();
 }
 
 export async function GET() {
@@ -336,7 +379,120 @@ const [weeklyMoodRows] =
     [userId]
   );
 
+  const [recentReviewRows] =
+  await pool.execute<RecentReviewRow[]>(
+    `
+      SELECT
+        mc.comment_id,
+        mc.movie_id,
+        m.title,
+        mc.rating,
+        mc.comment_text,
+        mc.review_tags,
+        mc.created_at,
+        mc.updated_at,
+
+        COALESCE(
+          NULLIF(m.portrait_url, ''),
+          NULLIF(m.poster_url, ''),
+          '/placeholder.jpg'
+        ) AS image
+
+      FROM movie_comments mc
+
+      INNER JOIN movies m
+        ON m.movie_id = mc.movie_id
+
+      WHERE mc.user_id = ?
+
+      ORDER BY
+        COALESCE(
+          mc.updated_at,
+          mc.created_at
+        ) DESC
+
+      LIMIT 3
+    `,
+    [userId]
+  );
+
     const stats = statsRows[0];
+
+    const [watchHistoryRows] =
+  await pool.execute<WatchHistoryRow[]>(
+    `
+      SELECT
+        m.movie_id,
+        m.title,
+        m.release_year,
+
+        ct.type_name AS content_type,
+
+        COALESCE(
+          m.poster_url,
+          m.portrait_url
+        ) AS image,
+
+        MAX(watched_movies.added_at)
+          AS watched_at,
+
+        CASE
+          WHEN EXISTS (
+            SELECT 1
+
+            FROM movie_comments reviews
+
+            WHERE reviews.movie_id =
+              m.movie_id
+
+              AND reviews.user_id = ?
+          )
+          THEN 1
+          ELSE 0
+        END AS has_review
+
+      FROM watchlist_movies watched_movies
+
+      INNER JOIN watchlists watched_lists
+        ON watched_lists.watchlist_id =
+          watched_movies.watchlist_id
+
+      INNER JOIN movies m
+        ON m.movie_id =
+          watched_movies.movie_id
+
+      LEFT JOIN content_types ct
+        ON ct.content_type_id =
+          m.content_type_id
+
+      WHERE watched_lists.user_id = ?
+
+        AND LOWER(
+          COALESCE(
+            watched_movies.status,
+            ''
+          )
+        ) = 'completed'
+
+      GROUP BY
+        m.movie_id,
+        m.title,
+        m.release_year,
+        ct.type_name,
+        m.poster_url,
+        m.portrait_url
+
+      ORDER BY
+        MAX(watched_movies.added_at) DESC,
+        m.movie_id DESC
+
+      LIMIT 3
+    `,
+    [
+      userId,
+      userId,
+    ]
+  );
 
     const weekDays = [
   {
@@ -429,40 +585,114 @@ const weeklyMoodTrends = weekDays.map(
       })
     );
 
-    return NextResponse.json({
-      stats: {
-        contentItemsWatched: Number(
-          stats?.content_items_watched ?? 0
-        ),
+    const recentWatchHistory =
+  watchHistoryRows.map((item) => ({
+    id: Number(item.movie_id),
 
-        watchlistsCreated: Number(
-          stats?.watchlists_created ?? 0
-        ),
+    title: item.title,
 
-        servicesActive: Number(
-          stats?.services_active ?? 0
-        ),
+    year: item.release_year
+      ? String(item.release_year)
+      : "",
 
-        reviewsPending: Number(
-          stats?.reviews_pending ?? 0
-        ),
+    type:
+      item.content_type ||
+      "Movie",
 
-        moodSelections: Number(
-          stats?.mood_selections ?? 0
-        ),
-      },
+    date: item.watched_at
+      ? new Date(
+          item.watched_at
+        ).toISOString()
+      : null,
 
-      services: serviceRows.map(
-        (service) => service.service_name
+    image:
+      item.image ||
+      "/placeholder.jpg",
+
+    hasReview:
+      Boolean(
+        Number(item.has_review)
       ),
+  }));
 
-      moodTrends,
+const recentReviews =
+  recentReviewRows.map((review) => {
+    let tags: string[] = [];
 
-      weeklyMoodTrends,
+    if (Array.isArray(review.review_tags)) {
+      tags = review.review_tags;
+    } else if (review.review_tags) {
+      try {
+        const parsed = JSON.parse(
+          String(review.review_tags)
+        );
 
-      mostCommonMood:
-        moodTrends[0]?.label ?? null,
-    });
+        tags = Array.isArray(parsed)
+          ? parsed.map(String)
+          : [];
+      } catch {
+        tags = [];
+      }
+    }
+
+    return {
+      id: Number(review.comment_id),
+      movieId: Number(review.movie_id),
+      title: review.title,
+      rating: Number(review.rating ?? 0),
+
+      review:
+        review.comment_text || "",
+
+      tags,
+
+      date: toIsoDate(
+        review.updated_at ||
+            review.created_at
+        ),
+
+      image:
+        review.image ||
+        "/placeholder.jpg",
+    };
+  });
+
+    return NextResponse.json({
+  stats: {
+    contentItemsWatched: Number(
+      stats?.content_items_watched ?? 0
+    ),
+
+    watchlistsCreated: Number(
+      stats?.watchlists_created ?? 0
+    ),
+
+    servicesActive: Number(
+      stats?.services_active ?? 0
+    ),
+
+    reviewsPending: Number(
+      stats?.reviews_pending ?? 0
+    ),
+
+    moodSelections: Number(
+      stats?.mood_selections ?? 0
+    ),
+  },
+
+  services: serviceRows.map(
+    (service) => service.service_name
+  ),
+
+  moodTrends,
+
+  weeklyMoodTrends,
+
+  recentWatchHistory,
+    recentReviews,
+  mostCommonMood:
+    moodTrends[0]?.label ?? null,
+});
   } catch (error) {
     console.error(
       "GET ACTIVITY ERROR:",

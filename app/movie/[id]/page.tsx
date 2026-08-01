@@ -1204,6 +1204,69 @@ function toggleWatchedTag(tag: string) {
   );
 }
 
+async function handleSkipWatchedReview() {
+  if (!movie || !currentUserId) {
+    return;
+  }
+
+  try {
+    setIsSubmittingWatchedReview(true);
+    setWatchedReviewError("");
+
+    const response = await fetch(
+      "/api/watchlist-movies/status",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type":
+            "application/json",
+        },
+        body: JSON.stringify({
+          userId: currentUserId,
+          movieId: movie.movie_id,
+          status: "completed",
+        }),
+      }
+    );
+
+    const result = await response
+      .json()
+      .catch(() => null);
+
+    if (!response.ok) {
+      throw new Error(
+        result?.error ||
+          "Unable to mark this title as watched."
+      );
+    }
+
+    setIsWatched(true);
+    setIsWatchedReviewOpen(false);
+
+    setWatchedRating(0);
+    setWatchedTags([]);
+    setWatchedReviewText("");
+    setWouldRecommend(true);
+
+    setWatchedMessage(
+      "Marked as watched. You can add a review later."
+    );
+  } catch (error) {
+    console.error(
+      "Skip watched review error:",
+      error
+    );
+
+    setWatchedReviewError(
+      error instanceof Error
+        ? error.message
+        : "Unable to mark this title as watched."
+    );
+  } finally {
+    setIsSubmittingWatchedReview(false);
+  }
+}
+
 async function handleSubmitWatchedReview(
   event: React.FormEvent<HTMLFormElement>
 ) {
@@ -2316,13 +2379,16 @@ async function handleSubmitWatchedReview(
       )}
 
       <div className="movie-watched-review-actions">
-        <button
+       <button
           type="button"
           onClick={() =>
-            setIsWatchedReviewOpen(false)
+            void handleSkipWatchedReview()
           }
+          disabled={isSubmittingWatchedReview}
         >
-          Cancel
+          {isSubmittingWatchedReview
+            ? "Saving..."
+            : "Skip review"}
         </button>
 
         <button
