@@ -311,6 +311,7 @@ export default function HelpPage() {
               Still need help?
               <span>Send us a message</span>
             </h2>
+            <br />
             <p className="help-support-copy">
               Fill out the form below and we&apos;ll get back to you within 2
               business days.

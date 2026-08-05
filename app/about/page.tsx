@@ -16,10 +16,10 @@ import {
 } from "lucide-react";
 
 const team = [
-  { name: "Victoria Khokhlova", role: "Graphic & UX Designer" },
-  { name: "Yu Joo Hwang (Sarah)", role: "Web Designer & Developer" },
-  { name: "Dylan Ellis", role: "Database & API Specialist" },
-  { name: "Alexander Armstrong", role: "Quality & UX Research" },
+  { name: "Victoria Khokhlova", role: "Graphic & UX/UI Designer" },
+  { name: "Yu Jou Huang (Sarah)", role: "Web Designer & Developer" },
+  { name: "Dylan Ellis", role: "Graphic & UX/UI Designer" },
+  { name: "Alexander Armstrong", role: "Graphic & UX/UI Designer" },
   { name: "Sehrish Khan", role: "Graphic Designer" },
 ];
 
