@@ -18,9 +18,9 @@ export default function Footer() {
 
         <div className="footer-links">
           <Link href="/privacy">Privacy</Link>
-          <Link href="/terms">Terms</Link>
+          {/* <Link href="/terms">Terms</Link> */}
           <Link href="/help">Help</Link>
-          <Link href="/contact">Contact</Link>
+          {/* <Link href="/contact">Contact</Link> */}
         </div>
 
         <div className="footer-copy">
