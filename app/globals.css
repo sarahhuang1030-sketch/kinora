@@ -15689,7 +15689,7 @@ main.help-article-content {
   border-top: 1px solid rgba(126, 148, 174, 0.09);
 
   color: #9ba7b5;
-  font-size: calc(8px * var(--app-text-scale));
+  font-size: calc(12px * var(--app-text-scale));
   line-height: 1.55;
 }
 
@@ -15822,5 +15822,233 @@ main.help-article-content {
     grid-template-columns: 1fr;
     gap: 5px;
     padding: 14px 0;
+  }
+}
+/* ========================================================================== 
+   HELP ARTICLES — FINAL MOBILE OVERRIDES
+   Keep this section at the very end of globals.css so it wins over earlier
+   sidebar and article rules.
+   ========================================================================== */
+
+@media (max-width: 900px) {
+  .help-article-page {
+    padding: 96px 22px 72px;
+  }
+
+  .help-article-layout {
+    grid-template-columns: 180px minmax(0, 1fr);
+    gap: 26px;
+  }
+
+  .help-article-sidebar {
+    width: 180px;
+    top: 120px;
+  }
+
+  main.help-article-content {
+    top: 0;
+  }
+
+  .help-article-header h1 {
+    font-size: calc(58px * var(--app-text-scale));
+    line-height: 0.82;
+  }
+
+  .help-article-section > h2 {
+    font-size: calc(43px * var(--app-text-scale));
+    line-height: 0.82;
+  }
+}
+
+@media (max-width: 720px) {
+  .help-article-page {
+    padding: 86px 16px 56px;
+  }
+
+  .help-article-layout {
+    display: flex;
+    flex-direction: column;
+    gap: 28px;
+  }
+
+  .help-article-sidebar {
+    position: static;
+    width: 100%;
+    margin: 0;
+    padding: 14px 10px;
+    border-radius: 13px;
+  }
+
+  .help-article-sidebar-nav {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 6px;
+  }
+
+  .help-article-sidebar-link {
+    min-width: 0;
+    min-height: 44px;
+    padding: 7px 9px;
+    white-space: normal;
+  }
+
+  main.help-article-content {
+    width: 100%;
+    max-width: none;
+    top: 0;
+  }
+
+  .help-article-header {
+    padding-bottom: 22px;
+  }
+
+  .help-article-header h1 {
+    margin-bottom: 12px;
+    font-size: calc(50px * var(--app-text-scale));
+    line-height: 0.82;
+  }
+
+  .help-article-header p,
+  .help-article-intro,
+  .help-article-intro1,
+  .help-article-text-step p,
+  .help-article-number-card p,
+  .help-article-tip p,
+  .help-article-navigation-heading p,
+  .help-article-feature-card p,
+  .help-article-account-description p,
+  .help-streaming-step p,
+  .help-streaming-question-list p,
+  .help-streaming-access-card p,
+  .help-privacy-border-card p,
+  .help-privacy-sharing-list p,
+  .help-privacy-security-list p,
+  .help-privacy-closing {
+    font-size: calc(13px * var(--app-text-scale));
+    line-height: 1.7;
+  }
+
+  .help-article-section {
+    padding: 28px 0 31px;
+  }
+
+  .help-article-section > h2 {
+    font-size: calc(40px * var(--app-text-scale));
+    line-height: 0.84;
+  }
+
+  .help-article-intro {
+    margin-top: -3px;
+  }
+
+  .help-article-instructions {
+    margin-top: 24px;
+    padding-left: 0;
+  }
+
+  .help-article-number-card {
+    padding: 18px 17px 18px 66px;
+  }
+
+  .help-article-number {
+    top: 18px;
+    left: 17px;
+  }
+
+  .help-article-navigation-heading {
+    gap: 14px;
+  }
+
+  .help-article-feature-grid,
+  .help-account-factor-grid,
+  .help-streaming-access-grid,
+  .help-privacy-card-grid,
+  .help-privacy-collect-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .help-article-feature-card {
+    min-height: auto;
+  }
+
+  .help-article-account-row,
+  .help-account-settings-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+    padding: 16px 0;
+  }
+
+  .help-article-account-button,
+  .help-account-settings-row .help-article-account-button {
+    width: min(100%, 260px);
+  }
+
+  .help-privacy-header-row {
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .help-privacy-table-head,
+  .help-privacy-retention-head {
+    display: none;
+  }
+
+  .help-privacy-table-row,
+  .help-privacy-retention-row {
+    grid-template-columns: 1fr;
+    gap: 5px;
+    padding: 14px 0;
+  }
+}
+
+@media (max-width: 500px) {
+  .help-article-page {
+    padding: 78px 13px 48px;
+  }
+
+  .help-article-sidebar-nav {
+    grid-template-columns: 1fr;
+  }
+
+  .help-article-sidebar-link {
+    min-height: 42px;
+  }
+
+  .help-article-header h1 {
+    font-size: calc(44px * var(--app-text-scale));
+  }
+
+  .help-article-section > h2 {
+    font-size: calc(36px * var(--app-text-scale));
+  }
+
+  .help-article-navigation-heading {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 10px;
+  }
+
+  .help-article-navigation-heading > a {
+    padding-top: 0;
+  }
+
+  .help-article-number-card {
+    padding: 64px 15px 17px;
+  }
+
+  .help-article-number {
+    top: 15px;
+    left: 15px;
+  }
+
+  .help-article-feature-card,
+  .help-streaming-access-card,
+  .help-privacy-border-card {
+    padding-right: 15px;
+    padding-left: 15px;
+  }
+
+  .help-article-next {
+    justify-content: flex-start;
   }
 }
