@@ -16,27 +16,32 @@ import {
 } from "lucide-react";
 import { FormEvent, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 
 const helpTopics = [
   {
     title: "Getting Started",
     text: "New to Cineri? Learn how to create your account, set up your taste profile, and connect your streaming services.",
     icon: "/icons/arrowRight.png",
+    href: "/help/getting-started",
   },
   {
     title: "Account & Recommendation",
     text: "Manage your personal information, update preferences, or understand how mood matching and personalized recommendations work.",
     icon: CircleUser,
+    href: "/help/account-recommendations",
   },
   {
     title: "Streaming Services",
     text: "Connect, disconnect, and troubleshoot your Netflix, Prime, Disney+, Crave, Apple TV+, and other accounts.",
     icon: Monitor,
+    href: "/help/streaming-services",
   },
   {
     title: "Privacy & Terms of Use",
     text: "Understand your privacy settings, resolve login problems, display issues, and other technical difficulties.",
     icon: LockKeyhole,
+    href: "/privacy",
   },
 ];
 
@@ -254,7 +259,7 @@ export default function HelpPage() {
         </div>
 
         <p>{topic.text}</p>
-        <a href="#help-faq">READ THIS TOPIC</a>
+        <Link href={topic.href}>READ THIS TOPIC</Link>
       </article>
     );
   })}
