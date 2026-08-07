@@ -639,7 +639,7 @@ if (
               stepNumber="1"
               eyebrow="QUESTION 1 of 3"
               title="Pick your favourite genres"
-              subtitle="Choose as many as you like."
+              subtitle="Select everything you emjoy watching."
               label="Genres"
               options={genreOptions}
               selected={answers.genres}

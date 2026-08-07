@@ -677,7 +677,7 @@ display: block;
   text-align: left;
   text-decoration: none;
 
-  font-size: calc(13px * var(--app-text-scale));
+  font-size: calc(12px * var(--app-text-scale));
   font-weight: 500;
 
   cursor: pointer;
@@ -1058,10 +1058,10 @@ width: 24px;
 
 .nav-search-form {
 position: absolute;
-  right: -5px;
-  top: 50%;
+  right: 130px;
+  top: 20px;
   transform: translateY(-50%);
-  width: 290px;
+  width: 240px;
 }
 
 .nav-profile-menu {
@@ -5333,6 +5333,7 @@ display: inline-flex;
   font-weight: 700;
 
   transition: all 0.25s ease;
+  margin-right:10px;
 }
 
 .register-btn:hover {
@@ -5348,14 +5349,14 @@ min-height: calc(100vh - 64px);
   justify-content: center;
   align-items: center;
 
-  padding: 100px 20px 60px;
+  /* padding: 100px 20px 60px; */
 }
 
 .auth-card {
 width: 420px;
   padding: 40px;
 
-  background: rgba(20, 20, 20, 0.95);
+  background: rgba(13, 27, 44, 0.94);
 
   border-radius: 24px;
 
@@ -5365,6 +5366,7 @@ width: 420px;
     0 20px 60px rgba(0,0,0,0.6);
 
   backdrop-filter: blur(10px);
+  margin-top:160px;
 }
 
 .auth-card h1 {
@@ -5589,7 +5591,7 @@ min-height: calc(100vh - 64px);
   display: flex;
   justify-content: center;
   align-items: flex-start;
-  padding: 110px 20px 60px;
+  /* padding: 110px 20px 60px; */
 }
 
 .register-shell {
@@ -5598,11 +5600,12 @@ width: 100%;
   display: flex;
   flex-direction: column;
   align-items: center;
+  margin-top:120px;
 }
 
 .register-card {
 width: 100%;
-  /* max-width: 520px; */
+  
   max-width: 600px;
   padding: 28px 36px 32px;
   border-radius: 22px;
@@ -5611,6 +5614,7 @@ width: 100%;
   box-shadow: 0 24px 80px rgba(0, 0, 0, 0.45);
   color: white;
   text-align: center;
+  margin-top: 50px;
 }
 
 .register-card h1 {
@@ -5621,12 +5625,11 @@ margin: 0;
 }
 
 .register-subtitle {
-  max-width: 420px;
   color: #aeb9c8;
   font-size: calc(15px * var(--app-text-scale));
   font-family: var(--font-moderustic);
   margin-top:-12px;
-  margin-left:12px;
+  text-align:center;
 }
 
 .step-eyebrow {
@@ -5650,7 +5653,7 @@ margin: 0 0 10px;
 
 .register-progress-wrapper {
 width: 100%;
-  margin-bottom: 90px;
+ 
 }
 
 .register-progress-lines {
@@ -5739,10 +5742,6 @@ background: radial-gradient(
     #ff7b3f 65%,
     #ff5f4a 100%
   );
-
-  
-
-
   box-shadow:
     0 0 15px rgba(255, 159, 67, 0.45),
     0 0 25px rgba(255, 95, 74, 0.25);
@@ -6335,10 +6334,7 @@ padding-left: 5px;
 /* Responsive */
 
 @media (max-width: 720px) {
-  .register-card {
-    width: 100%;
-    padding: 28px 22px 32px;
-  }
+
 
   .streaming-connect-grid {
     grid-template-columns: 1fr;
@@ -6451,10 +6447,12 @@ display: inline-flex;
 .complete-title {
   margin: 0;
   text-align: center;
-  font-size: calc(30px * var(--app-text-scale));
+  font-size: calc(60px * var(--app-text-scale));
   font-weight: 800;
-  line-height: 1.2;
-  letter-spacing: -0.5px;
+  line-height: 0.7;
+  /* letter-spacing: -0.5px; */
+  font-family:var(--font-dongle);
+
 }
 
 .complete-title span {
@@ -6462,7 +6460,7 @@ display: inline-flex;
 }
 
 .complete-subtitle {
-  max-width: 470px;
+  max-width: 382px;
   margin: 17px auto 24px;
   color: #67717e;
   text-align: center;
@@ -10480,36 +10478,278 @@ margin-top: 16px;
    ========================================================================== */
 
 @media (max-width: 760px) {
+  main {
+    padding-left: 20px;
+    padding-right: 20px;
+  }
 
-nav,
-main,
-footer {
-padding-left: 20px; padding-right: 20px;
+  .nav-links {
+    display: none;
+  }
 }
 
-.nav-links {
-display: none;
+/* =========================================================
+   REGISTRATION — TABLET
+   ========================================================= */
+
+@media (max-width: 900px) {
+
+  .register-page {
+    min-height: auto;
+    padding: 90px 20px 50px;
+  }
+
+  .register-shell {
+    width: 100%;
+    max-width: 100%;
+  }
+
+  .register-progress-wrapper {
+    margin-bottom: 40px;
+  }
+
+  .register-card {
+    width: 100%;
+    max-width: 600px;
+  }
+
+  .choice-grid,
+  .content-preference-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .choice-pill {
+    min-width: 0;
+  }
 }
-}
+
+
+/* =========================================================
+   REGISTRATION — MOBILE
+   ========================================================= */
 
 @media (max-width: 600px) {
 
-.register-card {
-padding: 26px 20px;
-}
+  .register-page {
+    width: 100%;
+    min-height: auto;
 
-.register-card h1 {
-font-size: calc(28px * var(--app-text-scale));
-}
+    padding-top: 80px;
+    padding-right: 14px;
+    padding-bottom: 40px;
+    padding-left: 14px;
+  }
 
-.choice-grid,
-.social-login {
-grid-template-columns: 1fr;
-}
+  .register-shell {
+    width: 100%;
+    max-width: 100%;
+  }
 
-.step-actions {
-flex-direction: column;
-}
+
+  /* ---------- progress ---------- */
+
+  .register-progress-wrapper {
+    width: 100%;
+    margin-bottom: 28px;
+  }
+
+  .register-progress-lines {
+    gap: 5px;
+  }
+
+
+  /* ---------- card ---------- */
+
+  .register-card {
+    width: 100%;
+    max-width: 100%;
+    padding: 24px 18px 28px;
+    border-radius: 18px;
+  }
+
+  .register-card h1 {
+    font-size: calc(38px * var(--app-text-scale));
+    line-height: 0.95;
+  }
+
+
+  /* ---------- subtitles ---------- */
+
+  .register-subtitle {
+    max-width: 100%;
+    margin-top: -5px;
+    margin-left: 0;
+    line-height: 1.5;
+  }
+
+  .question-header {
+    width: 100%;
+    margin-bottom: 18px;
+  }
+
+  .question-header h1 {
+    font-size: calc(36px * var(--app-text-scale));
+    line-height: 0.95;
+  }
+
+  .question-header .register-subtitle {
+    margin-left: 0;
+  }
+
+
+  /* ---------- onboarding rows ---------- */
+
+  .onboarding-list {
+    margin: 22px 0 24px;
+    gap: 10px;
+  }
+
+  .info-row {
+    width: 100%;
+    min-width: 0;
+    padding: 12px;
+  }
+
+  .info-text {
+    min-width: 0;
+  }
+
+
+  /* ---------- question choices ---------- */
+
+  .choice-grid,
+  .genre-choice-grid,
+  .content-choice-grid,
+  .content-preference-grid,
+  .social-login {
+    width: 100%;
+    grid-template-columns: 1fr;
+  }
+
+  .choice-grid {
+    margin: 18px 0;
+    gap: 10px;
+  }
+
+  .choice-pill {
+    width: 100%;
+    min-width: 0;
+    min-height: 52px;
+    height: auto;
+    padding: 10px 14px;
+  }
+
+  .choice-content {
+    min-width: 0;
+  }
+
+  .choice-title,
+  .choice-description {
+    white-space: normal;
+    overflow-wrap: anywhere;
+  }
+
+
+  /* ---------- preference sections ---------- */
+
+  .content-preference-section {
+    margin-top: 20px;
+  }
+
+  .content-preference-section.excluded-section {
+    margin-top: 24px;
+  }
+
+  .content-preference-note {
+    margin-top: 16px;
+  }
+
+
+  /* ---------- personal details ---------- */
+
+  .register-grid {
+    width: 100%;
+    grid-template-columns: 1fr;
+    gap: 18px;
+  }
+
+  .field-group,
+  .field-group.full-width {
+    width: 100%;
+    min-width: 0;
+    grid-column: auto;
+  }
+
+  .field-group input,
+  .field-group select,
+  .register-form input,
+  .register-select {
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+    box-sizing: border-box;
+  }
+
+
+  /* ---------- password ---------- */
+
+  .register-password-stack {
+    width: 100%;
+    gap: 18px;
+  }
+
+  .password-wrapper {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  /* ---------- buttons ---------- */
+
+  .step-actions,
+  .register-final-actions {
+    display: grid;
+    grid-template-columns: 1fr;
+    width: 100%;
+    gap: 10px;
+    margin-top: 24px;
+  }
+
+  .step-actions .primary-btn,
+  .step-actions .secondary-btn,
+  .register-final-actions .primary-btn,
+  .register-final-actions .secondary-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+
+  /* ---------- social login ---------- */
+
+  .social-login {
+    gap: 10px;
+  }
+
+  .social-btn {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .register-social-section {
+    width: 100%;
+  }
+
+  .register-section-heading {
+    width: 100%;
+  }
+
+
+  /* ---------- security text ---------- */
+
+  .register-security-note {
+    width: 100%;
+    line-height: 1.5;
+  }
 }
 
 @media (max-width: 600px) {
@@ -11432,7 +11672,7 @@ margin: 0;
 
 .content-preference-grid {
   display: grid;
-  grid-template-columns: re  peat(2, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 9px;
 }
 
@@ -11473,7 +11713,7 @@ margin: 0;
 .content-preference-note {
   margin: 22px 0 0;
   color: #6e7d8d;
-  font-size: calc(9px * var(--app-text-scale));
+  font-size: calc(12px * var(--app-text-scale));
   text-align: center;
 }
 
@@ -16053,67 +16293,189 @@ main.help-article-content {
   }
 }
 
-/* =========================================
-   MOBILE NAVBAR FIX
-   ========================================= */
+/* =========================================================
+   MOBILE NAVBAR + FOOTER
+   ========================================================= */
 
 @media (max-width: 760px) {
+
+  /* ---------- NAVBAR ---------- */
+
   nav {
+    position: relative;
+    z-index: 99999;
+
+    width: 100%;
     height: 68px;
-    padding: 0 16px;
+    padding: 0 18px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     gap: 12px;
+
+    background: #081023;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
 
-  /* Keep the logo visible */
   .logo {
-    flex: 0 0 auto;
-    gap: 9px;
-    min-width: 0;
+    display: inline-flex;
+    align-items: center;
+    flex-shrink: 0;
+    gap: 8px;
   }
 
   .logo-icon {
     display: block;
-    width: 36px;
-    height: 36px;
-    flex-shrink: 0;
+    width: 42px;
+    height: 42px;
     object-fit: contain;
+    flex-shrink: 0;
   }
 
-  .logo-wordmark {
-    font-size: calc(18px * var(--app-text-scale));
-    letter-spacing: 0.12em;
-  }
-
-  /* Hide desktop navigation links */
-  .nav-links {
+  nav .logo-wordmark {
     display: none;
   }
 
-  /* Hide the large desktop search bar */
+  /* Hide desktop navigation links only */
+  nav > .nav-links {
+    display: none;
+  }
+
+  /* Right side of navbar */
+  .nav-actions {
+    margin-left: auto;
+
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 12px;
+
+    min-width: 0;
+  }
+
+  /* Hide desktop search on phone */
   .nav-search-form {
     display: none;
   }
 
-  /* Make buttons smaller */
+  .search-wrapper {
+    display: none;
+  }
+
   .register-btn {
     height: 36px;
-    padding: 0 15px;
+    padding: 0 16px;
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+
+    border-radius: 999px;
+
     font-size: calc(12px * var(--app-text-scale));
+    flex-shrink: 0;
   }
 
   .login-btn {
+    display: inline-flex;
+    align-items: center;
+
     font-size: calc(12px * var(--app-text-scale));
+    flex-shrink: 0;
+  }
+
+  .nav-profile-menu {
+    display: block;
+    flex-shrink: 0;
+  }
+
+  .nav-profile {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .nav-profile-img,
+  .nav-profile-initials {
+    width: 36px;
+    height: 36px;
+  }
+
+
+  /* ---------- FOOTER ---------- */
+
+  .footer {
+    width: 100%;
+    height: auto;
+    min-height: 90px;
+
+    margin-top: 40px;
+    padding: 24px 20px;
+
+    display: flex;
+    align-items: center;
+
+    background: rgba(8, 16, 35, 1);
+  }
+
+  .footer-container {
+    width: 100%;
+
+    display: grid;
+    grid-template-columns: auto 1fr auto;
+    align-items: center;
+
+    gap: 18px;
+  }
+
+  .footer-logo {
+    justify-self: start;
+    margin: 0;
+  }
+
+  .footer-logo img {
+    width: 34px;
+    height: 34px;
+    object-fit: contain;
+  }
+
+  /* Hide CINERI text but keep logo */
+  .footer-logo .logo-wordmark {
+    display: none;
+  }
+
+  .footer-links {
+    justify-self: center;
+
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    gap: 16px;
+    margin: 0;
+  }
+
+  .footer-copy {
+    justify-self: end;
+
+    width: auto;
+    max-width: 120px;
+
+    margin: 0;
+
+    font-size: calc(10px * var(--app-text-scale));
+    line-height: 1.35;
+    text-align: right;
   }
 }
 
-@media (max-width: 480px) {
-  nav {
-    padding: 0 13px;
-  }
 
-  /* Show only the logo image on very small screens */
-  .logo-wordmark {
-    display: none;
+@media (max-width: 420px) {
+
+  nav {
+    height: 64px;
+    padding: 0 14px;
   }
 
   .logo-icon {
@@ -16121,7 +16483,45 @@ main.help-article-content {
     height: 38px;
   }
 
+  .nav-actions {
+    gap: 9px;
+  }
+
   .register-btn {
+    height: 34px;
     padding: 0 13px;
+    font-size: calc(11px * var(--app-text-scale));
+  }
+
+  .login-btn {
+    font-size: calc(11px * var(--app-text-scale));
+  }
+
+
+  /* Footer */
+
+  .footer {
+    margin-top: 36px;
+    padding: 22px 16px;
+  }
+
+  .footer-container {
+    grid-template-columns: auto auto 1fr;
+    gap: 14px;
+  }
+
+  .footer-logo img {
+    width: 30px;
+    height: 30px;
+  }
+
+  .footer-links {
+    gap: 10px;
+    font-size: calc(11px * var(--app-text-scale));
+  }
+
+  .footer-copy {
+    max-width: 105px;
+    font-size: calc(9px * var(--app-text-scale));
   }
 }

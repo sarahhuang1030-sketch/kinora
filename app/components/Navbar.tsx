@@ -202,7 +202,7 @@ useEffect(() => {
             </Link>
       </div>
 
-      <div className="nav-links">
+      <div className="nav-actions">
         <div className="search-wrapper">
   <form onSubmit={handleSearch} className="nav-search-form">
     <FiSearch className="search-input-icon" />

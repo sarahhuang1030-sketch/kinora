@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
 import pool from "@/app/src/lib/db";
+import type { RowDataPacket } from "mysql2";
+
+type ContentTypeRow = RowDataPacket & {
+  content_type_id: number;
+};
 
 export async function POST(req: Request) {
   try {
     const body = await req.json();
-
+console.log("ONBOARDING BODY:", body);
     const {
       userId,
       genres,
@@ -115,34 +120,61 @@ export async function POST(req: Request) {
       }
     }
 
-    if (Array.isArray(excludedContentTypes)) {
-      await pool.execute(
-        `
-          DELETE FROM user_excluded_content_types
-          WHERE user_id = ?
-        `,
-        [userId]
+   if (Array.isArray(excludedContentTypes)) {
+  await pool.execute(
+    `
+      DELETE FROM user_excluded_content_types
+      WHERE user_id = ?
+    `,
+    [userId]
+  );
+
+  for (const typeName of excludedContentTypes) {
+   
+
+    const [contentTypeRows] =
+  await pool.execute<ContentTypeRow[]>(
+      `
+        SELECT content_type_id
+        FROM content_types
+        WHERE type_name = ?
+        LIMIT 1
+      `,
+      [typeName]
+    );
+
+    if (contentTypeRows.length === 0) {
+      console.warn(
+        "EXCLUDED CONTENT TYPE NOT FOUND:",
+        typeName
       );
-
-      for (const typeName of excludedContentTypes) {
-        if (typeName === "No Preference") {
-          continue;
-        }
-
-        await pool.execute(
-          `
-            INSERT INTO user_excluded_content_types (
-              user_id,
-              content_type_id
-            )
-            SELECT ?, content_type_id
-            FROM content_types
-            WHERE type_name = ?
-          `,
-          [userId, typeName]
-        );
-      }
+      continue;
     }
+
+    const contentTypeId =
+      contentTypeRows[0].content_type_id;
+
+    await pool.execute(
+      `
+        INSERT INTO user_excluded_content_types (
+          user_id,
+          content_type_id
+        )
+        VALUES (?, ?)
+      `,
+      [userId, contentTypeId]
+    );
+
+    console.log(
+      "EXCLUDED CONTENT TYPE SAVED:",
+      {
+        userId,
+        typeName,
+        contentTypeId,
+      }
+    );
+  }
+}
 
     console.log("ONBOARDING / PREFERENCES UPDATED", {
       userId,
