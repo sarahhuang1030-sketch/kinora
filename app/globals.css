@@ -16338,8 +16338,25 @@ main.help-article-content {
   }
 
   /* Hide desktop navigation links only */
-  nav > .nav-links {
+  /* nav > .nav-links {
     display: none;
+  } */
+
+    nav > .nav-links {
+    order: 3;
+    width: 100%;
+
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 18px;
+
+    padding-top: 10px;
+  }
+
+  .nav-links a {
+    font-size: calc(11px * var(--app-text-scale));
+    white-space: nowrap;
   }
 
   /* Right side of navbar */
@@ -16349,7 +16366,7 @@ main.help-article-content {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 12px;
+    gap: 10px;
 
     min-width: 0;
   }
