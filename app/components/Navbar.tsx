@@ -6,6 +6,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useEffect, useState, useRef } from "react";
 import { FiSearch } from "react-icons/fi";
+import { FiMenu, FiX } from "react-icons/fi";
 
 type Movie = {
   movie_id: number;
@@ -29,7 +30,7 @@ export default function Navbar() {
   const [results, setResults] = useState<Movie[]>([]);
   const [navUser, setNavUser] = useState<NavUser | null>(null); 
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
-
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   useEffect(() => {
     const query = searchText.trim();
 
@@ -169,6 +170,13 @@ useEffect(() => {
 
   return (
     <nav>
+      <button
+      className="mobile-menu-btn"
+      onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+    >
+      {mobileMenuOpen ? <FiX /> : <FiMenu />}
+    </button>
+
       <Link href="/" className="logo">
   <Image
   src="/CINERI-favicon.png"
@@ -181,26 +189,54 @@ useEffect(() => {
 <span className="logo-wordmark">CINERI</span>
 </Link>
 
-      <div className="nav-links">
-        <Link href="/">Home</Link>
-        <Link href="/discover">Discover</Link>
-        <Link href="/about">About</Link>
-        <Link href="https://docs.google.com/forms/d/e/1FAIpQLSfXTcE0RAA0-kBj5PJXY1uzrWun-QP0wIWXPsTKQH6fj6b39g/viewform"
-              target="_blank"
-              rel="noopener noreferrer"
-              onClick={async () => {
-                try {
-                  await fetch("/api/feedback-click", {
-                    method: "POST",
-                  });
-                } catch (error) {
-                  console.error("Feedback tracking failed", error);
-                }
-              }}
-            >
-              User Feedback
-            </Link>
-      </div>
+    <div
+  className={`nav-links ${
+    mobileMenuOpen ? "mobile-open" : ""
+  }`}
+>
+  <Link
+    href="/"
+    onClick={() => setMobileMenuOpen(false)}
+  >
+    Home
+  </Link>
+
+  <Link
+    href="/discover"
+    onClick={() => setMobileMenuOpen(false)}
+  >
+    Discover
+  </Link>
+
+  <Link
+    href="/about"
+    onClick={() => setMobileMenuOpen(false)}
+  >
+    About
+  </Link>
+
+  <Link
+    href="https://docs.google.com/forms/d/e/1FAIpQLSd2IID8cPee60wNytR5JpLeStW9RKlBBOsDy4Beygqe2tmr3A/viewform"
+    target="_blank"
+    rel="noopener noreferrer"
+    onClick={async () => {
+      setMobileMenuOpen(false);
+
+      try {
+        await fetch("/api/feedback-click", {
+          method: "POST",
+        });
+      } catch (error) {
+        console.error(
+          "Feedback tracking failed",
+          error
+        );
+      }
+    }}
+  >
+    User Feedback
+  </Link>
+</div>
 
       <div className="nav-actions">
         <div className="search-wrapper">
